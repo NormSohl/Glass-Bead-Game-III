@@ -8,18 +8,76 @@
 
 /* Begin PBXBuildFile section */
 		06824BDE2B881E3C002E9661 /* Glass_Bead_Game_2App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BDD2B881E3C002E9661 /* Glass_Bead_Game_2App.swift */; };
-		06824BE02B881E3C002E9661 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BDF2B881E3C002E9661 /* ContentView.swift */; };
 		06824BE22B881E3D002E9661 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 06824BE12B881E3D002E9661 /* Assets.xcassets */; };
 		06824BE62B881E3D002E9661 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 06824BE52B881E3D002E9661 /* Preview Assets.xcassets */; };
+		06824BFC2B886963002E9661 /* DissonanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF52B886962002E9661 /* DissonanceView.swift */; };
+		06824BFD2B886963002E9661 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF62B886962002E9661 /* ContentView.swift */; };
+		06824BFE2B886963002E9661 /* HitTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF72B886962002E9661 /* HitTestView.swift */; };
+		06824BFF2B886963002E9661 /* DiamondView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF82B886962002E9661 /* DiamondView.swift */; };
+		06824C002B886963002E9661 /* TickView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF92B886963002E9661 /* TickView.swift */; };
+		06824C012B886963002E9661 /* GraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BFA2B886963002E9661 /* GraphView.swift */; };
+		06824C022B886963002E9661 /* ControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BFB2B886963002E9661 /* ControlView.swift */; };
+		06824C0E2B887538002E9661 /* Diamonds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C0B2B887538002E9661 /* Diamonds.swift */; };
+		06824C0F2B887538002E9661 /* ControlData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C0C2B887538002E9661 /* ControlData.swift */; };
+		06824C102B887538002E9661 /* Scale.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C0D2B887538002E9661 /* Scale.swift */; };
+		06824C212B887559002E9661 /* CanInterpolate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C122B887559002E9661 /* CanInterpolate.swift */; };
+		06824C222B887559002E9661 /* Overview.md in Resources */ = {isa = PBXBuildFile; fileRef = 06824C132B887559002E9661 /* Overview.md */; };
+		06824C232B887559002E9661 /* Score.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C142B887559002E9661 /* Score.swift */; };
+		06824C242B887559002E9661 /* Note.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C152B887559002E9661 /* Note.swift */; };
+		06824C252B887559002E9661 /* Part.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C162B887559002E9661 /* Part.swift */; };
+		06824C262B887559002E9661 /* TransFlat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C182B887559002E9661 /* TransFlat.swift */; };
+		06824C272B887559002E9661 /* TransEaseOut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C192B887559002E9661 /* TransEaseOut.swift */; };
+		06824C282B887559002E9661 /* TransEaseInEaseOut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C1A2B887559002E9661 /* TransEaseInEaseOut.swift */; };
+		06824C292B887559002E9661 /* TransEaseIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C1B2B887559002E9661 /* TransEaseIn.swift */; };
+		06824C2A2B887559002E9661 /* TransLinear.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C1C2B887559002E9661 /* TransLinear.swift */; };
+		06824C2B2B887559002E9661 /* EnvFlat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C1E2B887559002E9661 /* EnvFlat.swift */; };
+		06824C2C2B887559002E9661 /* EnvHump.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C1F2B887559002E9661 /* EnvHump.swift */; };
+		06824C2D2B887559002E9661 /* Node.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C202B887559002E9661 /* Node.swift */; };
+		06824C362B887571002E9661 /* Waveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C2F2B887571002E9661 /* Waveform.swift */; };
+		06824C372B887571002E9661 /* Midi.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C302B887571002E9661 /* Midi.swift */; };
+		06824C382B887571002E9661 /* AudioTestCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C312B887571002E9661 /* AudioTestCode.swift */; };
+		06824C392B887571002E9661 /* MIDITestCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C322B887571002E9661 /* MIDITestCode.swift */; };
+		06824C3A2B887571002E9661 /* Tone.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C332B887571002E9661 /* Tone.swift */; };
+		06824C3B2B887571002E9661 /* Triad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C342B887571002E9661 /* Triad.swift */; };
+		06824C3C2B887571002E9661 /* Audio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C352B887571002E9661 /* Audio.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		06824BDA2B881E3C002E9661 /* Glass Bead Game 2.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Glass Bead Game 2.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		06824BDD2B881E3C002E9661 /* Glass_Bead_Game_2App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Glass_Bead_Game_2App.swift; sourceTree = "<group>"; };
-		06824BDF2B881E3C002E9661 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		06824BE12B881E3D002E9661 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		06824BE32B881E3D002E9661 /* Glass_Bead_Game_2.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Glass_Bead_Game_2.entitlements; sourceTree = "<group>"; };
 		06824BE52B881E3D002E9661 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		06824BF52B886962002E9661 /* DissonanceView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DissonanceView.swift; sourceTree = "<group>"; };
+		06824BF62B886962002E9661 /* ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		06824BF72B886962002E9661 /* HitTestView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HitTestView.swift; sourceTree = "<group>"; };
+		06824BF82B886962002E9661 /* DiamondView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DiamondView.swift; sourceTree = "<group>"; };
+		06824BF92B886963002E9661 /* TickView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TickView.swift; sourceTree = "<group>"; };
+		06824BFA2B886963002E9661 /* GraphView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GraphView.swift; sourceTree = "<group>"; };
+		06824BFB2B886963002E9661 /* ControlView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControlView.swift; sourceTree = "<group>"; };
+		06824C0B2B887538002E9661 /* Diamonds.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Diamonds.swift; sourceTree = "<group>"; };
+		06824C0C2B887538002E9661 /* ControlData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControlData.swift; sourceTree = "<group>"; };
+		06824C0D2B887538002E9661 /* Scale.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Scale.swift; sourceTree = "<group>"; };
+		06824C122B887559002E9661 /* CanInterpolate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CanInterpolate.swift; sourceTree = "<group>"; };
+		06824C132B887559002E9661 /* Overview.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = Overview.md; sourceTree = "<group>"; };
+		06824C142B887559002E9661 /* Score.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Score.swift; sourceTree = "<group>"; };
+		06824C152B887559002E9661 /* Note.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Note.swift; sourceTree = "<group>"; };
+		06824C162B887559002E9661 /* Part.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Part.swift; sourceTree = "<group>"; };
+		06824C182B887559002E9661 /* TransFlat.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TransFlat.swift; sourceTree = "<group>"; };
+		06824C192B887559002E9661 /* TransEaseOut.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TransEaseOut.swift; sourceTree = "<group>"; };
+		06824C1A2B887559002E9661 /* TransEaseInEaseOut.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TransEaseInEaseOut.swift; sourceTree = "<group>"; };
+		06824C1B2B887559002E9661 /* TransEaseIn.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TransEaseIn.swift; sourceTree = "<group>"; };
+		06824C1C2B887559002E9661 /* TransLinear.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TransLinear.swift; sourceTree = "<group>"; };
+		06824C1E2B887559002E9661 /* EnvFlat.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EnvFlat.swift; sourceTree = "<group>"; };
+		06824C1F2B887559002E9661 /* EnvHump.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EnvHump.swift; sourceTree = "<group>"; };
+		06824C202B887559002E9661 /* Node.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Node.swift; sourceTree = "<group>"; };
+		06824C2F2B887571002E9661 /* Waveform.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Waveform.swift; sourceTree = "<group>"; };
+		06824C302B887571002E9661 /* Midi.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Midi.swift; sourceTree = "<group>"; };
+		06824C312B887571002E9661 /* AudioTestCode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioTestCode.swift; sourceTree = "<group>"; };
+		06824C322B887571002E9661 /* MIDITestCode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MIDITestCode.swift; sourceTree = "<group>"; };
+		06824C332B887571002E9661 /* Tone.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Tone.swift; sourceTree = "<group>"; };
+		06824C342B887571002E9661 /* Triad.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Triad.swift; sourceTree = "<group>"; };
+		06824C352B887571002E9661 /* Audio.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Audio.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,20 +111,100 @@
 			isa = PBXGroup;
 			children = (
 				06824BDD2B881E3C002E9661 /* Glass_Bead_Game_2App.swift */,
-				06824BDF2B881E3C002E9661 /* ContentView.swift */,
+				06824C0A2B887538002E9661 /* Data */,
+				06824BF42B88691F002E9661 /* View */,
+				06824C112B887559002E9661 /* Score */,
+				06824C2E2B887571002E9661 /* Audio */,
 				06824BE12B881E3D002E9661 /* Assets.xcassets */,
 				06824BE32B881E3D002E9661 /* Glass_Bead_Game_2.entitlements */,
-				06824BE42B881E3D002E9661 /* Preview Content */,
+				06824C092B886A5C002E9661 /* Preview Content */,
 			);
 			path = "Glass Bead Game 2";
 			sourceTree = "<group>";
 		};
-		06824BE42B881E3D002E9661 /* Preview Content */ = {
+		06824BF42B88691F002E9661 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				06824BF62B886962002E9661 /* ContentView.swift */,
+				06824BFB2B886963002E9661 /* ControlView.swift */,
+				06824BF82B886962002E9661 /* DiamondView.swift */,
+				06824BF52B886962002E9661 /* DissonanceView.swift */,
+				06824BFA2B886963002E9661 /* GraphView.swift */,
+				06824BF72B886962002E9661 /* HitTestView.swift */,
+				06824BF92B886963002E9661 /* TickView.swift */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
+		06824C092B886A5C002E9661 /* Preview Content */ = {
 			isa = PBXGroup;
 			children = (
 				06824BE52B881E3D002E9661 /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		06824C0A2B887538002E9661 /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				06824C0B2B887538002E9661 /* Diamonds.swift */,
+				06824C0C2B887538002E9661 /* ControlData.swift */,
+				06824C0D2B887538002E9661 /* Scale.swift */,
+			);
+			name = Data;
+			path = ../../GBG_01/GBG_01/Data;
+			sourceTree = "<group>";
+		};
+		06824C112B887559002E9661 /* Score */ = {
+			isa = PBXGroup;
+			children = (
+				06824C122B887559002E9661 /* CanInterpolate.swift */,
+				06824C132B887559002E9661 /* Overview.md */,
+				06824C142B887559002E9661 /* Score.swift */,
+				06824C152B887559002E9661 /* Note.swift */,
+				06824C162B887559002E9661 /* Part.swift */,
+				06824C172B887559002E9661 /* Transitions */,
+				06824C1D2B887559002E9661 /* Envelopes */,
+				06824C202B887559002E9661 /* Node.swift */,
+			);
+			name = Score;
+			path = ../../GBG_01/GBG_01/Score;
+			sourceTree = "<group>";
+		};
+		06824C172B887559002E9661 /* Transitions */ = {
+			isa = PBXGroup;
+			children = (
+				06824C182B887559002E9661 /* TransFlat.swift */,
+				06824C192B887559002E9661 /* TransEaseOut.swift */,
+				06824C1A2B887559002E9661 /* TransEaseInEaseOut.swift */,
+				06824C1B2B887559002E9661 /* TransEaseIn.swift */,
+				06824C1C2B887559002E9661 /* TransLinear.swift */,
+			);
+			path = Transitions;
+			sourceTree = "<group>";
+		};
+		06824C1D2B887559002E9661 /* Envelopes */ = {
+			isa = PBXGroup;
+			children = (
+				06824C1E2B887559002E9661 /* EnvFlat.swift */,
+				06824C1F2B887559002E9661 /* EnvHump.swift */,
+			);
+			path = Envelopes;
+			sourceTree = "<group>";
+		};
+		06824C2E2B887571002E9661 /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				06824C2F2B887571002E9661 /* Waveform.swift */,
+				06824C302B887571002E9661 /* Midi.swift */,
+				06824C312B887571002E9661 /* AudioTestCode.swift */,
+				06824C322B887571002E9661 /* MIDITestCode.swift */,
+				06824C332B887571002E9661 /* Tone.swift */,
+				06824C342B887571002E9661 /* Triad.swift */,
+				06824C352B887571002E9661 /* Audio.swift */,
+			);
+			name = Audio;
+			path = ../../GBG_01/GBG_01/Audio;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -128,6 +266,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				06824BE62B881E3D002E9661 /* Preview Assets.xcassets in Resources */,
+				06824C222B887559002E9661 /* Overview.md in Resources */,
 				06824BE22B881E3D002E9661 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -139,8 +278,36 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				06824BE02B881E3C002E9661 /* ContentView.swift in Sources */,
+				06824C0E2B887538002E9661 /* Diamonds.swift in Sources */,
+				06824C3B2B887571002E9661 /* Triad.swift in Sources */,
+				06824BFF2B886963002E9661 /* DiamondView.swift in Sources */,
 				06824BDE2B881E3C002E9661 /* Glass_Bead_Game_2App.swift in Sources */,
+				06824C2C2B887559002E9661 /* EnvHump.swift in Sources */,
+				06824BFD2B886963002E9661 /* ContentView.swift in Sources */,
+				06824C282B887559002E9661 /* TransEaseInEaseOut.swift in Sources */,
+				06824C002B886963002E9661 /* TickView.swift in Sources */,
+				06824BFE2B886963002E9661 /* HitTestView.swift in Sources */,
+				06824C362B887571002E9661 /* Waveform.swift in Sources */,
+				06824BFC2B886963002E9661 /* DissonanceView.swift in Sources */,
+				06824C2D2B887559002E9661 /* Node.swift in Sources */,
+				06824C3A2B887571002E9661 /* Tone.swift in Sources */,
+				06824C102B887538002E9661 /* Scale.swift in Sources */,
+				06824C232B887559002E9661 /* Score.swift in Sources */,
+				06824C2B2B887559002E9661 /* EnvFlat.swift in Sources */,
+				06824C262B887559002E9661 /* TransFlat.swift in Sources */,
+				06824C242B887559002E9661 /* Note.swift in Sources */,
+				06824C212B887559002E9661 /* CanInterpolate.swift in Sources */,
+				06824C022B886963002E9661 /* ControlView.swift in Sources */,
+				06824C012B886963002E9661 /* GraphView.swift in Sources */,
+				06824C392B887571002E9661 /* MIDITestCode.swift in Sources */,
+				06824C292B887559002E9661 /* TransEaseIn.swift in Sources */,
+				06824C252B887559002E9661 /* Part.swift in Sources */,
+				06824C3C2B887571002E9661 /* Audio.swift in Sources */,
+				06824C382B887571002E9661 /* AudioTestCode.swift in Sources */,
+				06824C0F2B887538002E9661 /* ControlData.swift in Sources */,
+				06824C272B887559002E9661 /* TransEaseOut.swift in Sources */,
+				06824C2A2B887559002E9661 /* TransLinear.swift in Sources */,
+				06824C372B887571002E9661 /* Midi.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -7,11 +7,24 @@
 
 import SwiftUI
 
+var triad = Triad()
+var audio = AudioUtil()
+
 @main
-struct Glass_Bead_Game_2App: App {
+struct GBG_01App: App {
+    //@Environment(\.scenePhase) var scenePhase
+    //var audio = AudioUtil()
+    init() {
+        audio.stopAudio() // any call to trigger lazy instantiation
+        let _ = triad.getRootPitch() // same
+    }
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView()//audio:audio)
         }
+        #if os(macOS)
+        .windowStyle(.hiddenTitleBar)
+        #endif
     }
 }
