@@ -26,21 +26,21 @@ struct TickView: View {
                 {
                     // horizontal tick marks left
                     let tempHeight = graphWidth - (size * Double(tick))
-                    path.move(to: CGPoint (x: 1, y: tempHeight + border))
-                    path.addLine(to: CGPoint(x: 10, y: tempHeight + border))
+                    //path.move(to: CGPoint (x: 1, y: tempHeight + border))
+                    //path.addLine(to: CGPoint(x: 10, y: tempHeight + border))
                     
                     // horizontal tick marks right
-                    path.move(to: CGPoint (x: geo.size.width - 10, y: tempHeight + border))
-                    path.addLine(to: CGPoint(x:geo.size.width, y: tempHeight + border))
+                    //path.move(to: CGPoint (x: geo.size.width - 10, y: tempHeight + border))
+                    //path.addLine(to: CGPoint(x:geo.size.width, y: tempHeight + border))
                     
                     //vertical tick marks top
                     let tempWidth = size * Double(tick)
-                    path.move(to: CGPoint (x:tempWidth + border, y: 1))
-                    path.addLine(to: CGPoint(x:tempWidth + border, y: 10))
+                    //path.move(to: CGPoint (x:tempWidth + border, y: 1))
+                    //path.addLine(to: CGPoint(x:tempWidth + border, y: 10))
                     
                     //vertical tick marks bottom
-                    path.move(to: CGPoint (x:tempWidth + border, y: geo.size.height - 10))
-                    path.addLine(to: CGPoint(x:tempWidth + border, y: geo.size.height))
+                    //path.move(to: CGPoint (x:tempWidth + border, y: geo.size.height - 10))
+                    //path.addLine(to: CGPoint(x:tempWidth + border, y: geo.size.height))
                 }
             }
         }
@@ -54,21 +54,21 @@ struct TickView: View {
                 {
                     // horizontal tick marks left
                     let tempHeight = graphWidth - (size * Double(tick))
-                    path.move(to: CGPoint (x: 1, y: tempHeight + border))
-                    path.addLine(to: CGPoint(x: border-30, y: tempHeight + border))
+                    //path.move(to: CGPoint (x: 1, y: tempHeight + border))
+                    //path.addLine(to: CGPoint(x: border-30, y: tempHeight + border))
                     
                     // horizontal tick marks right
-                    path.move(to: CGPoint (x: geo.size.width - 10, y: tempHeight + border))
-                    path.addLine(to: CGPoint(x: geo.size.width, y: tempHeight + border))
+                    //path.move(to: CGPoint (x: geo.size.width - 10, y: tempHeight + border))
+                    //path.addLine(to: CGPoint(x: geo.size.width, y: tempHeight + border))
                     
                     //vertical tick marks bottom
                     let tempWidth = size * Double(tick)
-                    path.move(to: CGPoint (x:tempWidth + border, y: 1))
-                    path.addLine(to: CGPoint(x:tempWidth + border, y: border - 30))
+                    //path.move(to: CGPoint (x:tempWidth + border, y: 1))
+                    //path.addLine(to: CGPoint(x:tempWidth + border, y: border - 30))
                     
                     // vertical tick marks bottom
-                    path.move(to: CGPoint (x:tempWidth + border, y: geo.size.height - 10))
-                    path.addLine(to: CGPoint(x:tempWidth + border, y: geo.size.height))
+                    //path.move(to: CGPoint (x:tempWidth + border, y: geo.size.height - 10))
+                    //path.addLine(to: CGPoint(x:tempWidth + border, y: geo.size.height))
                 }
             }
         }

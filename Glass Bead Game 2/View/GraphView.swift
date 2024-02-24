@@ -8,102 +8,165 @@
 import SwiftUI
 
 struct GraphView: View {
-    //@ObservedObject var settings: AppSettings
     var scale: Scale
-    //var geo:GeometryProxy
     var border:Double
 
-    var body: some View {        
-        // graph is the size of the view less the left and right border
-        //let graphWidth = geo.size.width - border - border
-        //let graphHeight = geo.size.height - border - border
+    var body: some View {
         
         VStack(alignment: .leading, spacing:0){// group of all graph elements
             
             HStack(alignment: .top, spacing:0){  // top border
                 // top left corner
-                Rectangle()
-                    .fill(.clear)
-                    .frame(width:border, height: border)
-                
-                // top border
-                Rectangle()
-                    .fill(.clear)
-                    .frame(height: border)
-    
+                Corner(border: border)
+                // top tick marks
+                Ticks(border: border, alignment: .top).frame(height: border)
                 // top right corner
-                Rectangle()
-                    .fill(.clear)
-                    .frame(width:border, height: border)
+                Corner(border: border)
             }
             
             HStack(alignment: .center, spacing:0){  // middle including left border, graph and right border
                 // left border
-                Rectangle()
-                    .fill(.clear)
-                    .frame(width:border)
-                
+                Ticks(border: border, alignment: .leading).frame(width: border)
                 // graph
-                Canvas(){context, size in
-                    context.stroke(
-                        Path { path in
-                            for interval in scale.scale {
-                                
-                                // Horizontal lines
-                                let tempHeight = size.height - ((size.height * interval.valueNormalized))
-                                path.move(to: CGPoint (x: 0, y: tempHeight))
-                                path.addLine(to: CGPoint(x: size.width, y: tempHeight))
-                                
-                                //vertical lines
-                                let tempWidth = size.width * interval.valueNormalized
-                                path.move(to: CGPoint (x:tempWidth, y:0))
-                                path.addLine(to: CGPoint(x:tempWidth, y: size.height))
-                            }
-                        },
-                        with: .color(.white)
-                    )
-                }
-
+                Graph(border: border, scale: scale)
                 // right border
-                Rectangle()
-                    .fill(.clear)
-                    .frame(width:border)
+                Ticks(border: border, alignment: .trailing).frame(width: border)
             }
             
             HStack(alignment: .bottom, spacing:0){  // bottom border
                 // bottom left corner
-                Rectangle()
-                    .fill(.clear)
-                    .frame(width:border, height: border)
-                
-                // bottom border
-                Rectangle()
-                    .fill(.clear)
-                    .frame(height: border)
-    
+                Corner(border: border)
+                // bottom tick marks
+                Ticks(border: border, alignment: .bottom).frame(height: border)
                 // bottom right corner
-                Rectangle()
-                    .fill(.clear)
-                    .frame(width:border, height: border)
+                Corner(border: border)
             }
         }
-        // draw graph
-        /*
-        Path { path in
-            for interval in scale.scale {
-                
-                // Horizontal lines
-                let tempHeight = geo.size.height - ((graphHeight * interval.valueNormalized) + border)
-                path.move(to: CGPoint (x: border, y: tempHeight))
-                path.addLine(to: CGPoint(x: graphWidth + border, y: tempHeight))
-                
-                //vertical lines
-                let tempWidth = graphWidth * interval.valueNormalized
-                path.move(to: CGPoint (x:tempWidth + border, y: border))
-                path.addLine(to: CGPoint(x:tempWidth + border, y: graphHeight + border ))
-            }
-        }
-        .stroke(.white, lineWidth: 1)
-         */
     }
 }
+
+// filler for the corners of the border of the graph
+struct Corner: View {
+    var border:Double
+    
+    var body: some View {
+        
+        Rectangle()
+            .fill(.clear)
+            .frame(width:border, height: border)
+    }
+}
+
+struct Graph: View {
+    var border:Double
+    var scale: Scale
+    
+    var body: some View {
+        Canvas(){context, size in
+            context.stroke(
+                Path { path in
+                    for interval in scale.scale {
+                        
+                        // Horizontal lines
+                        let tempHeight = size.height - ((size.height * interval.valueNormalized))
+                        path.move(to: CGPoint (x: 0, y: tempHeight))
+                        path.addLine(to: CGPoint(x: size.width, y: tempHeight))
+                        
+                        //vertical lines
+                        let tempWidth = size.width * interval.valueNormalized
+                        path.move(to: CGPoint (x:tempWidth, y:0))
+                        path.addLine(to: CGPoint(x:tempWidth, y: size.height))
+                    }
+                },
+                with: .color(.white)
+            )
+        }
+    }
+}
+    
+enum Alignment {
+    case top
+    case bottom
+    case leading
+    case trailing
+}
+
+// tick marks
+struct Ticks: View {
+    var border:Double
+    var alignment: Alignment
+    
+    var body: some View {
+        Canvas(){ context, size in
+            let whiteTicks: Set = [0,2,4,5,7,9,11,12] // C, D, E, F, G, A, B, C
+            context.stroke(
+                Path { path in
+                    //let tickSpacing = (size.height) / 12
+                    for tick in 0...12 {
+                        if whiteTicks.contains(tick){
+                            //let tickLocation = size.height - (((size.height) / 12) * Double(tick))
+                            switch alignment {
+                            case .leading:
+                                let tickLocation = size.height - (((size.height) / 12) * Double(tick))
+                                path.move(to: CGPoint (x: 1, y: tickLocation))
+                                path.addLine(to: CGPoint(x: 10, y: tickLocation))
+                                
+                            case .trailing:
+                                let tickLocation = size.height - (((size.height) / 12) * Double(tick))
+                                path.move(to: CGPoint (x: border - 10, y: tickLocation))
+                                path.addLine(to: CGPoint(x: border - 1, y: tickLocation))
+                                
+                            case .top:
+                                let tickLocation = (size.width / 12) * Double(tick)
+                                path.move(to: CGPoint (x: tickLocation, y: 1))
+                                path.addLine(to: CGPoint(x: tickLocation, y:10))
+                                
+                            case .bottom:
+                                let tickLocation = ((size.width) / 12) * Double(tick)
+                                path.move(to: CGPoint (x: tickLocation, y: border - 1))
+                                path.addLine(to: CGPoint(x: tickLocation, y: border - 10))
+                            }
+                        }
+                    }
+                },
+                with: .color(.white),
+                lineWidth: 2
+            )
+            context.stroke(
+                Path { path in
+                    let tickSpacing = (size.height) / 12
+                    for tick in 0...12 {
+                        if !whiteTicks.contains(tick)
+                        {
+                            let tickLocation = size.height - (((size.height) / 12) * Double(tick))
+                            switch alignment {
+                            case .leading:
+                                let tickLocation = size.height - (((size.height) / 12) * Double(tick))
+                                path.move(to: CGPoint (x: 1, y: tickLocation))
+                                path.addLine(to: CGPoint(x: 10, y: tickLocation))
+                                
+                            case .trailing:
+                                let tickLocation = size.height - (((size.height) / 12) * Double(tick))
+                                path.move(to: CGPoint (x: border - 10, y: tickLocation))
+                                path.addLine(to: CGPoint(x: border - 1, y: tickLocation))
+                                
+                            case .top:
+                                let tickLocation = (size.width / 12) * Double(tick)
+                                path.move(to: CGPoint (x: tickLocation, y: 1))
+                                path.addLine(to: CGPoint(x: tickLocation, y:10))
+                                
+                            case .bottom:
+                                let tickLocation = (size.width / 12) * Double(tick)
+                                path.move(to: CGPoint (x: tickLocation, y: border - 1))
+                                path.addLine(to: CGPoint(x: tickLocation, y: border - 10))
+                            }
+                        }
+                    }
+                },
+                with: .color(.black),
+                lineWidth: 2
+            )
+        }
+    }
+}
+

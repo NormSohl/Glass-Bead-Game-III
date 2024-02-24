@@ -23,7 +23,7 @@ struct ContentView: View {
                     GraphView(scale: scale, border: border)
                     let diamonds = Diamonds(scale:scale)
                     DiamondView(showDiamonds: settings.showDiamonds, diamonds: diamonds, geo: geo, border: border)
-                    TickView( geo: geo, border: border)
+                    //TickView( geo: geo, border: border)
                     HitTestView(geoIn: geo, scaleIn: scale, borderIn: border, snapIn: settings.snap)//, audioIn: audio)
                 }
             }
