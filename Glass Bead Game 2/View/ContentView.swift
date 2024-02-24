@@ -26,7 +26,7 @@ struct ContentView: View {
             .layoutPriority(1)
             .background()
             
-            ControlView(settings: settings).background()// all ui in right panel goes here
+            ControlView(settings: settings).background().frame(minWidth: 200)// all ui in right panel goes here
         }
         .frame (minWidth: 800, minHeight: 500)
     }

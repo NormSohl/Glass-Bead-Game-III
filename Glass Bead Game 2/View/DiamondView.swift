@@ -27,7 +27,31 @@ struct DiamondView: View {
                     // diamond size
                     var diamondSize = (size.width / 35) * element.sizeNormalized
                     if diamondSize < 4 {diamondSize =  4}
+                    
+                    // diamond color
+                    var diamondShade = element.sizeNormalized
+                    if diamondShade < 0.3 {diamondShade = 0.3}
+                    if diamondShade > 0.7 {diamondShade = 1.0}  // brighten the fifth
+                    //print("DiamondView: diamondShade = \(diamondShade), sizeNormalized = \(element.sizeNormalized)")
+                    var color = Color(red: diamondShade, green: diamondShade * 0.70, blue: 0.0)
+                    
+                    // draw fill
                     context.fill(
+                        Path { path in
+                            path.move(to: CGPoint (x:x-diamondSize, y:y))
+                            // upper left line
+                            path.addLine(to: CGPoint(x:x, y:y+diamondSize))
+                            // upper right line
+                            path.addLine(to: CGPoint(x:x+diamondSize, y:y))
+                            // lower right line
+                            path.addLine(to: CGPoint(x:x, y:y-diamondSize))
+                            // lower left line
+                            path.closeSubpath()
+                        },
+                        with: .color(color)
+                    )
+                    // draw border
+                    context.stroke(
                         Path { path in
                             path.move(to: CGPoint (x:x-diamondSize, y:y))
                             // upper left line

@@ -124,7 +124,7 @@ struct HitTestView: View {
                 path.addLine(to: CGPoint(x: graphPoint.x, y: graphPoint.y - x))
                 path.move (to: CGPoint(x: graphPoint.x-x, y: graphPoint.y))
                 path.addLine(to: CGPoint(x: graphPoint.x+x, y: graphPoint.y))
-            }, with: .color(.red),
+            }, with: .color(.white),
             lineWidth: 3
             )}
         
