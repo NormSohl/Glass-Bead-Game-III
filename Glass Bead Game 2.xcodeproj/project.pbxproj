@@ -14,7 +14,6 @@
 		06824BFD2B886963002E9661 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF62B886962002E9661 /* ContentView.swift */; };
 		06824BFE2B886963002E9661 /* HitTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF72B886962002E9661 /* HitTestView.swift */; };
 		06824BFF2B886963002E9661 /* DiamondView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF82B886962002E9661 /* DiamondView.swift */; };
-		06824C002B886963002E9661 /* TickView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF92B886963002E9661 /* TickView.swift */; };
 		06824C012B886963002E9661 /* GraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BFA2B886963002E9661 /* GraphView.swift */; };
 		06824C022B886963002E9661 /* ControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BFB2B886963002E9661 /* ControlView.swift */; };
 		06824C0E2B887538002E9661 /* Diamonds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C0B2B887538002E9661 /* Diamonds.swift */; };
@@ -52,7 +51,6 @@
 		06824BF62B886962002E9661 /* ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		06824BF72B886962002E9661 /* HitTestView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HitTestView.swift; sourceTree = "<group>"; };
 		06824BF82B886962002E9661 /* DiamondView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DiamondView.swift; sourceTree = "<group>"; };
-		06824BF92B886963002E9661 /* TickView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TickView.swift; sourceTree = "<group>"; };
 		06824BFA2B886963002E9661 /* GraphView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GraphView.swift; sourceTree = "<group>"; };
 		06824BFB2B886963002E9661 /* ControlView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControlView.swift; sourceTree = "<group>"; };
 		06824C0B2B887538002E9661 /* Diamonds.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Diamonds.swift; sourceTree = "<group>"; };
@@ -131,7 +129,6 @@
 				06824BF52B886962002E9661 /* DissonanceView.swift */,
 				06824BFA2B886963002E9661 /* GraphView.swift */,
 				06824BF72B886962002E9661 /* HitTestView.swift */,
-				06824BF92B886963002E9661 /* TickView.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -285,7 +282,6 @@
 				06824C2C2B887559002E9661 /* EnvHump.swift in Sources */,
 				06824BFD2B886963002E9661 /* ContentView.swift in Sources */,
 				06824C282B887559002E9661 /* TransEaseInEaseOut.swift in Sources */,
-				06824C002B886963002E9661 /* TickView.swift in Sources */,
 				06824BFE2B886963002E9661 /* HitTestView.swift in Sources */,
 				06824C362B887571002E9661 /* Waveform.swift in Sources */,
 				06824BFC2B886963002E9661 /* DissonanceView.swift in Sources */,

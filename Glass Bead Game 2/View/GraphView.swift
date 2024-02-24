@@ -27,8 +27,13 @@ struct GraphView: View {
             HStack(alignment: .center, spacing:0){  // middle including left border, graph and right border
                 // left border
                 Ticks(border: border, alignment: .leading).frame(width: border)
-                // graph
-                Graph(border: border, scale: scale)
+                
+                ZStack(){
+                    // graph
+                    Graph(border: border, scale: scale)
+                    //DiamondView(showDiamonds: <#T##Bool#>, diamonds: <#T##Diamonds#>, geo: <#T##GeometryProxy#>, border: <#T##Double#>)
+                }
+
                 // right border
                 Ticks(border: border, alignment: .trailing).frame(width: border)
             }
@@ -169,4 +174,3 @@ struct Ticks: View {
         }
     }
 }
-
