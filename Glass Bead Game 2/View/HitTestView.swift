@@ -10,7 +10,6 @@ import SwiftUI
 @available(macOS 13.0, *)
 struct HitTestView: View {
     var scale:Scale
-    //var border:Double
     var snap:Bool
     
     @State private var hoverLocation: CGPoint = .zero

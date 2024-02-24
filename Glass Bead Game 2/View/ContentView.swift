@@ -11,7 +11,7 @@ struct ContentView: View {
     @StateObject private var settings = AppSettings(playDrone:true, showDiamonds:true, snap:true, selectedLimit:Limit.Eleven)
     
     //var audio: AudioUtil
-    var border:Double = 25
+    var border:Double = 40
     var body: some View {
         HStack(spacing:0) {
             ZStack(){
