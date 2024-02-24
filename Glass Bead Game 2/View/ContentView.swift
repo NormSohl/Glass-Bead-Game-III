@@ -20,7 +20,7 @@ struct ContentView: View {
                     // create scale and diamonds on the fly
                     let intLimit = LimitMap[settings.selectedLimit]
                     let scale = Scale(Limit: intLimit ?? 0 )
-                    GraphView(scale: scale, geo: geo, border: border)
+                    GraphView(scale: scale, border: border)
                     let diamonds = Diamonds(scale:scale)
                     DiamondView(showDiamonds: settings.showDiamonds, diamonds: diamonds, geo: geo, border: border)
                     TickView( geo: geo, border: border)
