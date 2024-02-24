@@ -11,6 +11,7 @@ struct GraphView: View {
     var scale: Scale
     var diamonds:Diamonds
     var border:Double
+    var showDiamonds:Bool
 
     var body: some View {
         
@@ -32,8 +33,8 @@ struct GraphView: View {
                 ZStack(){
                     // graph
                     Graph(border: border, scale: scale)
-                    DiamondView(showDiamonds: true, diamonds: diamonds, border: border)
-                }
+                    DiamondView(showDiamonds: showDiamonds, diamonds: diamonds, border: border)
+                }.border(.orange)
 
                 // right border
                 Ticks(border: border, alignment: .trailing).frame(width: border)

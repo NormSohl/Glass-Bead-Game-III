@@ -17,9 +17,9 @@ struct ControlView: View {
             ){
                 Text("Glass Bead Game").bold().font(Font.headline)
                 Divider()
-                Toggle("Diamonds", isOn: $settings.showDiamonds)
-                Toggle("Drone", isOn: $settings.playDrone)
-                Toggle("Snapping", isOn: $settings.snap)
+                Toggle("Diamonds", isOn: $settings.showDiamonds).tint(.blue)
+                Toggle("Drone", isOn: $settings.playDrone).tint(.blue)
+                Toggle("Snapping", isOn: $settings.snap).tint(.blue)
                 
                 HStack{
                     #if os(iOS)

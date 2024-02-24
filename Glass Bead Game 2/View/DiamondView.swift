@@ -33,7 +33,7 @@ struct DiamondView: View {
                     if diamondShade < 0.3 {diamondShade = 0.3}
                     if diamondShade > 0.7 {diamondShade = 1.0}  // brighten the fifth
                     //print("DiamondView: diamondShade = \(diamondShade), sizeNormalized = \(element.sizeNormalized)")
-                    var color = Color(red: diamondShade, green: diamondShade * 0.70, blue: 0.0)
+                    let color = Color(red: diamondShade, green: diamondShade * 0.70, blue: 0.0)
                     
                     // draw fill
                     context.fill(
@@ -67,7 +67,6 @@ struct DiamondView: View {
                     )
                 }
             }
-            
         }
     }
 }
