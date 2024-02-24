@@ -10,7 +10,7 @@ import SwiftUI
 @available(macOS 13.0, *)
 struct HitTestView: View {
     var scale:Scale
-    var border:Double
+    //var border:Double
     var snap:Bool
     
     @State private var hoverLocation: CGPoint = .zero
@@ -20,12 +20,6 @@ struct HitTestView: View {
     @State private var isDragWithoutShift = false
     @State private var isDragWithShift = false
     
-    init(scaleIn: Scale, borderIn: Double, snapIn: Bool){
-        scale = scaleIn
-        border = borderIn
-        snap = snapIn
-    }
-    
     var body: some View {
         Canvas(){context, size in
             context.stroke(
@@ -34,20 +28,20 @@ struct HitTestView: View {
                 var graphPoint:CGPoint = .zero
                 
                 // graph is the size of the view less the left and right border
-                let graphWidth = size.width - border - border
-                let graphHeight = size.height - border - border
+                let graphWidth = size.width
+                let graphHeight = size.height
                 
                 //print("HoverLocation: \(hoverLocation)")
                 // not interested if mouse is outside of x and y graph edges
-                if hoverLocation.x < border || hoverLocation.x > border + graphWidth || hoverLocation.y < border || hoverLocation.y > graphWidth + border + border {
-                    //print ("out of bounds")
+                if hoverLocation.x < 0 || hoverLocation.x > graphWidth || hoverLocation.y < 0 || hoverLocation.y > graphWidth {
+                    print ("out of bounds")
                     return
                 }
                 
                 // hit test for x axis against hoverLocation.x
                 for scaleElement in scale.scale {
-                    let lowerBounds = (graphWidth * scaleElement.lowerBounds) + border
-                    let upperBounds = (graphWidth * scaleElement.upperBounds) + border
+                    let lowerBounds = (graphWidth * scaleElement.lowerBounds)
+                    let upperBounds = (graphWidth * scaleElement.upperBounds)
                     let locationX = hoverLocation.x
                     
                     // if location is less than the start of the graph, break loop
@@ -56,7 +50,7 @@ struct HitTestView: View {
                         if isShiftPressed {
                             // if shift is pressed, play the unsnapped pitch, else play snapped value
                             //2^(701.955001/1200) = 1.5 hz - this is an example in standard notation for a perfect fifth
-                            let graphLocation = locationX - border
+                            let graphLocation = locationX
                             let graphRatio = graphLocation / graphWidth //0 to 1 value in linear measure, not log as is needed for frequency
                             //let graphCents = 1200 * graphRatio //this is correct! Finally! Included here only for debug output
                             let frequencyRatio = pow(2, graphRatio) //make it log. converts to correct 1 to 2 value for frequency ratio. Works!
@@ -74,14 +68,14 @@ struct HitTestView: View {
                             //print("scaleElement.value = \(scaleElement.value), unsnappedRatioX = \(unsnappedRatioX), Snapped X pitch = \(f2), unsnapped X pitch = \(unsnappedPitch)")
                         }
                         //assign x to crosshair
-                        graphPoint.x = (graphWidth * scaleElement.valueNormalized) + border
-                        if graphPoint.x < border { graphPoint.x = border }
+                        graphPoint.x = (graphWidth * scaleElement.valueNormalized)
+                        //if graphPoint.x < border { graphPoint.x = 0 }
                     }
                 }
                 // hit test for y axis against hoverLocation.y
                 for scaleElement in scale.scale {
-                    let lowerBounds = graphHeight - (graphHeight * scaleElement.lowerBounds) + border
-                    let upperBounds = graphHeight - (graphHeight * scaleElement.upperBounds) + border
+                    let lowerBounds = graphHeight - (graphHeight * scaleElement.lowerBounds)
+                    let upperBounds = graphHeight - (graphHeight * scaleElement.upperBounds)
                     let locationY = hoverLocation.y
                     
                     // print("HitTestView: locationY = \(locationY), upperBounds = \(upperBounds), lowerBounds = \(lowerBounds)")
@@ -92,7 +86,7 @@ struct HitTestView: View {
                             // if shift is pressed, play the unsnapped pitch, else play snapped value
                             
                             //2^(701.955001/1200) = 1.5 hz - this is an example in standard notation for a perfect fifth
-                            let graphLocation = locationY - border
+                            let graphLocation = locationY
                             var graphRatio = graphLocation / graphHeight //0 to 1 value in linear measure, not log as is needed for frequency
                             graphRatio  = 1-graphRatio // invert because y axis is upside down
                             //let graphCents = 1200 * graphRatio //this is correct! Finally! Included here only for debug output
@@ -113,7 +107,7 @@ struct HitTestView: View {
                         }
                         
                         //assign y to crosshair
-                        graphPoint.y =  size.height - ((graphHeight * scaleElement.valueNormalized) + border)
+                        graphPoint.y =  size.height - ((graphHeight * scaleElement.valueNormalized))
                         //print("graphPoint.y =", graphPoint.y)
                     }
                 }
@@ -194,53 +188,7 @@ struct HitTestView: View {
 #if os(iOS)
             .defersSystemGestures(on: .all)
 #endif
-            //.onKeyPress(phases: .all) { press in
-            //    //var key:String = ""
-            //    //key += press.characters
-            //    print("Hit test view KeyPress = \(press.characters)")
-            //    return .handled
-            //}
-            
-            // due to mouse down stopping hover behavior, use key to trigger sound. This allows hover to continue while turning on rendering of sound. Any key works.  It would be nice to block repeat of keydown
-            /*
-             .onAppear(perform: {
-             NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { event in
-             isShiftPressed = NSEvent.modifierFlags.contains(.shift)
-             if isKeyDown == false {
-             isKeyDown = true
-             
-             HitTestView.audio.startAudio(amp: 0.1)
-             print("keyDown Event. isKeyDown = ", isKeyDown)
-             //print("startAudio amp = 0.5")
-             }
-             return nil
-             }
-             NSEvent.addLocalMonitorForEvents(matching: [.keyUp]) {_ in
-             if isKeyDown == true {
-             isKeyDown = false
-             print("keyUp Event. isKeyDown = ", isKeyDown)
-             HitTestView.audio.stopAudio()
-             }
-             return nil
-             }
-             //NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDragged]) {_ in
-             //    var location = NSEvent.mouseLocation
-             //
-             //    print("Mouse drag location = ", location)
-             //    return nil
-             //}
-             
-             //NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved]) {_ in
-             //    hoverLocation   = self.mouseLocation
-             //    print("mouse: \(self.mouseLocation.x) \(self.mouseLocation.y)")
-             //    return nil
-             //}
-             })*/
         }
-        //func normalizeValue (minValue:Int, maxValue:Int, normalizeThis:CGFloat) ->CGFloat {
-        //    return (normalizeThis - CGFloat (minValue)) / CGFloat (maxValue - minValue)
-        
-        //}
     }
     
 

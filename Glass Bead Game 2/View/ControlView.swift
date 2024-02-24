@@ -15,11 +15,12 @@ struct ControlView: View {
                 alignment: .leading
                 //spacing: 10
             ){
+                let color = Color(red: 0.2, green: 0.4, blue: 0.8)
                 Text("Glass Bead Game").bold().font(Font.headline)
                 Divider()
-                Toggle("Diamonds", isOn: $settings.showDiamonds).tint(.blue)
-                Toggle("Drone", isOn: $settings.playDrone).tint(.blue)
-                Toggle("Snapping", isOn: $settings.snap).tint(.blue)
+                Toggle("Diamonds", isOn: $settings.showDiamonds).tint(color)
+                Toggle("Drone", isOn: $settings.playDrone).tint(color)
+                Toggle("Snapping", isOn: $settings.snap).tint(color)
                 
                 HStack{
                     #if os(iOS)

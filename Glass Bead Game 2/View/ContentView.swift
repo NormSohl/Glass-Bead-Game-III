@@ -19,8 +19,8 @@ struct ContentView: View {
                 let intLimit = LimitMap[settings.selectedLimit]
                 let scale = Scale(Limit: intLimit ?? 0 )
                 let diamonds = Diamonds(scale:scale)
-                GraphView(scale: scale, diamonds: diamonds, border: border, showDiamonds: settings.showDiamonds)
-                HitTestView(scaleIn: scale, borderIn: border, snapIn: settings.snap)
+                GraphView(scale: scale, diamonds: diamonds, border: border, showDiamonds: settings.showDiamonds,snap: settings.snap)
+                //HitTestView(scaleIn: scale, borderIn: border, snapIn: settings.snap)
             }
             .aspectRatio(1/1, contentMode: .fit)
             .layoutPriority(1)

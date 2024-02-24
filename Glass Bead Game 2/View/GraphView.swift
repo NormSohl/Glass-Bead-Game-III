@@ -12,6 +12,7 @@ struct GraphView: View {
     var diamonds:Diamonds
     var border:Double
     var showDiamonds:Bool
+    var snap:Bool
 
     var body: some View {
         
@@ -34,6 +35,7 @@ struct GraphView: View {
                     // graph
                     Graph(border: border, scale: scale)
                     DiamondView(showDiamonds: showDiamonds, diamonds: diamonds, border: border)
+                    HitTestView(scale:scale,snap:snap)
                 }.border(.orange)
 
                 // right border
