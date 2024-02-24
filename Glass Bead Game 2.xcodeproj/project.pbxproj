@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0634BD102B8A8912001E3644 /* TickView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0634BD0F2B8A8912001E3644 /* TickView.swift */; };
 		06824BDE2B881E3C002E9661 /* Glass_Bead_Game_2App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BDD2B881E3C002E9661 /* Glass_Bead_Game_2App.swift */; };
 		06824BE22B881E3D002E9661 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 06824BE12B881E3D002E9661 /* Assets.xcassets */; };
 		06824BE62B881E3D002E9661 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 06824BE52B881E3D002E9661 /* Preview Assets.xcassets */; };
@@ -42,6 +43,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0634BD0F2B8A8912001E3644 /* TickView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickView.swift; sourceTree = "<group>"; };
 		06824BDA2B881E3C002E9661 /* Glass Bead Game 2.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Glass Bead Game 2.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		06824BDD2B881E3C002E9661 /* Glass_Bead_Game_2App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Glass_Bead_Game_2App.swift; sourceTree = "<group>"; };
 		06824BE12B881E3D002E9661 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -129,6 +131,7 @@
 				06824BF52B886962002E9661 /* DissonanceView.swift */,
 				06824BFA2B886963002E9661 /* GraphView.swift */,
 				06824BF72B886962002E9661 /* HitTestView.swift */,
+				0634BD0F2B8A8912001E3644 /* TickView.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -298,6 +301,7 @@
 				06824C392B887571002E9661 /* MIDITestCode.swift in Sources */,
 				06824C292B887559002E9661 /* TransEaseIn.swift in Sources */,
 				06824C252B887559002E9661 /* Part.swift in Sources */,
+				0634BD102B8A8912001E3644 /* TickView.swift in Sources */,
 				06824C3C2B887571002E9661 /* Audio.swift in Sources */,
 				06824C382B887571002E9661 /* AudioTestCode.swift in Sources */,
 				06824C0F2B887538002E9661 /* ControlData.swift in Sources */,
