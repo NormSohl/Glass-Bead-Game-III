@@ -23,8 +23,8 @@ struct GBG_01App: App {
         WindowGroup {
             ContentView()//audio:audio)
         }
-        #if os(macOS)
-        .windowStyle(.hiddenTitleBar)
-        #endif
+        //#if os(macOS)
+        //.windowStyle(.hiddenTitleBar)
+        //#endif
     }
 }

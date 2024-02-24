@@ -37,6 +37,6 @@ struct ControlView: View {
                 }
                 Spacer()
             }
-            .padding([.leading,.trailing], 20)
+            .padding([.leading,.trailing,.top], 20)
         }
     }

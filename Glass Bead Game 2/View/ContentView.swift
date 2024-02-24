@@ -11,28 +11,22 @@ struct ContentView: View {
     @StateObject private var settings = AppSettings(playDrone:true, showDiamonds:true, snap:true, selectedLimit:Limit.Eleven)
     
     //var audio: AudioUtil
-    var border:Double = 40
+    var border:Double = 25
     var body: some View {
-        HStack() {
-            ZStack(){  // All graphics in left panel go here
-                GeometryReader { geo in
-                    let _ = print("ContentView: geo = \(geo.size)")
-                    // create scale and diamonds on the fly
-                    let intLimit = LimitMap[settings.selectedLimit]
-                    let scale = Scale(Limit: intLimit ?? 0 )
-                    GraphView(scale: scale, border: border)
-                    let diamonds = Diamonds(scale:scale)
-                    DiamondView(showDiamonds: settings.showDiamonds, diamonds: diamonds, geo: geo, border: border)
-                    //TickView( geo: geo, border: border)
-                    HitTestView(geoIn: geo, scaleIn: scale, borderIn: border, snapIn: settings.snap)//, audioIn: audio)
-                }
+        HStack(spacing:0) {
+            ZStack(){
+                // create scale and diamonds on the fly
+                let intLimit = LimitMap[settings.selectedLimit]
+                let scale = Scale(Limit: intLimit ?? 0 )
+                let diamonds = Diamonds(scale:scale)
+                GraphView(scale: scale, diamonds: diamonds, border: border)
+                HitTestView(scaleIn: scale, borderIn: border, snapIn: settings.snap)
             }
-            //.edgesIgnoringSafeArea(.all)
             .aspectRatio(1/1, contentMode: .fit)
             .layoutPriority(1)
-            .background(.red)
+            .background()
             
-            ControlView(settings: settings).background(.blue)// all ui in right panel goes here
+            ControlView(settings: settings).background()// all ui in right panel goes here
         }
         .frame (minWidth: 800, minHeight: 500)
     }

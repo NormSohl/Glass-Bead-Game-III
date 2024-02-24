@@ -9,6 +9,7 @@ import SwiftUI
 
 struct GraphView: View {
     var scale: Scale
+    var diamonds:Diamonds
     var border:Double
 
     var body: some View {
@@ -31,7 +32,7 @@ struct GraphView: View {
                 ZStack(){
                     // graph
                     Graph(border: border, scale: scale)
-                    //DiamondView(showDiamonds: <#T##Bool#>, diamonds: <#T##Diamonds#>, geo: <#T##GeometryProxy#>, border: <#T##Double#>)
+                    DiamondView(showDiamonds: true, diamonds: diamonds, border: border)
                 }
 
                 // right border
@@ -106,10 +107,8 @@ struct Ticks: View {
             let whiteTicks: Set = [0,2,4,5,7,9,11,12] // C, D, E, F, G, A, B, C
             context.stroke(
                 Path { path in
-                    //let tickSpacing = (size.height) / 12
                     for tick in 0...12 {
                         if whiteTicks.contains(tick){
-                            //let tickLocation = size.height - (((size.height) / 12) * Double(tick))
                             switch alignment {
                             case .leading:
                                 let tickLocation = size.height - (((size.height) / 12) * Double(tick))
@@ -139,11 +138,9 @@ struct Ticks: View {
             )
             context.stroke(
                 Path { path in
-                    let tickSpacing = (size.height) / 12
                     for tick in 0...12 {
                         if !whiteTicks.contains(tick)
                         {
-                            let tickLocation = size.height - (((size.height) / 12) * Double(tick))
                             switch alignment {
                             case .leading:
                                 let tickLocation = size.height - (((size.height) / 12) * Double(tick))
@@ -168,7 +165,7 @@ struct Ticks: View {
                         }
                     }
                 },
-                with: .color(.black),
+                with: .color(.blue),
                 lineWidth: 2
             )
         }
