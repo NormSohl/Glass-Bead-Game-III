@@ -51,24 +51,17 @@ struct HitTestView: View {
                             //2^(701.955001/1200) = 1.5 hz - this is an example in standard notation for a perfect fifth
                             let graphLocation = locationX
                             let graphRatio = graphLocation / graphWidth //0 to 1 value in linear measure, not log as is needed for frequency
-                            //let graphCents = 1200 * graphRatio //this is correct! Finally! Included here only for debug output
                             let frequencyRatio = pow(2, graphRatio) //make it log. converts to correct 1 to 2 value for frequency ratio. Works!
                             let unsnappedPitch =  triad.getRootPitch() * frequencyRatio // apply the ratio to the root frequency to get an actual frequency
                             triad.setXPitch(frequency: unsnappedPitch) // set the x value of the triad in the audio synthesiser to this frequency
-                            
-                            // spew for debugging
-                            //print("graphWidth = \(graphWidth), locationX = \(locationX), border = \(border), graphLocationX = \(graphLocationX), graphRatio = \(graphRatio), graphCents = \(graphCents), frequencyRatio = \(frequencyRatio)")
                         }
                         else{
                             // if shift is not pressed, set snapped pitch from scale
-                            // assign x pitch
                             let f2 = (scaleElement.value) * triad.getRootPitch()
                             triad.setXPitch(frequency: f2)
-                            //print("scaleElement.value = \(scaleElement.value), unsnappedRatioX = \(unsnappedRatioX), Snapped X pitch = \(f2), unsnapped X pitch = \(unsnappedPitch)")
                         }
                         //assign x to crosshair
                         graphPoint.x = (graphWidth * scaleElement.valueNormalized)
-                        //if graphPoint.x < border { graphPoint.x = 0 }
                     }
                 }
                 // hit test for y axis against hoverLocation.y

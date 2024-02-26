@@ -34,8 +34,9 @@ struct ControlView: View {
                         Text("13").tag(Limit.Thirteen)
                         Text("17").tag(Limit.Seventeen)
                         Text("19").tag(Limit.Nineteen)
-                    }.accentColor(.white)
+                    }.accentColor(.blue)
                 }
+                Text("Number of harmonic partials used to generate the scale used in the graph")
                 Spacer()
             }
             .padding([.leading,.trailing,.top], 20)
