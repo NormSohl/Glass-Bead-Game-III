@@ -9,8 +9,8 @@ import SwiftUI
 
 @available(macOS 13.0, *)
 struct HitTestView: View {
-    var scale:Scale
-    var snap:Bool
+    var scale: Scale
+    var settings: AppSettings
     
     @State private var hoverLocation: CGPoint = .zero
     @State private var isHovering = false
@@ -163,7 +163,7 @@ struct HitTestView: View {
                         if isDragWithoutShift == false{
                             print("HitTestView: DragGesture: Drag started without shift")
                             isDragWithoutShift = true
-                            if snap {isShiftPressed = false}
+                            if settings.snap {isShiftPressed = false}
                             else {isShiftPressed = true}
                             audio.startAudio(amp: 1)
                         }

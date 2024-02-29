@@ -13,13 +13,14 @@ struct ControlView: View {
     var body: some View {
             VStack(
                 alignment: .leading
-                //spacing: 10
             ){
                 let color = Color(red: 0.2, green: 0.4, blue: 0.8)
                 Text("Glass Bead Game").bold().font(Font.headline)
                 Divider()
                 Toggle("Diamonds", isOn: $settings.showDiamonds).tint(color)
                 Toggle("Drone", isOn: $settings.playDrone).tint(color)
+                Toggle("Note X", isOn: $settings.playNoteX).tint(color)
+                Toggle("Note Y", isOn: $settings.playNoteY).tint(color)
                 Toggle("Snapping", isOn: $settings.snap).tint(color)
                 
                 HStack{

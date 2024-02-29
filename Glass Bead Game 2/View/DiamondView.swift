@@ -9,20 +9,20 @@ import SwiftUI
 
 
 struct DiamondView: View {
-    var showDiamonds: Bool
     var diamonds: Diamonds
-    var border: Double
+    var settings: AppSettings
 
     var body: some View {
-        if showDiamonds {
+        if settings.showDiamonds {
             Canvas(){context, size in
                 for element in diamonds.DiamondList {
+                    print("showDiamond: element = \(element)")
                     
                     // scale and invert y
-                    let y = size.height - ((size.height * element.yElement.valueNormalized))
+                    let y = size.height - (size.height * (element.yElement.valueNormalized)/diamonds.numberOfOctaves)
                     
                     // scale x
-                    let x = (size.width * element.xElement.valueNormalized)
+                    let x = (size.width * (element.xElement.valueNormalized / diamonds.numberOfOctaves))
                     
                     // diamond size
                     var diamondSize = (size.width / 35) * element.sizeNormalized
@@ -30,10 +30,14 @@ struct DiamondView: View {
                     
                     // diamond color
                     var diamondShade = element.sizeNormalized
-                    if diamondShade < 0.3 {diamondShade = 0.3}
-                    if diamondShade > 0.7 {diamondShade = 1.0}  // brighten the fifth
-                    //print("DiamondView: diamondShade = \(diamondShade), sizeNormalized = \(element.sizeNormalized)")
-                    let color = Color(red: diamondShade, green: diamondShade * 0.70, blue: 0.0)
+                    if diamondShade > 0.6 {diamondShade = 1.0}
+                    if diamondShade <= 0.6 {diamondShade = diamondShade * 1.5} // brighten the fifth
+                    var color = Color(red: diamondShade, green: diamondShade, blue: 0.0)
+                    if element.mydissonance == 1.0 {
+                        color = Color(red: 0, green: 0, blue: 0)
+                    }
+                    
+                    print("ShowDiamonds: element.dissonance \(element.mydissonance)")
                     
                     // draw fill
                     context.fill(

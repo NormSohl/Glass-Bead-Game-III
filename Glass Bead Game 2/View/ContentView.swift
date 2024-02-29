@@ -8,19 +8,24 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var settings = AppSettings(playDrone:true, showDiamonds:true, snap:true, selectedLimit:Limit.Eleven)
+    @StateObject private var settings = AppSettings()
     
-    //var audio: AudioUtil
-    var border:Double = 40
+    //var border:Double = 40
     var body: some View {
         HStack(spacing:0) {
+            
             ZStack(){
                 // create scale and diamonds on the fly
                 let intLimit = LimitMap[settings.selectedLimit]
-                let scale = Scale(Limit: intLimit ?? 0 )
+                let scale = Scale(Limit: intLimit ?? 0, numberOfOctaves: settings.numberOfOctaves)
                 let diamonds = Diamonds(scale:scale)
-                GraphView(scale: scale, diamonds: diamonds, border: border, showDiamonds: settings.showDiamonds,snap: settings.snap)
-                //HitTestView(scaleIn: scale, borderIn: border, snapIn: settings.snap)
+                GraphView(scale: scale,
+                          diamonds: diamonds,
+                          settings: settings
+                          //border: settings.border,
+                          //showDiamonds: settings.showDiamonds,
+                          //snap: settings.snap
+                )
             }
             .aspectRatio(1/1, contentMode: .fit)
             .layoutPriority(1)

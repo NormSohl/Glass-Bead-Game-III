@@ -10,45 +10,45 @@ import SwiftUI
 struct GraphView: View {
     var scale: Scale
     var diamonds:Diamonds
-    var border:Double
-    var showDiamonds:Bool
-    var snap:Bool
-
+    var settings: AppSettings
+    
     var body: some View {
         
         VStack(alignment: .leading, spacing:0){// group of all graph elements
             
             HStack(alignment: .top, spacing:0){  // top border
                 // top left corner
-                Corner(border: border)
+                Corner(border: settings.border)
                 // top tick marks
-                Ticks(border: border, alignment: .top).frame(height: border)
+                Ticks(border: settings.border, alignment: .top).frame(height: settings.border)
                 // top right corner
-                Corner(border: border)
+                Corner(border: settings.border)
             }
             
             HStack(alignment: .center, spacing:0){  // middle including left border, graph and right border
                 // left border
-                Ticks(border: border, alignment: .leading).frame(width: border)
+                Ticks(border: settings.border, alignment: .leading).frame(width: settings.border)
                 
                 ZStack(){
                     // graph
-                    Graph(border: border, scale: scale)
-                    DiamondView(showDiamonds: showDiamonds, diamonds: diamonds, border: border)
-                    HitTestView(scale:scale,snap:snap)
+                    Graph(scale: scale)
+                    DiamondView(diamonds: diamonds,
+                                settings: settings)
+                    
+                    HitTestView(scale:scale, settings: settings)
                 }.border(.orange)
 
                 // right border
-                Ticks(border: border, alignment: .trailing).frame(width: border)
+                Ticks(border: settings.border, alignment: .trailing).frame(width: settings.border)
             }
             
             HStack(alignment: .bottom, spacing:0){  // bottom border
                 // bottom left corner
-                Corner(border: border)
+                Corner(border: settings.border)
                 // bottom tick marks
-                Ticks(border: border, alignment: .bottom).frame(height: border)
+                Ticks(border: settings.border, alignment: .bottom).frame(height: settings.border)
                 // bottom right corner
-                Corner(border: border)
+                Corner(border: settings.border)
             }
         }
     }
@@ -67,7 +67,6 @@ struct Corner: View {
 }
 
 struct Graph: View {
-    var border:Double
     var scale: Scale
     
     var body: some View {
@@ -77,12 +76,12 @@ struct Graph: View {
                     for interval in scale.scale {
                         
                         // Horizontal lines
-                        let tempHeight = size.height - ((size.height * interval.valueNormalized))
+                        let tempHeight = size.height - ((size.height * interval.valueNormalized) / scale.numberOfOctaves)
                         path.move(to: CGPoint (x: 0, y: tempHeight))
                         path.addLine(to: CGPoint(x: size.width, y: tempHeight))
                         
                         //vertical lines
-                        let tempWidth = size.width * interval.valueNormalized
+                        let tempWidth = (size.width * interval.valueNormalized) / scale.numberOfOctaves
                         path.move(to: CGPoint (x:tempWidth, y:0))
                         path.addLine(to: CGPoint(x:tempWidth, y: size.height))
                     }
