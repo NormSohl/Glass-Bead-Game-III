@@ -16,14 +16,11 @@ struct DiamondView: View {
         if settings.showDiamonds {
             Canvas(){context, size in
                 for element in diamonds.DiamondList {
-                    print("showDiamond: element = \(element)")
                     
                     // scale and invert y
-                    let y = size.height - (size.height * (element.yElement.valueNormalized)/diamonds.numberOfOctaves)
-                    
+                    let y = size.height - (size.height * element.yElement.valueNormalized)
                     // scale x
-                    let x = (size.width * (element.xElement.valueNormalized / diamonds.numberOfOctaves))
-                    
+                    let x = (size.width * element.xElement.valueNormalized)
                     // diamond size
                     var diamondSize = (size.width / 35) * element.sizeNormalized
                     if diamondSize < 4 {diamondSize =  4}
@@ -36,8 +33,7 @@ struct DiamondView: View {
                     if element.mydissonance == 1.0 {
                         color = Color(red: 0, green: 0, blue: 0)
                     }
-                    
-                    print("ShowDiamonds: element.dissonance \(element.mydissonance)")
+                    //print("DiamondView: element.dissonance = \(element.mydissonance)")
                     
                     // draw fill
                     context.fill(

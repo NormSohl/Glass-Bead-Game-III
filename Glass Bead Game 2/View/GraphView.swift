@@ -76,12 +76,12 @@ struct Graph: View {
                     for interval in scale.scale {
                         
                         // Horizontal lines
-                        let tempHeight = size.height - ((size.height * interval.valueNormalized) / scale.numberOfOctaves)
+                        let tempHeight = size.height - (size.height * interval.valueNormalized)
                         path.move(to: CGPoint (x: 0, y: tempHeight))
                         path.addLine(to: CGPoint(x: size.width, y: tempHeight))
                         
                         //vertical lines
-                        let tempWidth = (size.width * interval.valueNormalized) / scale.numberOfOctaves
+                        let tempWidth = size.width * interval.valueNormalized
                         path.move(to: CGPoint (x:tempWidth, y:0))
                         path.addLine(to: CGPoint(x:tempWidth, y: size.height))
                     }

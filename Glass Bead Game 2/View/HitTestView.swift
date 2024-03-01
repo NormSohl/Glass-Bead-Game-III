@@ -21,22 +21,21 @@ struct HitTestView: View {
     
     var body: some View {
         Canvas(){context, size in
+            var crosshairPoint:CGPoint = .zero
+            
+            // hit test x
+            let xHit = hittest(graphSize: size.width, location: hoverLocation.x, invert: false)
+            triad.setXPitch(frequency: xHit.frequency)
+            crosshairPoint.x = xHit.crosshair
+                    
+            // hit test y
+            let yHit = hittest(graphSize: size.height, location: hoverLocation.y, invert: true)
+            triad.setYPitch(frequency: yHit.frequency)
+            crosshairPoint.y = yHit.crosshair
+
+            // draw crosshair on graph
             context.stroke(
                 Path { path in
-                    // init crosshair
-                    var crosshairPoint:CGPoint = .zero
-                    
-                    // hit test x
-                    let xHit = hittest(graphSize: size.width, location: hoverLocation.x, invert: false)
-                    triad.setXPitch(frequency: xHit.frequency)
-                    crosshairPoint.x = xHit.crosshair
-                    
-                    // hit test y
-                    let yHit = hittest(graphSize: size.height, location: hoverLocation.y, invert: true)
-                    triad.setYPitch(frequency: yHit.frequency)
-                    crosshairPoint.y = yHit.crosshair
-                    
-                    // draw crosshair
                     let x:Double = 8
                     path.move (to: CGPoint(x: crosshairPoint.x, y: crosshairPoint.y + x))
                     path.addLine(to: CGPoint(x: crosshairPoint.x, y: crosshairPoint.y - x))
@@ -54,11 +53,11 @@ struct HitTestView: View {
                 //print ("HitTestView: onContinousHover: Hover active phase \(hoverLocation)")
             case .ended:
                 isHovering = false
-                print ("Hover ended phase")
+                //print ("Hover ended phase")
             }
         }
         .onHover(perform: {_ in
-            print("HitTestView: onContinousHover: onHover")
+            //print("HitTestView: onContinousHover: onHover")
         })
             
 #if os(macOS)
@@ -92,18 +91,18 @@ struct HitTestView: View {
             .onChanged { value in
                 hoverLocation = value.location
                 if isDragWithoutShift == false{
-                    print("HitTestView: DragGesture: Drag started without shift")
+                    //print("HitTestView: DragGesture: Drag started without shift")
                     isDragWithoutShift = true
                     if settings.snap {isShiftPressed = false}
                     else {isShiftPressed = true}
-                    startAudio() //audio.startAudio(amp: 1)
+                    startAudio()
                 }
             }
             .onEnded { _ in
                 hoverLocation = .zero
                 isDragWithoutShift = false
                 isShiftPressed = false
-                print("HitTestView: DragGesture: Drag ended without shift")
+                //print("HitTestView: DragGesture: Drag ended without shift")
                 stopAudio()
             }
         )
@@ -121,12 +120,14 @@ struct HitTestView: View {
         // hit test for hoverLocation
         var lowerBounds: Double = 0.0
         var upperBounds: Double = 0.0
+        
+        
         for scaleElement in scale.scale {
+            //print("HitTestView: scale = \(scale.scale)")
             if invert == false {
                 // process for x axis
                 lowerBounds = (graphSize * scaleElement.lowerBounds)
                 upperBounds = (graphSize * scaleElement.upperBounds)
-                // if location is less than the start of the graph, break loop
                 if location >= lowerBounds && location <= upperBounds {
                     
                     if isShiftPressed {
