@@ -72,7 +72,7 @@ struct HitTestView: View {
                         print("HitTestView: DragGesture: Drag started with shift")
                         isDragWithShift = true
                         isShiftPressed = true
-                        audio.startAudio(amp: 1)
+                        startAudio()
                     }
                 }
                 .onEnded { _ in
@@ -80,7 +80,7 @@ struct HitTestView: View {
                     isDragWithShift = false
                     isShiftPressed = false
                     print("HitTestView: DragGesture: Drag ended with shift")
-                    audio.stopAudio()
+                    stopAudio()
                 }
         )
 #endif
@@ -96,7 +96,7 @@ struct HitTestView: View {
                     isDragWithoutShift = true
                     if settings.snap {isShiftPressed = false}
                     else {isShiftPressed = true}
-                    audio.startAudio(amp: 1)
+                    startAudio() //audio.startAudio(amp: 1)
                 }
             }
             .onEnded { _ in
@@ -104,7 +104,7 @@ struct HitTestView: View {
                 isDragWithoutShift = false
                 isShiftPressed = false
                 print("HitTestView: DragGesture: Drag ended without shift")
-                audio.stopAudio()
+                stopAudio()
             }
         )
 #if os(iOS)
@@ -131,11 +131,9 @@ struct HitTestView: View {
                     
                     if isShiftPressed {
                         // if shift is pressed, play the unsnapped pitch, else play snapped value.
-                        var graphRatio = location / graphSize //0 to 1 value in linear measure, not log as is needed for frequency
-                        // inverted?
-                        if invert == true {graphRatio  = 1 - graphRatio}
+                        let graphRatio = location / graphSize //0 to 1 value in linear measure, not log as is needed for frequency
                         let frequencyRatio = pow(2, graphRatio) //make it log. converts to correct 1 to 2 value for frequency ratio. Works!
-                        let frequency =  triad.getRootPitch() * frequencyRatio // apply the ratio to the root frequency to get an actual frequency
+                        frequency =  triad.getRootPitch() * frequencyRatio // apply the ratio to the root frequency to get an actual frequency
                     }
                     else{
                         // if shift is not pressed, play snapped value from scale
@@ -153,11 +151,9 @@ struct HitTestView: View {
                     
                     if isShiftPressed {
                         // if shift is pressed, play the unsnapped pitch, else play snapped value.
-                        var graphRatio = location / graphSize //0 to 1 value in linear measure, not log as is needed for frequency
-                        // inverted?
-                        if invert == true {graphRatio  = 1 - graphRatio}
+                        let graphRatio = 1 - (location / graphSize) //0 to 1 value in linear measure, not log as is needed for frequency
                         let frequencyRatio = pow(2, graphRatio) //make it log. converts to correct 1 to 2 value for frequency ratio. Works!
-                        let frequency =  triad.getRootPitch() * frequencyRatio // apply the ratio to the root frequency to get an actual frequency
+                        frequency =  triad.getRootPitch() * frequencyRatio // apply the ratio to the root frequency to get an actual frequency
                     }
                     else{
                         // if shift is not pressed, play snapped value from scale
@@ -168,6 +164,17 @@ struct HitTestView: View {
             }
         }
         return (frequency: frequency, crosshair: crosshair)
+    }
+    
+    func startAudio (){
+        triad.enableRootTone(enable: settings.playDrone)
+        triad.enableXTone(enable: settings.playNoteX)
+        triad.enableYTone(enable: settings.playNoteY)
+        audio.startAudio(amp: 1)
+    }
+    
+    func stopAudio (){
+        audio.stopAudio()
     }
 }
     
