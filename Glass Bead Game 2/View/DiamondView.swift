@@ -10,7 +10,7 @@ import SwiftUI
 
 struct DiamondView: View {
     var diamonds: Diamonds
-    var settings: AppSettings
+    let settings: AppSettings
 
     var body: some View {
         if settings.showDiamonds {

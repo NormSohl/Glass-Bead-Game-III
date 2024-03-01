@@ -10,7 +10,6 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var settings = AppSettings()
     
-    //var border:Double = 40
     var body: some View {
         HStack(spacing:0) {
             
@@ -22,9 +21,6 @@ struct ContentView: View {
                 GraphView(scale: scale,
                           diamonds: diamonds,
                           settings: settings
-                          //border: settings.border,
-                          //showDiamonds: settings.showDiamonds,
-                          //snap: settings.snap
                 )
             }
             .aspectRatio(1/1, contentMode: .fit)

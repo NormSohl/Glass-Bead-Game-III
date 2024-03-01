@@ -8,9 +8,9 @@
 import SwiftUI
 
 struct GraphView: View {
-    var scale: Scale
-    var diamonds:Diamonds
-    var settings: AppSettings
+    let scale: Scale
+    let diamonds:Diamonds
+    let settings: AppSettings
     
     var body: some View {
         
