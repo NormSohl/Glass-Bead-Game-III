@@ -126,41 +126,42 @@ struct HitTestView: View {
             //print("HitTestView: scale = \(scale.scale)")
             if invert == false {
                 // process for x axis
-                lowerBounds = (graphSize * scaleElement.lowerBounds)
-                upperBounds = (graphSize * scaleElement.upperBounds)
+                lowerBounds = (graphSize * (scaleElement.lowerBounds / scale.highestRatioNormalized))
+                upperBounds = (graphSize * (scaleElement.upperBounds / scale.highestRatioNormalized))
                 if location >= lowerBounds && location <= upperBounds {
                     
                     if isShiftPressed {
                         // if shift is pressed, play the unsnapped pitch, else play snapped value.
-                        let graphRatio = location / graphSize //0 to 1 value in linear measure, not log as is needed for frequency
-                        let frequencyRatio = pow(2, graphRatio) //make it log. converts to correct 1 to 2 value for frequency ratio. Works!
+                        var graphRatio = location / graphSize //0 to 1 value in linear measure, not log as is needed for frequency
+                        //graphRatio = graphRatio
+                        let frequencyRatio = pow(scale.highestRatio, graphRatio) //make it log. converts to correct 1 to 2 value for frequency ratio. Works!
                         frequency =  triad.getRootPitch() * frequencyRatio // apply the ratio to the root frequency to get an actual frequency
                     }
                     else{
                         // if shift is not pressed, play snapped value from scale
                         frequency = (scaleElement.value) * triad.getRootPitch()
                     }
-                    crosshair = (graphSize * scaleElement.valueNormalized)
+                    crosshair = (graphSize * (scaleElement.valueNormalized / scale.highestRatioNormalized))
                }
             }
             else {
                 // process for y axis which is inverted
-                lowerBounds = graphSize - (graphSize * scaleElement.lowerBounds)
-                upperBounds = graphSize - (graphSize * scaleElement.upperBounds)
+                lowerBounds = graphSize - (graphSize * (scaleElement.lowerBounds / scale.highestRatioNormalized))
+                upperBounds = graphSize - (graphSize * (scaleElement.upperBounds / scale.highestRatioNormalized))
                 // if location is less than the start of the graph, break loop
                 if location <= lowerBounds && location >= upperBounds {
                     
                     if isShiftPressed {
                         // if shift is pressed, play the unsnapped pitch, else play snapped value.
                         let graphRatio = 1 - (location / graphSize) //0 to 1 value in linear measure, not log as is needed for frequency
-                        let frequencyRatio = pow(2, graphRatio) //make it log. converts to correct 1 to 2 value for frequency ratio. Works!
+                        let frequencyRatio = pow(scale.highestRatio, graphRatio) //make it log. converts to correct 1 to 2 value for frequency ratio. Works!
                         frequency =  triad.getRootPitch() * frequencyRatio // apply the ratio to the root frequency to get an actual frequency
                     }
                     else{
                         // if shift is not pressed, play snapped value from scale
                         frequency = (scaleElement.value) * triad.getRootPitch()
                     }
-                    crosshair =  graphSize - ((graphSize * scaleElement.valueNormalized))
+                    crosshair =  graphSize - (graphSize * (scaleElement.valueNormalized / scale.highestRatioNormalized))
                }
             }
         }

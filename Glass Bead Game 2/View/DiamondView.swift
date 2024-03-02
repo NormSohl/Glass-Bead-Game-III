@@ -18,9 +18,9 @@ struct DiamondView: View {
                 for element in diamonds.DiamondList {
                     
                     // scale and invert y
-                    let y = size.height - (size.height * element.yElement.valueNormalized)
+                    let y = size.height - (size.height * (element.yElement.valueNormalized / settings.highestRatioNormalized))
                     // scale x
-                    let x = (size.width * element.xElement.valueNormalized)
+                    let x = (size.width * (element.xElement.valueNormalized / settings.highestRatioNormalized))
                     // diamond size
                     var diamondSize = (size.width / 35) * element.sizeNormalized
                     if diamondSize < 4 {diamondSize =  4}
