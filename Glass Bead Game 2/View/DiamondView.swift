@@ -30,9 +30,9 @@ struct DiamondView: View {
                     if diamondShade > 0.6 {diamondShade = 1.0}
                     if diamondShade <= 0.6 {diamondShade = diamondShade * 1.5} // brighten the fifth
                     var color = Color(red: diamondShade, green: diamondShade, blue: 0.0)
-                    if element.mydissonance == 1.0 {
-                        color = Color(red: 0, green: 0, blue: 0)
-                    }
+                    if element.mydissonance == 1.0 {color = Color(red: 0.0, green: 0.0, blue: 0.0)}
+                    if element.mydissonance == 3.0 {color = Color(red: 0.8, green: 0.3, blue: 0.3)}
+                    //if element.mydissonance == 2.0 {color = Color(red: 0.9, green: 0.3, blue: 0.3)}  // 2 never appears
                     //print("DiamondView: element.dissonance = \(element.mydissonance)")
                     
                     // draw fill
