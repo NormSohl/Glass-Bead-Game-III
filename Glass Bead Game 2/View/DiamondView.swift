@@ -19,16 +19,16 @@ struct DiamondView: View {
                 for diamond in diamonds.DiamondList {
                     
                     // get screen location for Y
-                    let yLocationInScreenUnits = scale.convertScaleValueToScreenUnits(
+                    var yLocationInScreenUnits = scale.convertScaleValueToScreenUnits(
                         normalizedValue: diamond.yElement.valueNormalized,
-                        screenSize:size.height,
-                        invert: true)
+                        screenSize:size.height)
+                    // invert because y screen values are upside down
+                    yLocationInScreenUnits = size.height - yLocationInScreenUnits
                     
                     // get screen location for X
                     let xLocationInScreenUnits = scale.convertScaleValueToScreenUnits(
                         normalizedValue: diamond.xElement.valueNormalized,
-                        screenSize:size.width,
-                        invert: false)
+                        screenSize:size.width)
 
                     // diamond size
                     var diamondSize = (size.width / 35) * diamond.sizeNormalized

@@ -8,6 +8,9 @@
 import SwiftUI
 
 @available(macOS 13.0, *)
+
+var height = 0.0  // placed in global scope to resolve inconsistant behavior when placed in view
+
 struct HitTestView: View {
     let scale: Scale
     let settings: AppSettings
@@ -22,25 +25,26 @@ struct HitTestView: View {
     var body: some View {
         Canvas(){context, size in
             var crosshairPoint:CGPoint = .zero
+            height = size.height
             
             // hit test x
-            let xHit = hittest(graphSize: size.width, screenLocation: hoverLocation.x, invert: false)
+            let xHit = hittest(graphSize: size.width, screenLocation: hoverLocation.x)
             triad.setXPitch(frequency: xHit.frequency)
             crosshairPoint.x = xHit.crosshair
             
             // hit test y
-            let yHit = hittest(graphSize: size.height, screenLocation: hoverLocation.y, invert: true)
+            let yHit = hittest(graphSize: size.height, screenLocation: hoverLocation.y)
             triad.setYPitch(frequency: yHit.frequency)
             crosshairPoint.y = yHit.crosshair
-            
+            crosshairPoint.y = height - crosshairPoint.y
             // draw crosshair on graph
             context.stroke(
                 Path { path in
-                    let x:Double = 8
-                    path.move (to: CGPoint(x: crosshairPoint.x, y: crosshairPoint.y + x))
-                    path.addLine(to: CGPoint(x: crosshairPoint.x, y: crosshairPoint.y - x))
-                    path.move (to: CGPoint(x: crosshairPoint.x-x, y: crosshairPoint.y))
-                    path.addLine(to: CGPoint(x: crosshairPoint.x+x, y: crosshairPoint.y))
+                    let crossSize:Double = 8
+                    path.move (to: CGPoint(x: crosshairPoint.x, y: crosshairPoint.y + crossSize))
+                    path.addLine(to: CGPoint(x: crosshairPoint.x, y: crosshairPoint.y - crossSize))
+                    path.move (to: CGPoint(x: crosshairPoint.x-crossSize, y: crosshairPoint.y))
+                    path.addLine(to: CGPoint(x: crosshairPoint.x+crossSize, y: crosshairPoint.y))
                 }, with: .color(.white),
                 lineWidth: 3
             )
@@ -49,6 +53,9 @@ struct HitTestView: View {
             switch phase {
             case .active(let location):
                 hoverLocation = location
+                // invert y at the source
+                hoverLocation.y = height - hoverLocation.y
+                
                 isHovering = true
                 //print ("HitTestView: onContinousHover: Hover active phase \(hoverLocation)")
             case .ended:
@@ -67,8 +74,11 @@ struct HitTestView: View {
                 .modifiers(.shift)
                 .onChanged { value in
                     hoverLocation = value.location
+                    // invert y at the source
+                    hoverLocation.y = height - hoverLocation.y
+                    
                     if isDragWithShift == false{
-                        print("HitTestView: DragGesture: Drag started with shift")
+                        //print("HitTestView: DragGesture: Drag started with shift")
                         isDragWithShift = true
                         isShiftPressed = true
                         audio.startAudio(amp: 1)
@@ -78,7 +88,6 @@ struct HitTestView: View {
                     hoverLocation = .zero
                     isDragWithShift = false
                     isShiftPressed = false
-                    print("HitTestView: DragGesture: Drag ended with shift")
                     audio.stopAudio()
                 }
         )
@@ -90,8 +99,9 @@ struct HitTestView: View {
             DragGesture(minimumDistance: 0, coordinateSpace: .local)
                 .onChanged { value in
                     hoverLocation = value.location
+                    hoverLocation.y = height - hoverLocation.y
+                    
                     if isDragWithoutShift == false{
-                        //print("HitTestView: DragGesture: Drag started without shift")
                         isDragWithoutShift = true
                         if settings.snap {isShiftPressed = false}
                         else {isShiftPressed = true}
@@ -111,8 +121,7 @@ struct HitTestView: View {
 #endif
     }
     
-    func hittest(graphSize: Double, screenLocation: Double, invert: Bool)->(frequency: Double, crosshair: Double){
-        
+    func hittest(graphSize: Double, screenLocation: Double)->(frequency: Double, crosshair: Double){
         // init return values
         var frequency: Double = 0.0
         var crosshair: Double = 0.0
@@ -125,37 +134,21 @@ struct HitTestView: View {
             // process for x axis
             lowerBounds = scale.convertScaleValueToScreenUnits(
                 normalizedValue: scaleElement.lowerBounds,
-                screenSize: graphSize,
-                invert: invert)
+                screenSize: graphSize)
             
             upperBounds = scale.convertScaleValueToScreenUnits(
                 normalizedValue: scaleElement.upperBounds,
-                screenSize: graphSize,
-                invert: invert)
-            
-            if invert == false {
-                if screenLocation >= lowerBounds && screenLocation <= upperBounds {
-                    print("HitTest: X axis")
-                    let ret = hitTestCore(
-                        invert: invert,
-                        screenLocation: screenLocation,
-                        graphSize: graphSize,
-                        scaleElement: scaleElement)
-                    frequency = ret.frequency
-                    crosshair = ret.crosshair
-                }
-            }
-            else {
-                if screenLocation <= lowerBounds && screenLocation >= upperBounds {
-                    print("HitTest: Y axis")
-                    let ret = hitTestCore(
-                        invert: true,
-                        screenLocation: screenLocation,
-                        graphSize: graphSize,
-                        scaleElement: scaleElement)
-                    frequency = ret.frequency
-                    crosshair = ret.crosshair
-                }
+                screenSize: graphSize)
+
+            if screenLocation >= lowerBounds && screenLocation <= upperBounds {
+                //print("HitTest: X axis")
+                let ret = hitTestCore(
+                    screenLocation: screenLocation,
+                    graphSize: graphSize,
+                    scaleElement: scaleElement)
+                frequency = ret.frequency
+                crosshair = ret.crosshair
+                break;
             }
         }
         return (frequency: frequency, crosshair: crosshair)
@@ -173,7 +166,6 @@ struct HitTestView: View {
     }
     
     func hitTestCore(
-        invert: Bool,
         screenLocation: Double,
         graphSize: Double,
         scaleElement: ScaleElement
@@ -188,17 +180,8 @@ struct HitTestView: View {
             let screenRatio = screenLocation / graphSize //0 to 1 value in linear measure, not log as is needed for frequency
             // value is linear between 0 and rangeNormalized
             var value = scale.rangeNormalized * screenRatio
-            
-            if invert {  // invert. this is the y axis
-                // invert value
-                value =   1 - (value + scale.lowestRatioNormalized)
-                // drop it by an octave - this is needed when there is an octave above and below. don't know why yet
-                // not needed when the range is a fifth above and below. 
-                //value = value - 1
-            }
-            else {  //don't invert this is the x axis
-                value = value + scale.lowestRatioNormalized
-            }
+            // adjust tp be negitive if needed
+            value = value + scale.lowestRatioNormalized
             
             // convert to frequency ratio
             let frequencyRatio = pow(2, value)
@@ -206,8 +189,7 @@ struct HitTestView: View {
             // dont snap the crosshair
             crosshair = scale.convertScaleValueToScreenUnits(
                 normalizedValue: value,
-                screenSize: graphSize,
-                invert: invert)
+                screenSize: graphSize)
         }
         else{  // shift is not pressed, play snapped value from scale
             frequency = (triad.getRootPitch() * scaleElement.value)
@@ -215,8 +197,7 @@ struct HitTestView: View {
             // snap the crosshair
             crosshair = scale.convertScaleValueToScreenUnits(
                 normalizedValue: scaleElement.valueNormalized,
-                screenSize: graphSize,
-                invert: invert)
+                screenSize: graphSize)
         }
         return (frequency, crosshair)
     }

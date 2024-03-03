@@ -77,10 +77,12 @@ struct Graph: View {
                     for interval in scale.scale {
                         
                         // Horizontal lines
-                        let yIntervalInScreenUnits = scale.convertScaleValueToScreenUnits(
+                        var yIntervalInScreenUnits = scale.convertScaleValueToScreenUnits(
                             normalizedValue: interval.valueNormalized,
-                            screenSize:size.width,
-                            invert: true)
+                            screenSize:size.width)
+                        // y screen values are inverted
+                        yIntervalInScreenUnits = size.width - yIntervalInScreenUnits
+
                         // Draw
                         path.move(to: CGPoint (x: 0, y: yIntervalInScreenUnits))
                         path.addLine(to: CGPoint(x: size.width, y: yIntervalInScreenUnits))
@@ -88,8 +90,7 @@ struct Graph: View {
                         // Vertical lines
                         let xIntervalInScreenUnits = scale.convertScaleValueToScreenUnits(
                             normalizedValue: interval.valueNormalized,
-                            screenSize:size.height,
-                            invert: false)
+                            screenSize:size.height)
                         // draw
                         path.move(to: CGPoint (x:xIntervalInScreenUnits, y:0))
                         path.addLine(to: CGPoint(x:xIntervalInScreenUnits, y: size.height))
