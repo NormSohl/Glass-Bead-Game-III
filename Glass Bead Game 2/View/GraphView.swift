@@ -33,7 +33,8 @@ struct GraphView: View {
                     // graph
                     Graph(scale: scale)
                     DiamondView(diamonds: diamonds,
-                                settings: settings)
+                                showDiamonds: settings.showDiamonds,
+                                scale: scale)
                     
                     HitTestView(scale:scale, settings: settings)
                 }.border(.orange)
@@ -76,14 +77,22 @@ struct Graph: View {
                     for interval in scale.scale {
                         
                         // Horizontal lines
-                        let tempHeight = size.height - (size.height * (interval.valueNormalized / scale.highestRatioNormalized))
-                        path.move(to: CGPoint (x: 0, y: tempHeight))
-                        path.addLine(to: CGPoint(x: size.width, y: tempHeight))
-                        
-                        //vertical lines
-                        let tempWidth = size.width * (interval.valueNormalized / scale.highestRatioNormalized)
-                        path.move(to: CGPoint (x:tempWidth, y:0))
-                        path.addLine(to: CGPoint(x:tempWidth, y: size.height))
+                        let yIntervalInScreenUnits = scale.convertScaleValueToScreenUnits(
+                            normalizedValue: interval.valueNormalized,
+                            screenSize:size.width,
+                            invert: true)
+                        // Draw
+                        path.move(to: CGPoint (x: 0, y: yIntervalInScreenUnits))
+                        path.addLine(to: CGPoint(x: size.width, y: yIntervalInScreenUnits))
+
+                        // Vertical lines
+                        let xIntervalInScreenUnits = scale.convertScaleValueToScreenUnits(
+                            normalizedValue: interval.valueNormalized,
+                            screenSize:size.height,
+                            invert: false)
+                        // draw
+                        path.move(to: CGPoint (x:xIntervalInScreenUnits, y:0))
+                        path.addLine(to: CGPoint(x:xIntervalInScreenUnits, y: size.height))
                     }
                 },
                 with: .color(.gray)
