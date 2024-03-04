@@ -20,15 +20,18 @@ struct GraphView: View {
                 // top left corner
                 Corner(border: settings.border)
                 // top tick marks
-                Ticks(border: settings.border, alignment: .top).frame(height: settings.border)
+                Ticks(border: settings.border, alignment: .top, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized)
+                    .frame(height: settings.border)
+                    //.rotationEffect(.degrees(0))
                 // top right corner
                 Corner(border: settings.border)
             }
             
             HStack(alignment: .center, spacing:0){  // middle including left border, graph and right border
                 // left border
-                Ticks(border: settings.border, alignment: .leading).frame(width: settings.border)
-                
+                Ticks(border: settings.border, alignment: .leading, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized)
+                    .frame(width: settings.border)
+                    //.rotationEffect(.degrees(0), anchor: .leading)
                 ZStack(){
                     // graph
                     Graph(scale: scale)
@@ -40,14 +43,18 @@ struct GraphView: View {
                 }.border(.orange)
 
                 // right border
-                Ticks(border: settings.border, alignment: .trailing).frame(width: settings.border)
+                Ticks(border: settings.border, alignment: .trailing, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized)
+                    .frame(width: settings.border)
+                    //.rotationEffect(.degrees(180))
             }
             
             HStack(alignment: .bottom, spacing:0){  // bottom border
                 // bottom left corner
                 Corner(border: settings.border)
                 // bottom tick marks
-                Ticks(border: settings.border, alignment: .bottom).frame(height: settings.border)
+                Ticks(border: settings.border, alignment: .bottom, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized)
+                    .frame(height: settings.border)
+                    //.rotationEffect(.degrees(180))
                 // bottom right corner
                 Corner(border: settings.border)
             }
