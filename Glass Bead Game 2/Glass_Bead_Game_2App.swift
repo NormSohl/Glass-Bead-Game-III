@@ -9,22 +9,21 @@ import SwiftUI
 
 var triad = Triad()
 var audio = AudioUtil()
+var midiTest = MidiTest()
 
 @main
 struct GBG_01App: App {
-    //@Environment(\.scenePhase) var scenePhase
-    //var audio = AudioUtil()
+    
     init() {
         audio.stopAudio() // any call to trigger lazy instantiation
         let _ = triad.getRootPitch() // same
+        // test the midi code - this should be removed after testing
+        midiTest.test()
     }
     
     var body: some Scene {
         WindowGroup {
-            ContentView()//audio:audio)
+            ContentView()
         }
-        //#if os(macOS)
-        //.windowStyle(.hiddenTitleBar)
-        //#endif
     }
 }

@@ -12,7 +12,6 @@ struct ContentView: View {
     
     var body: some View {
         HStack(spacing:0) {
-            
             ZStack(){
                 // create scale and diamonds on the fly
                 let intLimit = LimitMap[settings.selectedLimit]
@@ -21,9 +20,9 @@ struct ContentView: View {
                 GraphView(scale: scale,
                           diamonds: diamonds,
                           settings: settings
-                )//.rotationEffect(.degrees(-45.0)).scaleEffect(CGSize(width: 0.73, height: 0.73))
+                ).rotationEffect(.degrees(settings.viewRotation)).scaleEffect(CGSize(width: settings.viewScale, height: settings.viewScale)).offset(x: settings.viewOffsetX, y: settings.viewOffsetY)
             }
-            .aspectRatio(1/1, contentMode: .fit)
+            .aspectRatio(1/1, contentMode: settings.contentMode)
             .layoutPriority(1)
             .background()
             

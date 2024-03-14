@@ -31,7 +31,7 @@ struct Ticks: View {
             
             // rangeBelow is negative, -1 to 0 for the octave, may be lower or higher. rangeAbove is positive, 0 to 1 for octave, may be lower or higher.
             let range = abs(rangeBelow) + rangeAbove
-            var numTicks = 12 * range
+            let numTicks = 12 * range
             let centerTick = 12 * abs(rangeBelow)
             
             var MySize = size.width
@@ -67,41 +67,10 @@ struct Ticks: View {
                     startLocation = CGPoint(x: tickLocation+nudge, y: 1.0)
                     endLocation = CGPoint(x: tickLocation+nudge, y: 10.0)
                     textLocation = CGPoint(x: endLocation.x+(nudge*10), y: endLocation.y + 10)
-                    
-                    /*
-                case .top:
-                    tickLocation = size.height - (((size.height) / numTicks) * Double(tick))
-                    startLocation = CGPoint(x: border - 1.0, y: tickLocation-nudge)
-                    endLocation = CGPoint(x: border - 10.0, y: tickLocation-nudge)
-                    textLocation = CGPoint(x: endLocation.x-10, y: tickLocation-(nudge*10))
-                    
-                case .bottom:
-                    tickLocation = size.height - (((size.height) / numTicks) * Double(tick))
-                    startLocation = CGPoint(x: 10.0, y: tickLocation-nudge)
-                    endLocation = CGPoint(x: 1.0, y: tickLocation-nudge)
-                    
-                    //startLocation = CGPoint(x: tickLocation-nudge, y: 1.0)
-                    //endLocation = CGPoint(x: tickLocation + nudge, y:endLocation.y + 10)
-                    textLocation = CGPoint(x: endLocation.x-10, y: tickLocation-(nudge*10))
-                    
-                case .leading:
-                    tickLocation = (MySize / numTicks) * Double(tick)
-                    //tickLocation = (size.width / 12) * Double(tick)
-                    startLocation = CGPoint(x: tickLocation+nudge, y: border - 1.0)
-                    endLocation = CGPoint(x: tickLocation+nudge, y: border - 10.0)
-                    textLocation = CGPoint(x: endLocation.x+(nudge*10), y: endLocation.y - 10)
-                    
-                case .trailing:
-                    tickLocation = (MySize / numTicks) * Double(tick)
-                    //tickLocation = (size.width / 12) * Double(tick)
-                    startLocation = CGPoint(x: tickLocation+nudge, y: border - 1.0)
-                    endLocation = CGPoint(x: tickLocation+nudge, y: border - 10.0)
-                    textLocation = CGPoint(x: endLocation.x+(nudge*10), y: endLocation.y - 10)
-                     */
                 }
                 
                 // draw tick
-                var mcolor: Color = .white
+                let mcolor: Color = .white
                 //let whiteTicks: Set = [0,2,4,5,7,9,11,12] // C, D, E, F, G, A, B, C
                 //if whiteTicks.contains(tick) {mcolor = .white} else {mcolor = .blue}
                 context.stroke(

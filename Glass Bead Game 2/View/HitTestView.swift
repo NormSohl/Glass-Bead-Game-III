@@ -18,9 +18,8 @@ struct HitTestView: View {
     @State private var hoverLocation: CGPoint = .zero
     @State private var isHovering = false
     @State private var isKeyDown = false
-    @State private var isShiftPressed = false
-    @State private var isDragWithoutShift = false
-    @State private var isDragWithShift = false
+    @State private var isDrag = false
+    @State private var isShift = false
     
     var body: some View {
         Canvas(){context, size in
@@ -29,12 +28,12 @@ struct HitTestView: View {
             
             // hit test x
             let xHit = hittest(graphSize: size.width, screenLocation: hoverLocation.x)
-            triad.setXPitch(frequency: xHit.frequency)
+            if isDrag {triad.setXPitch(frequency: xHit.frequency)}
             crosshairPoint.x = xHit.crosshair
             
             // hit test y
             let yHit = hittest(graphSize: size.height, screenLocation: hoverLocation.y)
-            triad.setYPitch(frequency: yHit.frequency)
+            if isDrag {triad.setYPitch(frequency: yHit.frequency)}
             crosshairPoint.y = yHit.crosshair
             crosshairPoint.y = height - crosshairPoint.y
             // draw crosshair on graph
@@ -60,7 +59,8 @@ struct HitTestView: View {
                 //print ("HitTestView: onContinousHover: Hover active phase \(hoverLocation)")
             case .ended:
                 isHovering = false
-                //print ("Hover ended phase")
+                audio.stopAudio()
+                print ("Hover ended phase")
             }
         }
         .onHover(perform: {_ in
@@ -76,19 +76,16 @@ struct HitTestView: View {
                     hoverLocation = value.location
                     // invert y at the source
                     hoverLocation.y = height - hoverLocation.y
+                    isDrag = true
+                    isShift = true
                     
-                    if isDragWithShift == false{
-                        //print("HitTestView: DragGesture: Drag started with shift")
-                        isDragWithShift = true
-                        isShiftPressed = true
-                        audio.startAudio(amp: 1)
-                    }
+                    audio.startAudio(amp: 1)
                 }
                 .onEnded { _ in
                     hoverLocation = .zero
-                    isDragWithShift = false
-                    isShiftPressed = false
-                    audio.stopAudio()
+                    isDrag = false
+                    isShift = false
+                    if !settings.pedal {audio.stopAudio()}
                 }
         )
 #endif
@@ -100,20 +97,22 @@ struct HitTestView: View {
                 .onChanged { value in
                     hoverLocation = value.location
                     hoverLocation.y = height - hoverLocation.y
+                    isDrag = true
                     
-                    if isDragWithoutShift == false{
-                        isDragWithoutShift = true
-                        if settings.snap {isShiftPressed = false}
-                        else {isShiftPressed = true}
-                        audio.startAudio(amp: 1)
+                    // hack to duplicate the effect of shift-down with UI
+                    if isShift == false{
+                        if settings.snap {isShift = false}
+                        else {isShift = true}
                     }
+                    audio.startAudio(amp: 1)
                 }
                 .onEnded { _ in
                     hoverLocation = .zero
-                    isDragWithoutShift = false
-                    isShiftPressed = false
+                    isDrag = false
+                    isShift = false
                     //print("HitTestView: DragGesture: Drag ended without shift")
-                    audio.stopAudio()
+                    // if pedal is true, then use pointer out of graph to turn off sound
+                    if !settings.pedal {audio.stopAudio()}
                 }
         )
 #if os(iOS)
@@ -161,9 +160,9 @@ struct HitTestView: View {
         audio.startAudio(amp: 1)
     }
     
-    func stopAudio (){
-        audio.stopAudio()
-    }
+    //func stopAudio (){
+    //    audio.stopAudio()
+    //}
     
     func hitTestCore(
         screenLocation: Double,
@@ -175,7 +174,7 @@ struct HitTestView: View {
         var frequency: Double = 0.0
         var crosshair: Double = 0.0
         
-        if isShiftPressed {
+        if isShift {
             // if shift is pressed, play the unsnapped pitch, else play snapped value.
             let screenRatio = screenLocation / graphSize //0 to 1 value in linear measure, not log as is needed for frequency
             // value is linear between 0 and rangeNormalized
