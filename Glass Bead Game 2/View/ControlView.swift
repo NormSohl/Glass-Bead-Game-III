@@ -50,6 +50,7 @@ struct ControlView: View {
                     Text(shape.rawValue.capitalized)
                 }
             }
+
             .accentColor(.blue)
             .pickerStyle(.segmented)
             .onChange(of: settings.selectedGraphShape){
@@ -63,7 +64,7 @@ struct ControlView: View {
             
             Divider()
             
-            Toggle("Use internal synth", isOn:$settings.useSynth).tint(color)
+            Toggle("Use internal synth", isOn:$settings.useSynth).tint(color).onChange(of: settings.useSynth) {audioGeneric.outputToAudio = settings.useSynth}
             
 #if os(iOS)
             Text("MIDI Destination:")

@@ -28,12 +28,12 @@ struct HitTestView: View {
             
             // hit test x
             let xHit = hittest(graphSize: size.width, screenLocation: hoverLocation.x)
-            if isDrag {triad.setXPitch(frequency: xHit.frequency)}
+            if isDrag {audioGeneric.setXPitch(frequency: xHit.frequency)}
             crosshairPoint.x = xHit.crosshair
             
             // hit test y
             let yHit = hittest(graphSize: size.height, screenLocation: hoverLocation.y)
-            if isDrag {triad.setYPitch(frequency: yHit.frequency)}
+            if isDrag {audioGeneric.setYPitch(frequency: yHit.frequency)}
             crosshairPoint.y = yHit.crosshair
             crosshairPoint.y = height - crosshairPoint.y
             // draw crosshair on graph
@@ -59,7 +59,7 @@ struct HitTestView: View {
                 //print ("HitTestView: onContinousHover: Hover active phase \(hoverLocation)")
             case .ended:
                 isHovering = false
-                audio.stopAudio()
+                audioGeneric.stopAudio()
                 print ("Hover ended phase")
             }
         }
@@ -78,14 +78,13 @@ struct HitTestView: View {
                     hoverLocation.y = height - hoverLocation.y
                     isDrag = true
                     isShift = true
-                    
-                    audio.startAudio(amp: 1)
+                    audioGeneric.startAudio(amp: 1)
                 }
                 .onEnded { _ in
                     hoverLocation = .zero
                     isDrag = false
                     isShift = false
-                    if !settings.pedal {audio.stopAudio()}
+                    if !settings.pedal {audioGeneric.stopAudio()}
                 }
         )
 #endif
@@ -104,7 +103,7 @@ struct HitTestView: View {
                         if settings.snap {isShift = false}
                         else {isShift = true}
                     }
-                    audio.startAudio(amp: 1)
+                    audioGeneric.startAudio(amp: 1)
                 }
                 .onEnded { _ in
                     hoverLocation = .zero
@@ -112,7 +111,7 @@ struct HitTestView: View {
                     isShift = false
                     //print("HitTestView: DragGesture: Drag ended without shift")
                     // if pedal is true, then use pointer out of graph to turn off sound
-                    if !settings.pedal {audio.stopAudio()}
+                    if !settings.pedal {audioGeneric.stopAudio()}
                 }
         )
 #if os(iOS)
@@ -153,12 +152,13 @@ struct HitTestView: View {
         return (frequency: frequency, crosshair: crosshair)
     }
     
-    func startAudio (){
-        triad.enableRootTone(enable: settings.playDrone)
-        triad.enableXTone(enable: settings.playNoteX)
-        triad.enableYTone(enable: settings.playNoteY)
-        audio.startAudio(amp: 1)
-    }
+    //func startAudio (){
+    //    triad.enableRootTone(enable: settings.playDrone)
+    //    triad.enableXTone(enable: settings.playNoteX)
+    //    triad.enableYTone(enable: settings.playNoteY)
+        
+    //    audio.startAudio(amp: 1)
+    //}
     
     //func stopAudio (){
     //    audio.stopAudio()
