@@ -34,8 +34,11 @@ struct HitTestView: View {
             // hit test y
             let yHit = hittest(graphSize: size.height, screenLocation: hoverLocation.y)
             if isDrag {audioGeneric.setYPitch(frequency: yHit.frequency)}
+            
+            // crosshair
             crosshairPoint.y = yHit.crosshair
             crosshairPoint.y = height - crosshairPoint.y
+            
             // draw crosshair on graph
             context.stroke(
                 Path { path in

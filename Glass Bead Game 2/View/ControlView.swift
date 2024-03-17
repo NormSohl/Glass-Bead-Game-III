@@ -70,17 +70,17 @@ struct ControlView: View {
             Text("MIDI Destination:")
 #endif
             Picker("MIDI Destination:" ,selection: $settings.destinationIndex) {
-                ForEach(midiTest.midiDestinations.indices) { index in
-                    Text(midiTest.midiDestinations[index].destinationName)
+                ForEach(midi.midiDestinations.indices) { index in
+                    Text(midi.midiDestinations[index].destinationName)
                 }
             }
             .onChange(of: settings.destinationIndex) {
-                midiTest.destNum = settings.destinationIndex
+                midi.destNum = settings.destinationIndex
             }
             .pickerStyle(.automatic)
             .disabled(settings.useSynth)
             
-            Button(action: {midiTest.sendNote()}){
+            Button(action: {midi.sendNote()}){
                 Text("Test MIDI")
             }
             .accentColor(.white)

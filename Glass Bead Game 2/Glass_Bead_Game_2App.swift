@@ -8,8 +8,8 @@
 import SwiftUI
 
 var triad = Triad()
-var audio = AudioUtil()
-var midiTest = MidiTest()
+var audio = Audio()
+var midi = Midi()
 var audioGeneric = AudioGeneric()
 var noteList = NoteList()
 @main
@@ -20,7 +20,8 @@ struct GBG_01App: App {
         audio.stopAudio() // any call to trigger lazy instantiation
         let _ = triad.getRootPitch() // same
         // test the midi code - this should be removed after testing
-        midiTest.test()
+        midi.test() // need a better function to trigger lazy instantiation, otherwise destinations don't show up in control in view
+        //audioGeneric.testCentsToPitchBend()
     }
     
     var body: some Scene {

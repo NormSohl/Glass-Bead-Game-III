@@ -34,14 +34,12 @@
 		06824C2C2B887559002E9661 /* EnvHump.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C1F2B887559002E9661 /* EnvHump.swift */; };
 		06824C2D2B887559002E9661 /* Node.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C202B887559002E9661 /* Node.swift */; };
 		06824C362B887571002E9661 /* Waveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C2F2B887571002E9661 /* Waveform.swift */; };
-		06824C372B887571002E9661 /* Midi.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C302B887571002E9661 /* Midi.swift */; };
-		06824C382B887571002E9661 /* AudioTestCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C312B887571002E9661 /* AudioTestCode.swift */; };
-		06824C392B887571002E9661 /* MIDITestCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C322B887571002E9661 /* MIDITestCode.swift */; };
 		06824C3A2B887571002E9661 /* Tone.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C332B887571002E9661 /* Tone.swift */; };
 		06824C3B2B887571002E9661 /* Triad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C342B887571002E9661 /* Triad.swift */; };
 		06824C3C2B887571002E9661 /* Audio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824C352B887571002E9661 /* Audio.swift */; };
 		06D062182BA3B15300C68262 /* AudioAbstraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062172BA3B15300C68262 /* AudioAbstraction.swift */; };
 		06D0621A2BA3EF6C00C68262 /* NoteNameFrequency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062192BA3EF6C00C68262 /* NoteNameFrequency.swift */; };
+		06D0621C2BA6C3D400C68262 /* MIDI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D0621B2BA6C3D400C68262 /* MIDI.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -74,14 +72,12 @@
 		06824C1F2B887559002E9661 /* EnvHump.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EnvHump.swift; sourceTree = "<group>"; };
 		06824C202B887559002E9661 /* Node.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Node.swift; sourceTree = "<group>"; };
 		06824C2F2B887571002E9661 /* Waveform.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Waveform.swift; sourceTree = "<group>"; };
-		06824C302B887571002E9661 /* Midi.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Midi.swift; sourceTree = "<group>"; };
-		06824C312B887571002E9661 /* AudioTestCode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioTestCode.swift; sourceTree = "<group>"; };
-		06824C322B887571002E9661 /* MIDITestCode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MIDITestCode.swift; sourceTree = "<group>"; };
 		06824C332B887571002E9661 /* Tone.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Tone.swift; sourceTree = "<group>"; };
 		06824C342B887571002E9661 /* Triad.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Triad.swift; sourceTree = "<group>"; };
 		06824C352B887571002E9661 /* Audio.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Audio.swift; sourceTree = "<group>"; };
 		06D062172BA3B15300C68262 /* AudioAbstraction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioAbstraction.swift; sourceTree = "<group>"; };
 		06D062192BA3EF6C00C68262 /* NoteNameFrequency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteNameFrequency.swift; sourceTree = "<group>"; };
+		06D0621B2BA6C3D400C68262 /* MIDI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MIDI.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -202,12 +198,10 @@
 			children = (
 				06D062172BA3B15300C68262 /* AudioAbstraction.swift */,
 				06824C2F2B887571002E9661 /* Waveform.swift */,
-				06824C302B887571002E9661 /* Midi.swift */,
-				06824C312B887571002E9661 /* AudioTestCode.swift */,
-				06824C322B887571002E9661 /* MIDITestCode.swift */,
 				06824C332B887571002E9661 /* Tone.swift */,
 				06824C342B887571002E9661 /* Triad.swift */,
 				06824C352B887571002E9661 /* Audio.swift */,
+				06D0621B2BA6C3D400C68262 /* MIDI.swift */,
 			);
 			name = Audio;
 			path = ../../GBG_01/GBG_01/Audio;
@@ -289,6 +283,7 @@
 				06824BFF2B886963002E9661 /* DiamondView.swift in Sources */,
 				06824BDE2B881E3C002E9661 /* Glass_Bead_Game_2App.swift in Sources */,
 				06824C2C2B887559002E9661 /* EnvHump.swift in Sources */,
+				06D0621C2BA6C3D400C68262 /* MIDI.swift in Sources */,
 				06824BFD2B886963002E9661 /* ContentView.swift in Sources */,
 				06824C282B887559002E9661 /* TransEaseInEaseOut.swift in Sources */,
 				06824BFE2B886963002E9661 /* HitTestView.swift in Sources */,
@@ -304,18 +299,15 @@
 				06824C212B887559002E9661 /* CanInterpolate.swift in Sources */,
 				06824C022B886963002E9661 /* ControlView.swift in Sources */,
 				06824C012B886963002E9661 /* GraphView.swift in Sources */,
-				06824C392B887571002E9661 /* MIDITestCode.swift in Sources */,
 				06824C292B887559002E9661 /* TransEaseIn.swift in Sources */,
 				06824C252B887559002E9661 /* Part.swift in Sources */,
 				0634BD102B8A8912001E3644 /* TickView.swift in Sources */,
 				06D062182BA3B15300C68262 /* AudioAbstraction.swift in Sources */,
 				06824C3C2B887571002E9661 /* Audio.swift in Sources */,
-				06824C382B887571002E9661 /* AudioTestCode.swift in Sources */,
 				06D0621A2BA3EF6C00C68262 /* NoteNameFrequency.swift in Sources */,
 				06824C0F2B887538002E9661 /* ControlData.swift in Sources */,
 				06824C272B887559002E9661 /* TransEaseOut.swift in Sources */,
 				06824C2A2B887559002E9661 /* TransLinear.swift in Sources */,
-				06824C372B887571002E9661 /* Midi.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
