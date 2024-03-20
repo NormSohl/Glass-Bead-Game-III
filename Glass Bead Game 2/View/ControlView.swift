@@ -59,13 +59,13 @@ struct ControlView: View {
             
             Divider()
             
-            Text("Sound source:")
-            Text("(Turn off internal synth in order to enable MIDI output)")
+            //Text("Sound source:")
+            //Text("(Turn off internal synth in order to enable MIDI output)")
             
             Divider()
             
             Toggle("Use internal synth", isOn:$settings.useSynth).tint(color).onChange(of: settings.useSynth) {sound.outputToAudio = settings.useSynth}
-            Toggle("Use Midi", isOn:$settings.useMIDI).tint(color).onChange(of: settings.useSynth) {sound.outputToAudio = settings.useMIDI}
+            Toggle("Use Midi", isOn:$settings.useMIDI).tint(color).onChange(of: settings.useSynth) {sound.outputToMidi = settings.useMIDI}
 #if os(iOS)
             Text("MIDI Destination:")
 #endif
@@ -82,11 +82,11 @@ struct ControlView: View {
             .pickerStyle(.automatic)
             //.disabled(settings.useSynth)
             
-            Button(action: {sound.midi.test()}){
-                Text("Test MIDI")
-            }
-            .accentColor(.white)
-            .buttonStyle(.bordered)
+            //Button(action: {sound.midi.test()}){
+            //    Text("Test MIDI")
+            //}
+            //.accentColor(.white)
+            //.buttonStyle(.bordered)
             //.disabled(settings.useSynth)
             
             Spacer()

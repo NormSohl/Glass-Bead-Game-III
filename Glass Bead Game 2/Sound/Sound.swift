@@ -1,11 +1,11 @@
 //
-//  AudioAbstraction.swift
+//  Sound.swift
 //  Glass Bead Game 2
 //
 //  Created by Norman Sohl on 3/14/24.
 //
 // This class serves to abstract internal audio control. Audio output can be to internal synthesis or to external midi output.
-// These are very different but both can be controlled by a single set of abstracted functions which are defined here.
+// These are very different but both are controlled by a single set of abstracted functions which are defined here.
 
 import Foundation
 
@@ -15,10 +15,11 @@ class Sound {
     
     // set but not used at the moment. might be easier use case to always send midi data AND audio data, and just use what you want when you need it.
     var outputToAudio = true
+    var outputToMidi = true
     
     func startSound(amp: Float){
-        audio.startAudio(amp: amp)
-        midi.startMidi()
+        if outputToAudio {audio.startAudio(amp: amp)}
+        if outputToMidi {midi.startMidi()}
     }
     
     func stopSound(){
