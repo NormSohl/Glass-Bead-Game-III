@@ -64,30 +64,30 @@ struct ControlView: View {
             
             Divider()
             
-            Toggle("Use internal synth", isOn:$settings.useSynth).tint(color).onChange(of: settings.useSynth) {audioGeneric.outputToAudio = settings.useSynth}
-            
+            Toggle("Use internal synth", isOn:$settings.useSynth).tint(color).onChange(of: settings.useSynth) {sound.outputToAudio = settings.useSynth}
+            Toggle("Use Midi", isOn:$settings.useMIDI).tint(color).onChange(of: settings.useSynth) {sound.outputToAudio = settings.useMIDI}
 #if os(iOS)
             Text("MIDI Destination:")
 #endif
             Picker("MIDI Destination:" ,selection: $settings.destinationIndex) {
-                ForEach(midi.midiDestinations.indices, id: \.self) { index in
-                    Text(midi.midiDestinations[index].Name)
+                ForEach(sound.midi.midiDestinations.indices, id: \.self) { index in
+                    Text(sound.midi.midiDestinations[index].Name)
                 }
             }
             .onChange(of: settings.destinationIndex) {
                 let destinationIndex = settings.destinationIndex
                 print(settings.destinationIndex,destinationIndex)
-                midi.setMidiDestination(destination: destinationIndex)
+                sound.midi.setMidiDestination(destination: destinationIndex)
             }
             .pickerStyle(.automatic)
-            .disabled(settings.useSynth)
+            //.disabled(settings.useSynth)
             
-            Button(action: {midi.test()}){
+            Button(action: {sound.midi.test()}){
                 Text("Test MIDI")
             }
             .accentColor(.white)
             .buttonStyle(.bordered)
-            .disabled(settings.useSynth)
+            //.disabled(settings.useSynth)
             
             Spacer()
         }
