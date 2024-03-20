@@ -17,9 +17,10 @@ struct HitTestView: View {
     
     @State private var hoverLocation: CGPoint = .zero
     @State private var isHovering = false
-    @State private var isKeyDown = false
+    //@State private var isKeyDown = false
     @State private var isDrag = false
     @State private var isShift = false
+    @State private var isSound = false
     
     var body: some View {
         Canvas(){context, size in
@@ -83,17 +84,24 @@ struct HitTestView: View {
                     hoverLocation.y = height - hoverLocation.y
                     isDrag = true
                     isShift = true
-                    audioGeneric.startSound(amp: 1)
+                    if isSound == false{
+                        audioGeneric.startSound(amp: 1)
+                        isSound = true
+                    }
+                    
                 }
                 .onEnded { _ in
                     hoverLocation = .zero
                     isDrag = false
                     isShift = false
-                    if !settings.pedal {audioGeneric.stopSound()}
+                    if !settings.pedal {
+                        audioGeneric.stopSound()
+                        isSound = false
+                    }
                 }
         )
 #endif
-        
+
         // for touch and pen
         // without shift pressed
         .gesture(
@@ -108,12 +116,16 @@ struct HitTestView: View {
                         if settings.snap {isShift = false}
                         else {isShift = true}
                     }
-                    audioGeneric.startSound(amp: 1)
+                    if isSound == false{
+                        audioGeneric.startSound(amp: 1)
+                        isSound = true
+                    }
                 }
                 .onEnded { _ in
                     hoverLocation = .zero
                     isDrag = false
                     isShift = false
+                    isSound = false
                     //print("HitTestView: DragGesture: Drag ended without shift")
                     // if pedal is true, then use pointer out of graph to turn off sound
                     if !settings.pedal {audioGeneric.stopSound()}
