@@ -13,21 +13,22 @@ class Midi{
     
     // midi working variables
     private var RootMidiFrequency: Double = 0.0
-    private var RootMidiNote: UInt8 = 0
-    private var RootMidiVelocity: UInt8 = 80
-    private var RootMidiPitchBend: UInt16 = 0
+    private var RootMidiNote: Int = 60
+    private var RootMidiVelocity: Int = 80
+    private var RootMidiPitchBend: Int = 8192
     
     private var xMidiFrequency: Double = 0.0
-    private var xMidiNote: UInt8 = 0
-    private var xMidiVelocity: UInt8 = 100
-    private var xMidiPitchBend: UInt16 = 0
+    private var xMidiNote: Int = 60
+    private var xMidiVelocity: Int = 100
+    private var xMidiPitchBend: Int = 8192
     
     private var yMidiFrequency: Double = 0.0
-    private var yMidiNote: UInt8 = 0
-    private var yMidiVelocity: UInt8 = 100
-    private var yMidiPitchBend: UInt16 = 0
+    private var yMidiNote: Int = 60
+    private var yMidiVelocity: Int = 100
+    private var yMidiPitchBend: Int = 8192
     
-    private var pitchBendRange: UInt8 = 1 // 1 = one semi up and one down, for a full range of 1 tone
+    private var pitchBendRange: Int = 1
+    //private var PitchMidiNote: UInt8 = 60 // middle C
     
     // CoreMIDI values
     private var midiClient: MIDIClientRef = 0;
@@ -71,6 +72,37 @@ class Midi{
     func startMidi(){
         if rootMidiEnable {
             // Root note on channel 1
+            print ("\nMidi: startMidi: Root")
+            // Send note off to quiet glitch when changing PB
+            sendMidiNoteOff(channel: 1, note: RootMidiNote)
+            sendMidiPitchBend(channel:1, value: RootMidiPitchBend) // root note has centered pitchbend, should be 8192
+            sendMidiNoteOn(channel: 1, note: RootMidiNote, velocity: RootMidiVelocity)
+        }
+        
+        if xMidiEnable {
+            // X note on channel 2
+            print ("\nMidi: startMidi: X")
+            // Send note off to quiet glitch when changing PB, also to clear channel for new midi note
+            sendMidiNoteOff(channel: 2, note: xMidiNote)
+            xMidiPitchBend = freqToPB(frequency: xMidiFrequency, rootFrequency: RootMidiFrequency)
+            sendMidiPitchBend(channel: 2, value: xMidiPitchBend)
+            sendMidiNoteOn(channel: 2, note: xMidiNote, velocity: xMidiVelocity)
+        }
+        
+        if yMidiEnable {
+            // Y note on channel 3
+            print ("\nMidi: startMidi: Y")
+            // Send note off to quiet glitch when changing PB and to clear channel for new note if needed
+            sendMidiNoteOff(channel: 3, note: yMidiNote)
+            yMidiPitchBend = freqToPB(frequency: yMidiFrequency, rootFrequency: RootMidiFrequency)
+            sendMidiPitchBend(channel: 3, value: yMidiPitchBend)
+            sendMidiNoteOn(channel: 3, note: yMidiNote, velocity: yMidiVelocity)
+        }
+    }
+    /*
+    func startMidiOld(){  // using nAndPB which never worked right
+        if rootMidiEnable {
+            // Root note on channel 1
             print ("Midi: startMidi: Root")
             // Send note off to quiet glitch when changing PB
             sendMidiNoteOff(channel: 1, note: RootMidiNote)
@@ -80,7 +112,6 @@ class Midi{
             RootMidiPitchBend = UInt16(nAndPb.PitchBend)
             sendMidiPitchBend(channel:1, value: RootMidiPitchBend)// root note has centered pitchbend, should be 8192
             sendMidiNoteOn(channel: 1, note: RootMidiNote, velocity: RootMidiVelocity)
-            print("Midi: SetRootPitch: RootMidiNote = \(RootMidiNote)")
         }
         
         if xMidiEnable {
@@ -111,6 +142,7 @@ class Midi{
             sendMidiNoteOn(channel: 3, note: yMidiNote, velocity: yMidiVelocity)
         }
     }
+     */
     
     func stopMidi(){
         print ("Midi: stopMidi: Root")
@@ -138,9 +170,16 @@ class Midi{
         print("Midi: SetYMidiPitch: frequency = \(yMidiFrequency)")
     }
     
-    func setMidiPitchBendRange(PitchBendRange:UInt8){
+    func setMidiPitchBendRange(PitchBendRange:Int){
         pitchBendRange = PitchBendRange
     }
+    
+    func setRootNote(Note: Int){
+        RootMidiNote = Note
+        xMidiNote = Note
+        yMidiNote = Note
+    }
+    
     
     func tuneStart(){
         // set all frequencies  to A:440
@@ -217,42 +256,42 @@ class Midi{
     }
     private let channelVoiceMessage = ChannelVoiceMessage()
     
-    private func sendMidiNoteOn(channel:UInt8, note:UInt8, velocity:UInt8){
+    private func sendMidiNoteOn(channel:Int, note:Int, velocity:Int){
         print ("Midi: SendNoteOn: channel = \(channel), note = \(note), velocity = \(velocity)")
         
         // create packet
         var packet1 = MIDIPacket();
         packet1.timeStamp = 0;
         packet1.length = 3;
-        packet1.data.0 = channelVoiceMessage.NoteOn | (channel - 1) //(0x90 + (channel-1))
-        packet1.data.1 = note
-        packet1.data.2 = velocity
+        packet1.data.0 = channelVoiceMessage.NoteOn | (UInt8(channel) - 1) //(0x90 + (channel-1))
+        packet1.data.1 = UInt8(note)
+        packet1.data.2 = UInt8(velocity)
         //Add oacket to packet list and send it to destNum
         var packetList = MIDIPacketList(numPackets: 1, packet: packet1);
         MIDISend(outPort, midiDestinations[destNum].midiEndpoint, &packetList);
     }
     
-    private func sendMidiNoteOff(channel:UInt8, note:UInt8){
+    private func sendMidiNoteOff(channel:Int, note:Int){
         print ("Midi: SendNoteOff: channel = \(channel), note = \(note)")
 
         // create packet
         var packet1 = MIDIPacket();
         packet1.timeStamp = 0;
         packet1.length = 3;
-        packet1.data.0 = channelVoiceMessage.noteOff | (channel - 1) //UInt8(0x80 + (channel-1))
-        packet1.data.1 = note
+        packet1.data.0 = channelVoiceMessage.noteOff | (UInt8(channel) - 1) //UInt8(0x80 + (channel-1))
+        packet1.data.1 = UInt8(note)
         packet1.data.2 = 0
         //Add oacket to packet list and send it to destNum
         var packetList:MIDIPacketList = MIDIPacketList(numPackets: 1, packet: packet1);
         MIDISend(outPort, midiDestinations[destNum].midiEndpoint, &packetList);
     }
     
-    private func sendMidiPitchBend(channel:UInt8, value:UInt16){
+    private func sendMidiPitchBend(channel: Int, value: Int){
         print ("Midi: SendPitchBend: channel = \(channel), value = \(value)")
         // put bottom 7 bits in lsb
-        let lsb16:UInt16 = value & 0b000000001111111
+        let lsb16:UInt16 = UInt16(value) & 0b000000001111111
         // put next 7 bits in msb
-        var msb16:UInt16 = value & 0b0011111110000000
+        var msb16:UInt16 = UInt16(value) & 0b0011111110000000
         msb16 = msb16 >> 7
         // trim 16 bit to 8 bit (this should only trim empty bits
         let lsb8 = UInt8(lsb16)
@@ -261,7 +300,7 @@ class Midi{
         var packet1 = MIDIPacket();
         packet1.timeStamp = 0;
         packet1.length = 3;
-        packet1.data.0 = 0xE0 + (channel - 1)//UInt8(channelVoiceMessage.PitchBendChange + (channel - 1))
+        packet1.data.0 = 0xE0 + (UInt8(channel) - 1)//UInt8(channelVoiceMessage.PitchBendChange + (channel - 1))
         packet1.data.1 = lsb8
         packet1.data.2 = msb8
         //Add oacket to packet list and send it to destNum
@@ -280,11 +319,12 @@ class Midi{
         var PitchBend: UInt16 = 8192  // 0 of pitchbend range
     }
     
+    /*
     //Given a frequency, return the nearest semitone from the noteList and the pitchbend value to tune that note value to match the frequency. This will vary depending on pitchbend range.
     // take in frequency, return note value and pitch bend value
     private func freqToNoteAndPB(frequency: Double) -> noteAndPitchbend {
         var ret = noteAndPitchbend()
-        let match = noteList.searchList(frequency: frequency)
+        let match = noteList.searchList(frequency: frequency)  // this does not appear to be working 100%, but moving on to a different solution and leaving as is
         print("Midi: freqToNoteAndPB: frequency = \(frequency), Match = \(match)")
         // if match is an exact hit:
         if match.lowerNote.noteFreq == match.higherNote.noteFreq {
@@ -309,8 +349,27 @@ class Midi{
         }
         return ret
     }
+     */
     
-    private func centsToPitchBend(pitchBendRange: UInt8, cents: Double) -> UInt16{
+    private func freqToPB(frequency: Double, rootFrequency: Double) -> Int {
+        var ret: Int = 8192
+        var cents:Double = 0
+        
+        if frequency < rootFrequency {
+            // below drone
+            cents = 1200 * log2(rootFrequency / frequency)
+        }
+        else{
+            // above drone
+            cents = 1200 * log2(frequency / rootFrequency)
+        }
+        print("MIDI.freqToPB: cents = ", cents)
+        ret = centsToPitchBend(pitchBendRange: pitchBendRange, cents: cents)
+        print("MIDI.freqToPB: pitchBend = ", ret)
+        return ret
+    }
+    
+    private func centsToPitchBend(pitchBendRange: Int, cents: Double) -> Int{
         let pbRangeInCents = Double(pitchBendRange * 100)
         if cents >= pbRangeInCents {
             print ("Midi: centsToPitchBend: Error- cents above pbRangeInCents.  range = \(pitchBendRange), pbRangeInCents = \(pbRangeInCents), cents = \(cents),")
@@ -326,7 +385,7 @@ class Midi{
         let retPB: Double = (centsTemp * 8192) + 8192
         
         //print (" AudioGeneric: centsToPitchBend: Success, range = \(pitchBendRange), pbRangeInCents = \(pbRangeInCents), cents = \(cents), centsTemp = \(centsTemp), pitchbend = \(retPB)")
-        return UInt16(retPB)
+        return Int(retPB)
     }
     
     // returns number of octaves between freq1 and freq2
@@ -339,7 +398,7 @@ class Midi{
     private func testCentsToPitchBend(){
         for pbRange in 1...12 {
             for cents in -1200...1200 {
-                _ = centsToPitchBend(pitchBendRange: UInt8(pbRange), cents: Double(cents))
+                _ = centsToPitchBend(pitchBendRange: pbRange, cents: Double(cents))
             }
         }
     }

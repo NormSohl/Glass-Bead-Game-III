@@ -23,7 +23,7 @@ import AudioToolbox
 public class TestAudio {
     
     func test(){
-        var outputDevices = getOutputDevices()
+        let outputDevices = getOutputDevices()
         for device in outputDevices {
             print("\n")
             print("TEST: Device = \(getDeviceName(deviceID:device))")
@@ -31,10 +31,10 @@ public class TestAudio {
             //var agg = isAggregateDevice (deviceID: device)
             //print("TEST:     Aggrate? = \(agg)")
             
-            var numSubDevices = getNumberOfSubDevices(deviceID: device)
+            let numSubDevices = getNumberOfSubDevices(deviceID: device)
             print("TEST: Sub device count = \(numSubDevices)")
             
-            var subDevice = getAggregateDeviceSubDeviceList(deviceID: device)
+            let subDevice = getAggregateDeviceSubDeviceList(deviceID: device)
             
             for device in subDevice {
                 print("TEST SubAgDevice = \(getDeviceName(deviceID: device))")
@@ -45,7 +45,7 @@ public class TestAudio {
             
             //_ = getDeviceStereoChannel(deviceID:device)
             
-            var ret = getDeviceTransportType(deviceID:device)
+            let ret = getDeviceTransportType(deviceID:device)
             //if ret == kAudioDeviceTransportTypeUSB{
             //    print("USB ", ret)
             //}
@@ -280,7 +280,7 @@ public class TestAudio {
                 mScope: AudioObjectPropertyScope(kAudioObjectPropertyScopeGlobal),
                 mElement: AudioObjectPropertyElement(kAudioObjectPropertyElementMain))
             
-            var status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &propertySize, &channelLayout)  // status says unknown property.
+            let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &propertySize, &channelLayout)  // status says unknown property.
             print(deviceID)
             print(status.description)
             print(channelLayout.mChannelLayoutTag)
@@ -300,7 +300,7 @@ public class TestAudio {
                 mScope: AudioObjectPropertyScope(kAudioObjectPropertyScopeGlobal),
                 mElement: AudioObjectPropertyElement(kAudioObjectPropertyElementMain))
             
-            var status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &propertySize, &channelIDs)  // status says unknown property.
+            let status = AudioObjectGetPropertyData(deviceID, &propertyAddress, 0, nil, &propertySize, &channelIDs)  // status says unknown property.
             print(status) //2003332927 is unknown property.
             print(channelIDs)
             

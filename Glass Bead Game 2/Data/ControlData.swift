@@ -20,10 +20,10 @@ class AppSettings: ObservableObject{
     @Published var useMIDI: Bool = true
     @Published var tuneMidi: Bool = false
     @Published var selectedGraphShape: GraphShape = .Square
-
     
     // root pitch
-    @Published var root: Double = 261.6255653005986 // middle c  // no UI yet if ever
+    @Published var rootFrequency: Double = 261.6255653005986 // middle c  // no UI yet if ever. MIDI note number 60
+    @Published var rootMidiNote: Int = 60  // middle c
 
     //@Published var numberOfOctaves: Double = 2
     // Highest ratio =
@@ -58,7 +58,7 @@ class AppSettings: ObservableObject{
     @Published var border: Double = 40
     
     // MIDI data
-    @Published var pitchBendRange: UInt8 = 1 // 1 = one semi up and one down, for a full range of 1 tone // no ui yet if ever
+    @Published var pitchBendRange: Int = 12
     
     init(){
         self.highestRatioNormalized = log(self.highestRatio) / log(2)
@@ -67,8 +67,9 @@ class AppSettings: ObservableObject{
         // combine highest and lowest normalized ratios to give the full range of the graph
         self.rangeNormalized = self.highestRatioNormalized - self.lowestRatioNormalized // positive, need to handle negative value
         
-        sound.setRootPitch(frequency: self.root)
-        sound.sesetPitchBendRange(pitchBendRange: self.pitchBendRange)
+        sound.setRootPitch(frequency: self.rootFrequency)
+        sound.setRootNote(midiNote: self.rootMidiNote)
+        sound.setPitchBendRange(pitchBendRange: self.pitchBendRange)
     }
 }
 

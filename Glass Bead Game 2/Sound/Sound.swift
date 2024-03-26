@@ -57,7 +57,10 @@ class Sound {
         midi.setMidiYPitch(frequency: frequency)
     }
     
-    func sesetPitchBendRange(pitchBendRange: UInt8){
+    func setPitchBendRange(pitchBendRange: Int){
         midi.setMidiPitchBendRange(PitchBendRange: pitchBendRange)
+    }
+    func setRootNote(midiNote: Int){
+        midi.setRootNote(Note: midiNote)
     }
 }
