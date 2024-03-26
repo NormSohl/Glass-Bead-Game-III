@@ -25,7 +25,7 @@ class Triad{
         Triad.tone1.setSampleRate(inSampleRate: sampleRate)
         Triad.tone2.setSampleRate(inSampleRate: sampleRate)
         Triad.tone3.setSampleRate(inSampleRate: sampleRate)
-        print("Triad: setSampleRate: sampleRate = \(sampleRate)")
+        //print("Triad: setSampleRate: sampleRate = \(sampleRate)")
     }
     
     func setTriadRootPitch(frequency:Double){
@@ -41,7 +41,7 @@ class Triad{
         else {
             Triad.tone1.setAmplitude(inAmplitude: 0.0)
         }
-        print("Triad: setRootAmplitude: amplitude = \(Triad.tone1.amplitude), enable = \(enable)")
+        //print("Triad: setRootAmplitude: amplitude = \(Triad.tone1.amplitude), enable = \(enable)")
     }
     
     func enableTriadXTone(enable: Bool){
@@ -51,7 +51,7 @@ class Triad{
         else {
             Triad.tone2.setAmplitude(inAmplitude: 0.0)
         }
-        print("Triad: setXAmplitude: amplitude = \(Triad.tone3.amplitude), enable = \(enable)")
+        //print("Triad: setXAmplitude: amplitude = \(Triad.tone3.amplitude), enable = \(enable)")
     }
     
     func enableTriadYTone(enable: Bool){
@@ -61,17 +61,17 @@ class Triad{
         else {
             Triad.tone3.setAmplitude(inAmplitude: 0.0)
         }
-        print("Triad: setYAmplitude: amplitude = \(Triad.tone3.amplitude), enable = \(enable)")
+        //print("Triad: setYAmplitude: amplitude = \(Triad.tone3.amplitude), enable = \(enable)")
     }
             
     func setTriadXAmplitude(amplitude:Double){
         Triad.tone2.setAmplitude(inAmplitude: amplitude)
-        print("Triad: setXAmplitude: amplitude = \(amplitude)")
+        //print("Triad: setXAmplitude: amplitude = \(amplitude)")
     }
     
     func setTriadYAmplitude(amplitude:Double){
         Triad.tone1.setAmplitude(inAmplitude: amplitude)
-        print("Triad: setYAmplitude: amplitude = \(amplitude)")
+        //print("Triad: setYAmplitude: amplitude = \(amplitude)")
     }
     
     func getTriadRootPitch() -> Double{

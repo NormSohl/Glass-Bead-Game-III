@@ -18,9 +18,9 @@ struct ControlView: View {
             Text("Glass Bead Game").bold().font(Font.headline)
             Divider()
             Toggle("Diamonds", isOn: $settings.showDiamonds).tint(color)
-            Toggle("Drone", isOn: $settings.playDrone).tint(color)
-            Toggle("Note X", isOn: $settings.playNoteX).tint(color)
-            Toggle("Note Y", isOn: $settings.playNoteY).tint(color)
+            Toggle("Drone", isOn: $settings.playDrone).tint(color).onChange(of: settings.playDrone){sound.enableDrone = settings.playDrone}
+            Toggle("Note X", isOn: $settings.playNoteX).tint(color).onChange(of: settings.playNoteX){sound.enableX = settings.playNoteX}
+            Toggle("Note Y", isOn: $settings.playNoteY).tint(color).onChange(of: settings.playNoteY){sound.enableY = settings.playNoteY}
             Toggle("Snapping", isOn: $settings.snap).tint(color)
             Toggle("pedal", isOn: $settings.pedal).tint(color)
             Divider()
@@ -50,22 +50,26 @@ struct ControlView: View {
                     Text(shape.rawValue.capitalized)
                 }
             }
-
             .accentColor(.blue)
             .pickerStyle(.segmented)
             .onChange(of: settings.selectedGraphShape){
                 setView()
             }
-            
-            Divider()
-            
+                
+            //Divider()
+                
             //Text("Sound source:")
             //Text("(Turn off internal synth in order to enable MIDI output)")
-            
+                
             Divider()
+                
+            Toggle("Use internal synth", isOn:$settings.useSynth)
+                .tint(color)
+                .onChange(of: settings.useSynth) {sound.outputToAudio = settings.useSynth}
             
-            Toggle("Use internal synth", isOn:$settings.useSynth).tint(color).onChange(of: settings.useSynth) {sound.outputToAudio = settings.useSynth}
-            Toggle("Use Midi", isOn:$settings.useMIDI).tint(color).onChange(of: settings.useSynth) {sound.outputToMidi = settings.useMIDI}
+            Toggle("Use Midi", isOn:$settings.useMIDI)
+                .tint(color)
+                .onChange(of: settings.useMIDI) {sound.outputToMidi = settings.useMIDI}
 #if os(iOS)
             Text("MIDI Destination:")
 #endif
@@ -80,18 +84,40 @@ struct ControlView: View {
                 sound.midi.setMidiDestination(destination: destinationIndex)
             }
             .pickerStyle(.automatic)
-            //.disabled(settings.useSynth)
+                .disabled(!settings.useMIDI)
             
-            //Button(action: {sound.midi.test()}){
-            //    Text("Test MIDI")
-            //}
+            var details = "Midi channels 1, 2, and 3 are sending A: 440 hz to the \(sound.midi.midiDestinations[settings.destinationIndex].Name)"
+            
+            Button("TuneMidi"){
+                if settings.tuneMidi == false{
+                    sound.midi.tuneStart()
+                    settings.tuneMidi = true
+                }
+                else {
+                    sound.midi.tuneStop()
+                    settings.tuneMidi = false
+                }
+            }
             //.accentColor(.white)
-            //.buttonStyle(.bordered)
-            //.disabled(settings.useSynth)
-            
+            //.onChange(of: settings.tuneMidi) {sound.midi.tuneStart()}
+            .alert(
+                    "Tuning",
+                    isPresented: $settings.tuneMidi,
+                       presenting: details
+                ) { details in
+                    Button(role: .cancel) {
+                        sound.midi.tuneStop()
+                     } label: {
+                         Text("Stop")
+                     }
+                    
+                } message:{ details in
+                    Text(details)
+                }
+                .disabled(!settings.useMIDI)
+                
             Spacer()
-        }
-        .padding([.leading,.trailing,.top], 20)
+        }.padding([.leading,.trailing,.top], 20)
     }
     
     func setView() {

@@ -24,7 +24,7 @@ class Tone{
         //setSampleRate (inSampleRate: sampleRate)
         setPitch (inFrequency: frequency)
         setAmplitude(inAmplitude: amplitude)
-        print("Tone: init: amplitude = \(amplitude)")
+        //print("Tone: init: amplitude = \(amplitude)")
     }
     
     func setPitch (inFrequency:Double){
@@ -40,7 +40,7 @@ class Tone{
     
     func setAmplitude(inAmplitude:Double){
         self.amplitude = inAmplitude
-        print("Tone: setAmplitude: amplitude = \(self.amplitude)")
+        //print("Tone: setAmplitude: amplitude = \(self.amplitude)")
     }
     
     func incrementPhase(){

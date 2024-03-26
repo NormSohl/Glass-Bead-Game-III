@@ -13,11 +13,26 @@ class Sound {
     var midi = Midi()
     var audio = Audio()
     
-    // set but not used at the moment. might be easier use case to always send midi data AND audio data, and just use what you want when you need it.
     var outputToAudio = true
     var outputToMidi = true
     
+    var enableDrone = true
+    var enableX = true
+    var enableY = true
+    
+    func initSound(){
+        midi.initMidi()
+    }
+    
     func startSound(amp: Float){
+        audio.triad.enableTriadRootTone(enable: enableDrone)
+        audio.triad.enableTriadXTone(enable: enableX)
+        audio.triad.enableTriadYTone(enable: enableY)
+        
+        midi.rootMidiEnable = enableDrone
+        midi.xMidiEnable = enableX
+        midi.yMidiEnable = enableY
+        
         if outputToAudio {audio.startAudio(amp: amp)}
         if outputToMidi {midi.startMidi()}
     }

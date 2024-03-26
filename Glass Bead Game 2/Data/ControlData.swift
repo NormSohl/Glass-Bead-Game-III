@@ -18,10 +18,12 @@ class AppSettings: ObservableObject{
     @Published var pedal: Bool = false
     @Published var useSynth: Bool = true
     @Published var useMIDI: Bool = true
+    @Published var tuneMidi: Bool = false
     @Published var selectedGraphShape: GraphShape = .Square
+
     
     // root pitch
-    @Published var root: Double = 130.813 * 2 // middle c  // no UI yet if ever
+    @Published var root: Double = 261.6255653005986 // middle c  // no UI yet if ever
 
     //@Published var numberOfOctaves: Double = 2
     // Highest ratio =
@@ -47,7 +49,7 @@ class AppSettings: ObservableObject{
     
     // support for rotated views - replaced by UI
     
-    // square graph
+    // square graph: default. should really zero these out at init and let the UI set the appropriate values, even for defaults
     @Published var viewRotation: Double = 0.0 // rotation in degrees
     @Published var viewScale: Double = 1.0 // scaling 0.0 equals no change. negitive and positve are possible .73 is good for 45 degree rotation
     @Published var viewOffsetX: Double = 0.0 // horizontal offset

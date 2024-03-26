@@ -27,6 +27,7 @@
 		06D0627A2BAA9F0600C68262 /* Tone.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062792BAA9F0600C68262 /* Tone.swift */; };
 		06D0627C2BAA9F3D00C68262 /* Waveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D0627B2BAA9F3D00C68262 /* Waveform.swift */; };
 		06D0627E2BAA9F9A00C68262 /* Diamonds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D0627D2BAA9F9A00C68262 /* Diamonds.swift */; };
+		06D062802BAFB99100C68262 /* testAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D0627F2BAFB99100C68262 /* testAudio.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -66,6 +67,7 @@
 		06D062792BAA9F0600C68262 /* Tone.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tone.swift; sourceTree = "<group>"; };
 		06D0627B2BAA9F3D00C68262 /* Waveform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Waveform.swift; sourceTree = "<group>"; };
 		06D0627D2BAA9F9A00C68262 /* Diamonds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diamonds.swift; sourceTree = "<group>"; };
+		06D0627F2BAFB99100C68262 /* testAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = testAudio.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -151,6 +153,7 @@
 				06D062792BAA9F0600C68262 /* Tone.swift */,
 				06D0627B2BAA9F3D00C68262 /* Waveform.swift */,
 				06D0622C2BAA953300C68262 /* Score */,
+				06D0627F2BAFB99100C68262 /* testAudio.swift */,
 			);
 			name = Audio;
 			path = "Glass Bead Game 2/Sound/Audio";
@@ -298,6 +301,7 @@
 				06824BFE2B886963002E9661 /* HitTestView.swift in Sources */,
 				06D062702BAA9C4E00C68262 /* Sound.swift in Sources */,
 				06824BFC2B886963002E9661 /* DissonanceView.swift in Sources */,
+				06D062802BAFB99100C68262 /* testAudio.swift in Sources */,
 				06D0627A2BAA9F0600C68262 /* Tone.swift in Sources */,
 				06D0626E2BAA9A9000C68262 /* Scale.swift in Sources */,
 				06824C022B886963002E9661 /* ControlView.swift in Sources */,

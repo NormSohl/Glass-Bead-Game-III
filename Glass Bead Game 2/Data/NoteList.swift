@@ -61,17 +61,20 @@ class NoteList{
     // if out of range return default values in listReturn
     func searchList(frequency: Double)->listReturn{
         var ret = listReturn()
-        for i in 0 ..< list.count - 1 {  // less than max element because we may evaluate for i+1 below.
+        for i in 0 ..< list.count {  // less than max element because we may evaluate for i+1 below.
+            print("NoteList: searchList: frequency = \(frequency), \(list[i].noteFreq), count = \(i)")
             if list[i].noteFreq == frequency {
                 // nailed it! hit the exact frequency. This is a corner case and will not be hit very often
                 ret.lowerNote = list[i]
                 ret.higherNote = list[i]
+                print("NoteList: searchList: match!")
                 return ret
             }
             if list[i].noteFreq > frequency {
                 // process for the first element that is higher than the search frequency
-                ret.lowerNote = list[i]
-                ret.higherNote = list[i+1]
+                ret.lowerNote = list[i-1]
+                ret.higherNote = list[i]
+                print("NoteList: searchList: Greater Than!")
                 return ret
             }
         }

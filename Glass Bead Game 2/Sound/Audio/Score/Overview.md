@@ -87,11 +87,11 @@ AudioUtil
         Tone
             Waveform
             
-## AudioUtil
-The audio system creates an AVAudioSourceNode to manage filling raw audio values into buffers for playback. All functions that interact with the system are in the AudioUtil Class.
+## Audio
+The audio system creates an AVAudioSourceNode to manage filling raw audio values into buffers for playback. All functions that interact with the system are in the Audio Class.
 The Graph needs three tones which are managed by the Triad class
 
-The AudioUtil.Triad object has a pointer to the Score object. It can call the Score object to get the individual parts, and can assign part pointers to the individual Tone objects.
+The Audio.Triad object has a pointer to the Score object. It can call the Score object to get the individual parts, and can assign part pointers to the individual Tone objects.
 
 ## Tone
 Each Tone object manages the low level loops for one tone, and define the waveform used to generate the signal.
@@ -100,6 +100,6 @@ Each has an exposed Frquency and Amplitude property that is used to control the 
 * setPitch(Double)  // frequency in Hz.
 * setAmplitude(Double)  // 0 to 1 value used to scale the rendered output.
 
-The AudioUtil.Triad.Tone object has a pointer to it's associated Score.Part, and would query for a pointer to a new Score.Part.Note object when needed. The Note object has all information needed to render.
+The Audio.Triad.Tone object has a pointer to it's associated Score.Part, and would query for a pointer to a new Score.Part.Note object when needed. The Note object has all information needed to render.
 
 Once initialized, each note can be quickly queried for next frequency and amplitude. When the note ends the pointer is updated to the next note. This can be done until the score is over or until playback is stopped.

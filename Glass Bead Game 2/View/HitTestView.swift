@@ -26,32 +26,34 @@ struct HitTestView: View {
             var crosshairPoint:CGPoint = .zero
             height = size.height
             
-            // hit test x
-            let xHit = hittest(graphSize: size.width, screenLocation: hoverLocation.x)
-            //if isDrag {audioGeneric.setXPitch(frequency: xHit.frequency)}
-            sound.setXPitch(frequency: xHit.frequency)
-            crosshairPoint.x = xHit.crosshair
-            
-            // hit test y
-            let yHit = hittest(graphSize: size.height, screenLocation: hoverLocation.y)
-            //if isDrag {audioGeneric.setYPitch(frequency: yHit.frequency)}
-            sound.setYPitch(frequency: yHit.frequency)
-            
-            // crosshair
-            crosshairPoint.y = yHit.crosshair
-            crosshairPoint.y = height - crosshairPoint.y
-            
-            // draw crosshair on graph
-            context.stroke(
-                Path { path in
-                    let crossSize:Double = 8
-                    path.move (to: CGPoint(x: crosshairPoint.x, y: crosshairPoint.y + crossSize))
-                    path.addLine(to: CGPoint(x: crosshairPoint.x, y: crosshairPoint.y - crossSize))
-                    path.move (to: CGPoint(x: crosshairPoint.x-crossSize, y: crosshairPoint.y))
-                    path.addLine(to: CGPoint(x: crosshairPoint.x+crossSize, y: crosshairPoint.y))
-                }, with: .color(.white),
-                lineWidth: 3
-            )
+            if isHovering {
+                // hit test x
+                let xHit = hittest(graphSize: size.width, screenLocation: hoverLocation.x)
+                //if isDrag {audioGeneric.setXPitch(frequency: xHit.frequency)}
+                sound.setXPitch(frequency: xHit.frequency)
+                crosshairPoint.x = xHit.crosshair
+                
+                // hit test y
+                let yHit = hittest(graphSize: size.height, screenLocation: hoverLocation.y)
+                //if isDrag {audioGeneric.setYPitch(frequency: yHit.frequency)}
+                sound.setYPitch(frequency: yHit.frequency)
+                
+                // crosshair
+                crosshairPoint.y = yHit.crosshair
+                crosshairPoint.y = height - crosshairPoint.y
+                
+                // draw crosshair on graph
+                context.stroke(
+                    Path { path in
+                        let crossSize:Double = 8
+                        path.move (to: CGPoint(x: crosshairPoint.x, y: crosshairPoint.y + crossSize))
+                        path.addLine(to: CGPoint(x: crosshairPoint.x, y: crosshairPoint.y - crossSize))
+                        path.move (to: CGPoint(x: crosshairPoint.x-crossSize, y: crosshairPoint.y))
+                        path.addLine(to: CGPoint(x: crosshairPoint.x+crossSize, y: crosshairPoint.y))
+                    }, with: .color(.white),
+                    lineWidth: 3
+                )
+            }
         }
         .onContinuousHover { phase in
             switch phase {
@@ -59,13 +61,12 @@ struct HitTestView: View {
                 hoverLocation = location
                 // invert y at the source
                 hoverLocation.y = height - hoverLocation.y
-                
+                if isHovering == false{ print ("HitTestView: onContinousHover: Hover started")}// \(hoverLocation)")}
                 isHovering = true
-                //print ("HitTestView: onContinousHover: Hover active phase \(hoverLocation)")
             case .ended:
                 isHovering = false
-                sound.stopSound()
-                print ("Hover ended phase")
+                //sound.stopSound()  // should not be calling this here? disabling
+                print ("HitTestView: onContinousHover: Hover ended")
             }
         }
         .onHover(perform: {_ in
@@ -75,9 +76,11 @@ struct HitTestView: View {
 #if os(macOS)
         .gesture(
             // with shift pressed find a better solution for pen, since this is not implemented on iPad (yet?)
+            // this is ONLY called when shift is pressed
             DragGesture(minimumDistance: 0, coordinateSpace: .local)
                 .modifiers(.shift)
                 .onChanged { value in
+                    //print("DragGesture called with shift")
                     hoverLocation = value.location
                     // invert y at the source
                     hoverLocation.y = height - hoverLocation.y
@@ -90,7 +93,7 @@ struct HitTestView: View {
                     
                 }
                 .onEnded { _ in
-                    hoverLocation = .zero
+                    //hoverLocation = .zero  // don't think this is needed.
                     isDrag = false
                     isShift = false
                     if !settings.pedal {
@@ -102,10 +105,11 @@ struct HitTestView: View {
 #endif
 
         // for touch and pen
-        // without shift pressed
+        // only called without shift pressed
         .gesture(
             DragGesture(minimumDistance: 0, coordinateSpace: .local)
                 .onChanged { value in
+                    //print("DragGesture called without shift")
                     hoverLocation = value.location
                     hoverLocation.y = height - hoverLocation.y
                     isDrag = true
@@ -121,7 +125,7 @@ struct HitTestView: View {
                     }
                 }
                 .onEnded { _ in
-                    hoverLocation = .zero
+                    //hoverLocation = .zero  // this has been causing occasional bad values leaking into drag gestures. Don't think it is actually needed.
                     isDrag = false
                     isShift = false
                     isSound = false
