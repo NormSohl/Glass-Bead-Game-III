@@ -70,6 +70,12 @@ struct ControlView: View {
             Toggle("Use Midi", isOn:$settings.useMIDI)
                 .tint(color)
                 .onChange(of: settings.useMIDI) {sound.outputToMidi = settings.useMIDI}
+            
+            
+            Toggle("Use MPE", isOn:$settings.useMIDI_MPE)
+                .tint(color)
+                .onChange(of: settings.useMIDI_MPE) {sound.midi.useMPE(useMpe: settings.useMIDI_MPE)}
+                .disabled(!settings.useMIDI)
 #if os(iOS)
             Text("MIDI Destination:")
 #endif
@@ -80,13 +86,13 @@ struct ControlView: View {
             }
             .onChange(of: settings.destinationIndex) {
                 let destinationIndex = settings.destinationIndex
-                print(settings.destinationIndex,destinationIndex)
+                //print(settings.destinationIndex,destinationIndex)
                 sound.midi.setMidiDestination(destination: destinationIndex)
             }
             .pickerStyle(.automatic)
                 .disabled(!settings.useMIDI)
             
-            var details = "Midi channels 1, 2, and 3 are sending A: 440 hz to the \(sound.midi.midiDestinations[settings.destinationIndex].Name)"
+            let details = "Midi channels 1, 2, and 3 are sending A: 440 hz to the \(sound.midi.midiDestinations[settings.destinationIndex].Name)"
             
             Button("TuneMidi"){
                 if settings.tuneMidi == false{

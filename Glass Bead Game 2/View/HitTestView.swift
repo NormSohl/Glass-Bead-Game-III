@@ -61,12 +61,14 @@ struct HitTestView: View {
                 hoverLocation = location
                 // invert y at the source
                 hoverLocation.y = height - hoverLocation.y
-                if isHovering == false{ print ("HitTestView: onContinousHover: Hover started")}// \(hoverLocation)")}
+                if isHovering == false{
+                    //print ("HitTestView: onContinousHover: Hover started")
+                }// \(hoverLocation)")}
                 isHovering = true
             case .ended:
                 isHovering = false
                 //sound.stopSound()  // should not be calling this here? disabling
-                print ("HitTestView: onContinousHover: Hover ended")
+                //print ("HitTestView: onContinousHover: Hover ended")
             }
         }
         .onHover(perform: {_ in

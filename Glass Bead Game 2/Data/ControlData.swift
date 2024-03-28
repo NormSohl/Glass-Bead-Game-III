@@ -18,8 +18,10 @@ class AppSettings: ObservableObject{
     @Published var pedal: Bool = false
     @Published var useSynth: Bool = true
     @Published var useMIDI: Bool = true
+    @Published var useMIDI_MPE: Bool = true
     @Published var tuneMidi: Bool = false
     @Published var selectedGraphShape: GraphShape = .Square
+    
     
     // root pitch
     @Published var rootFrequency: Double = 261.6255653005986 // middle c  // no UI yet if ever. MIDI note number 60
@@ -59,6 +61,7 @@ class AppSettings: ObservableObject{
     
     // MIDI data
     @Published var pitchBendRange: Int = 12
+    @Published var pitchBendRangeMPE: Int = 48
     
     init(){
         self.highestRatioNormalized = log(self.highestRatio) / log(2)
@@ -70,6 +73,7 @@ class AppSettings: ObservableObject{
         sound.setRootPitch(frequency: self.rootFrequency)
         sound.setRootNote(midiNote: self.rootMidiNote)
         sound.setPitchBendRange(pitchBendRange: self.pitchBendRange)
+        sound.setPitchBendRangeMPE(pitchBendRange: self.pitchBendRangeMPE)
     }
 }
 
