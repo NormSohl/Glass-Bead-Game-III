@@ -12,6 +12,9 @@ import SwiftUI
 var height = 0.0  // placed in global scope to resolve inconsistant behavior when placed in view
 
 struct HitTestView: View {
+    // manage debug trace in hitTest
+    let hitTestTrace = false
+    
     let scale: Scale
     let settings: AppSettings
     
@@ -28,13 +31,13 @@ struct HitTestView: View {
             
             if isHovering {
                 // hit test x
-                let xHit = hittest(graphSize: size.width, screenLocation: hoverLocation.x)
+                let xHit = hitTest(graphSize: size.width, screenLocation: hoverLocation.x)
                 //if isDrag {audioGeneric.setXPitch(frequency: xHit.frequency)}
                 sound.setXPitch(frequency: xHit.frequency)
                 crosshairPoint.x = xHit.crosshair
                 
                 // hit test y
-                let yHit = hittest(graphSize: size.height, screenLocation: hoverLocation.y)
+                let yHit = hitTest(graphSize: size.height, screenLocation: hoverLocation.y)
                 //if isDrag {audioGeneric.setYPitch(frequency: yHit.frequency)}
                 sound.setYPitch(frequency: yHit.frequency)
                 
@@ -82,7 +85,7 @@ struct HitTestView: View {
             DragGesture(minimumDistance: 0, coordinateSpace: .local)
                 .modifiers(.shift)
                 .onChanged { value in
-                    //print("DragGesture called with shift")
+                    if hitTestTrace {print("HitTestView: DragGesture called with shift")}
                     hoverLocation = value.location
                     // invert y at the source
                     hoverLocation.y = height - hoverLocation.y
@@ -95,7 +98,7 @@ struct HitTestView: View {
                     
                 }
                 .onEnded { _ in
-                    //hoverLocation = .zero  // don't think this is needed.
+                    hoverLocation = .zero  // don't think this is needed.
                     isDrag = false
                     isShift = false
                     if !settings.pedal {
@@ -111,7 +114,6 @@ struct HitTestView: View {
         .gesture(
             DragGesture(minimumDistance: 0, coordinateSpace: .local)
                 .onChanged { value in
-                    //print("DragGesture called without shift")
                     hoverLocation = value.location
                     hoverLocation.y = height - hoverLocation.y
                     isDrag = true
@@ -125,15 +127,16 @@ struct HitTestView: View {
                         sound.startSound(amp: 1)
                         isSound = true
                     }
+                    if hitTestTrace {print("HitTestView: DragGesture called. isDrag = \(isDrag), isShift = \(isShift), isSound = \(isSound)")}
                 }
                 .onEnded { _ in
                     //hoverLocation = .zero  // this has been causing occasional bad values leaking into drag gestures. Don't think it is actually needed.
                     isDrag = false
                     isShift = false
                     isSound = false
-                    //print("HitTestView: DragGesture: Drag ended without shift")
                     // if pedal is true, then use pointer out of graph to turn off sound
                     if !settings.pedal {sound.stopSound()}
+                    if hitTestTrace {print("HitTestView: DragGesture: Drag ended without shift. isDrag = \(isDrag), isShift = \(isShift), isSound = \(isSound)")}
                 }
         )
 #if os(iOS)
@@ -141,7 +144,7 @@ struct HitTestView: View {
 #endif
     }
     
-    func hittest(graphSize: Double, screenLocation: Double)->(frequency: Double, crosshair: Double){
+    func hitTest(graphSize: Double, screenLocation: Double)->(frequency: Double, crosshair: Double){
         // init return values
         var frequency: Double = 0.0
         var crosshair: Double = 0.0
@@ -171,6 +174,7 @@ struct HitTestView: View {
                 break;
             }
         }
+        if hitTestTrace { print("HitTestView: hitTest called with return of: frequency: \(frequency), crosshair: \(crosshair)" )}
         return (frequency: frequency, crosshair: crosshair)
     }
     
@@ -220,6 +224,7 @@ struct HitTestView: View {
                 normalizedValue: scaleElement.valueNormalized,
                 screenSize: graphSize)
         }
+        if hitTestTrace { print("HitTestView: hitTestCore called with return of: frequency: \(frequency), crosshair: \(crosshair)" )}
         return (frequency, crosshair)
     }
 }

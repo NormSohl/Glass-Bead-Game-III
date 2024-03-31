@@ -45,7 +45,7 @@ class Sound {
     
     func setRootPitch(frequency: Double){
         audio.triad.setTriadRootPitch (frequency: frequency)
-        midi.setMidiRootPitch(frequency: frequency)
+        midi.setMidiReferencePitch(frequency: frequency)
     }
     
     func setXPitch(frequency: Double){

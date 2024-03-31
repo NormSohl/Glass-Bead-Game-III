@@ -81,7 +81,7 @@ struct ControlView: View {
 #endif
             Picker("MIDI Destination:" ,selection: $settings.destinationIndex) {
                 ForEach(sound.midi.midiDestinations.indices, id: \.self) { index in
-                    Text(sound.midi.midiDestinations[index].Name)
+                    Text(sound.midi.midiDestinations[index].name)
                 }
             }
             .onChange(of: settings.destinationIndex) {
@@ -91,10 +91,9 @@ struct ControlView: View {
             }
             .pickerStyle(.automatic)
                 .disabled(!settings.useMIDI)
-            
-            let details = "Midi channels 1, 2, and 3 are sending A: 440 hz to the \(sound.midi.midiDestinations[settings.destinationIndex].Name)"
-            
-            Button("TuneMidi"){
+                let details = "Midi channels 1, 2, and 3 are sending A: 440 hz" // to the \(sound.midi.midiDestinations[settings.destinationIndex].name)"
+ 
+            Button("Tune Midi"){
                 if settings.tuneMidi == false{
                     sound.midi.tuneStart()
                     settings.tuneMidi = true
@@ -104,8 +103,12 @@ struct ControlView: View {
                     settings.tuneMidi = false
                 }
             }
+            .buttonStyle(.borderedProminent)
+            //.padding(5)
+            //.r
+            //.background(color)
+            //.background
             //.accentColor(.white)
-            //.onChange(of: settings.tuneMidi) {sound.midi.tuneStart()}
             .alert(
                     "Tuning",
                     isPresented: $settings.tuneMidi,
@@ -121,7 +124,36 @@ struct ControlView: View {
                     Text(details)
                 }
                 .disabled(!settings.useMIDI)
-                
+
+            let details2 = "Midi test sent" //to the \(sound.midi.midiDestinations[settings.destinationIndex].name)"
+            
+            Button("Test"){
+                if settings.test == false{
+                    sound.midi.test(enable: true)
+                    settings.test = true
+                }
+                else {
+                    sound.midi.test(enable: false)
+                    settings.test = false
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .alert(
+                    "Testing",
+                    isPresented: $settings.test,
+                       presenting: details2
+                ) { details2 in
+                    Button(role: .cancel) {
+                        sound.midi.test(enable: false )
+                     } label: {
+                         Text("Stop")
+                     }
+                    
+                } message:{ details2 in
+                    Text(details2)
+                }
+                .disabled(!settings.useMIDI)
+            
             Spacer()
         }.padding([.leading,.trailing,.top], 20)
     }

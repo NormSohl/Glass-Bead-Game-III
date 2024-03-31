@@ -10,6 +10,8 @@ import AVFoundation
 //import AudioToolbox
 
 class Audio {
+    // manage debug audio trace
+    let audioTrace = false
     
     // AV components
     let engine: AVAudioEngine
@@ -20,13 +22,13 @@ class Audio {
     let echo = AVAudioUnitDelay()
     
     var triad = Triad()
-    var testAudio = TestAudio()
+    //var testAudio = TestAudio()
     
     // variables for systhesis of signal    var triad = Triad(sampleRate: 44100)
     var sampleRate: Double
     
     init(){
-        print("Audio init")
+        if audioTrace {print("Audio init")}
         // create the nodes for the audio chain
         engine = AVAudioEngine()
         mainMixer = engine.mainMixerNode
@@ -107,7 +109,7 @@ class Audio {
             )
             
         } catch {
-            print("Could not start engine: \(error)")
+            if audioTrace {print("Could not start engine: \(error)")}
         }
         //getOutputDevices()
     }
@@ -133,7 +135,7 @@ class Audio {
         //listDevices()
         //testAudio.test()
     //}
-    
+/*
     func listDevices(){
         // from: https://gist.github.com/glaurent/b4e9a2a1bc5223977df428e03d465560
         // this works, but I can't figure how to query number of channels
@@ -190,7 +192,7 @@ class Audio {
         }
     }
     
-    
+    */
     
     
     

@@ -20,6 +20,7 @@ class AppSettings: ObservableObject{
     @Published var useMIDI: Bool = true
     @Published var useMIDI_MPE: Bool = true
     @Published var tuneMidi: Bool = false
+    @Published var test: Bool = false
     @Published var selectedGraphShape: GraphShape = .Square
     
     
@@ -61,7 +62,7 @@ class AppSettings: ObservableObject{
     
     // MIDI data
     @Published var pitchBendRange: Int = 12
-    @Published var pitchBendRangeMPE: Int = 48
+    @Published var pitchBendRangeMPE: Int = 24
     
     init(){
         self.highestRatioNormalized = log(self.highestRatio) / log(2)

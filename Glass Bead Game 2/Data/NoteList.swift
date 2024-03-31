@@ -27,7 +27,7 @@ class NoteList{
     let octaves = [0,1,2,3,4,5,6,7,8]
     
     init(){
-        print ("NoteList: Init:")
+        //print ("NoteList: Init:")
         var noteNameIndex = 0
         var octaveIndex = 0
         
