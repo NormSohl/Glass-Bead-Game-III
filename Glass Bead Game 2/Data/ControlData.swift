@@ -23,7 +23,6 @@ class AppSettings: ObservableObject{
     @Published var test: Bool = false
     @Published var selectedGraphShape: GraphShape = .Square
     
-    
     // root pitch
     @Published var rootFrequency: Double = 261.6255653005986 // middle c  // no UI yet if ever. MIDI note number 60
     @Published var rootMidiNote: Int = 60  // middle c
@@ -38,6 +37,7 @@ class AppSettings: ObservableObject{
     @Published var highestRatio: Double = 3/1
     @Published var highestRatioNormalized:Double = 0.0 // initialized in the init function 0 to 1 is an octave. >1 for higher values
     @Published var destinationIndex:Int = 0
+    
     // Lowest ratio =
     // 2/3 is a fifth below 1/1
     // 1/2 gives a range of one octave below 1/1
@@ -54,7 +54,7 @@ class AppSettings: ObservableObject{
     
     // square graph: default. should really zero these out at init and let the UI set the appropriate values, even for defaults
     @Published var viewRotation: Double = 0.0 // rotation in degrees
-    @Published var viewScale: Double = 1.0 // scaling 0.0 equals no change. negitive and positve are possible .73 is good for 45 degree rotation
+    @Published var viewScale: Double = 1.0 // scaling 1.0 equals no change. negitive and positve are possible .73 is good for 45 degree rotation
     @Published var viewOffsetX: Double = 0.0 // horizontal offset
     @Published var viewOffsetY: Double = 0.0 // Vertical offset, inverted. negative numbers to go up
     @Published var contentMode: ContentMode = .fit

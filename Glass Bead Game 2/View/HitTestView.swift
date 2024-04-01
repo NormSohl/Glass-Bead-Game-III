@@ -32,13 +32,11 @@ struct HitTestView: View {
             if isHovering {
                 // hit test x
                 let xHit = hitTest(graphSize: size.width, screenLocation: hoverLocation.x)
-                //if isDrag {audioGeneric.setXPitch(frequency: xHit.frequency)}
                 sound.setXPitch(frequency: xHit.frequency)
                 crosshairPoint.x = xHit.crosshair
                 
                 // hit test y
                 let yHit = hitTest(graphSize: size.height, screenLocation: hoverLocation.y)
-                //if isDrag {audioGeneric.setYPitch(frequency: yHit.frequency)}
                 sound.setYPitch(frequency: yHit.frequency)
                 
                 // crosshair
@@ -65,17 +63,13 @@ struct HitTestView: View {
                 // invert y at the source
                 hoverLocation.y = height - hoverLocation.y
                 if isHovering == false{
-                    //print ("HitTestView: onContinousHover: Hover started")
-                }// \(hoverLocation)")}
+                }
                 isHovering = true
             case .ended:
                 isHovering = false
-                //sound.stopSound()  // should not be calling this here? disabling
-                //print ("HitTestView: onContinousHover: Hover ended")
             }
         }
         .onHover(perform: {_ in
-            //print("HitTestView: onContinousHover: onHover")
         })
         
 #if os(macOS)
@@ -83,32 +77,30 @@ struct HitTestView: View {
             // with shift pressed find a better solution for pen, since this is not implemented on iPad (yet?)
             // this is ONLY called when shift is pressed
             DragGesture(minimumDistance: 0, coordinateSpace: .local)
-                .modifiers(.shift)
-                .onChanged { value in
-                    if hitTestTrace {print("HitTestView: DragGesture called with shift")}
-                    hoverLocation = value.location
-                    // invert y at the source
-                    hoverLocation.y = height - hoverLocation.y
-                    isDrag = true
-                    isShift = true
-                    if isSound == false{
-                        sound.startSound(amp: 1)
-                        isSound = true
-                    }
-                    
+            .modifiers(.shift)
+            .onChanged { value in
+                if hitTestTrace {print("HitTestView: DragGesture called with shift")}
+                hoverLocation = value.location
+                // invert y at the source
+                hoverLocation.y = height - hoverLocation.y
+                isDrag = true
+                isShift = true
+                if isSound == false{
+                    sound.startSound(amp: 1)
+                    isSound = true
                 }
-                .onEnded { _ in
-                    hoverLocation = .zero  // don't think this is needed.
-                    isDrag = false
-                    isShift = false
-                    if !settings.pedal {
-                        sound.stopSound()
-                        isSound = false
-                    }
+            }
+            .onEnded { _ in
+                hoverLocation = .zero  // don't think this is needed.
+                isDrag = false
+                isShift = false
+                if !settings.pedal {
+                    sound.stopSound()
+                    isSound = false
                 }
+            }
         )
 #endif
-
         // for touch and pen
         // only called without shift pressed
         .gesture(
@@ -177,18 +169,6 @@ struct HitTestView: View {
         if hitTestTrace { print("HitTestView: hitTest called with return of: frequency: \(frequency), crosshair: \(crosshair)" )}
         return (frequency: frequency, crosshair: crosshair)
     }
-    
-    //func startAudio (){
-    //    triad.enableRootTone(enable: settings.playDrone)
-    //    triad.enableXTone(enable: settings.playNoteX)
-    //    triad.enableYTone(enable: settings.playNoteY)
-        
-    //    audio.startAudio(amp: 1)
-    //}
-    
-    //func stopAudio (){
-    //    audio.stopAudio()
-    //}
     
     func hitTestCore(
         screenLocation: Double,

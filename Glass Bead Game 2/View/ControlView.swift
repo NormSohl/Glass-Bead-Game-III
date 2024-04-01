@@ -55,12 +55,7 @@ struct ControlView: View {
             .onChange(of: settings.selectedGraphShape){
                 setView()
             }
-                
-            //Divider()
-                
-            //Text("Sound source:")
-            //Text("(Turn off internal synth in order to enable MIDI output)")
-                
+    
             Divider()
                 
             Toggle("Use internal synth", isOn:$settings.useSynth)
@@ -104,11 +99,6 @@ struct ControlView: View {
                 }
             }
             .buttonStyle(.borderedProminent)
-            //.padding(5)
-            //.r
-            //.background(color)
-            //.background
-            //.accentColor(.white)
             .alert(
                     "Tuning",
                     isPresented: $settings.tuneMidi,
