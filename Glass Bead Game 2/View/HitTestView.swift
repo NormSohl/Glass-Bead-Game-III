@@ -13,13 +13,13 @@ var height = 0.0  // placed in global scope to resolve inconsistant behavior whe
 
 struct HitTestView: View {
     // manage debug trace in hitTest
-    let hitTestTrace = false
+    let hitTestTrace = true
     
     let scale: Scale
     let settings: AppSettings
     
     @State private var hoverLocation: CGPoint = .zero
-    @State private var isHovering = false
+    //@State private var isHovering = false
     @State private var isDrag = false
     @State private var isShift = false
     @State private var isSound = false
@@ -29,47 +29,47 @@ struct HitTestView: View {
             var crosshairPoint:CGPoint = .zero
             height = size.height
             
-            if isHovering {
-                // hit test x
-                let xHit = hitTest(graphSize: size.width, screenLocation: hoverLocation.x)
-                sound.setXPitch(frequency: xHit.frequency)
-                crosshairPoint.x = xHit.crosshair
-                
-                // hit test y
-                let yHit = hitTest(graphSize: size.height, screenLocation: hoverLocation.y)
-                sound.setYPitch(frequency: yHit.frequency)
-                
-                // crosshair
-                crosshairPoint.y = yHit.crosshair
-                crosshairPoint.y = height - crosshairPoint.y
-                
-                // draw crosshair on graph
-                context.stroke(
-                    Path { path in
-                        let crossSize:Double = 8
-                        path.move (to: CGPoint(x: crosshairPoint.x, y: crosshairPoint.y + crossSize))
-                        path.addLine(to: CGPoint(x: crosshairPoint.x, y: crosshairPoint.y - crossSize))
-                        path.move (to: CGPoint(x: crosshairPoint.x-crossSize, y: crosshairPoint.y))
-                        path.addLine(to: CGPoint(x: crosshairPoint.x+crossSize, y: crosshairPoint.y))
-                    }, with: .color(.white),
-                    lineWidth: 3
-                )
-            }
+            if hitTestTrace {print("HitTestView: isHovering")}
+            // hit test x
+            let xHit = hitTest(graphSize: size.width, screenLocation: hoverLocation.x)
+            sound.setXPitch(frequency: xHit.frequency)
+            crosshairPoint.x = xHit.crosshair
+            
+            // hit test y
+            let yHit = hitTest(graphSize: size.height, screenLocation: hoverLocation.y)
+            sound.setYPitch(frequency: yHit.frequency)
+            
+            // crosshair
+            crosshairPoint.y = yHit.crosshair
+            crosshairPoint.y = height - crosshairPoint.y
+            
+            // draw crosshair on graph
+            context.stroke(
+                Path { path in
+                    let crossSize:Double = 8
+                    path.move (to: CGPoint(x: crosshairPoint.x, y: crosshairPoint.y + crossSize))
+                    path.addLine(to: CGPoint(x: crosshairPoint.x, y: crosshairPoint.y - crossSize))
+                    path.move (to: CGPoint(x: crosshairPoint.x-crossSize, y: crosshairPoint.y))
+                    path.addLine(to: CGPoint(x: crosshairPoint.x+crossSize, y: crosshairPoint.y))
+                }, with: .color(.white),
+                lineWidth: 3
+            )
         }
+        
+        // only needed for mouse input, so that crosshair is updated on hover
         .onContinuousHover { phase in
+            if hitTestTrace {print("HitTestView: onContinuousHover")}
             switch phase {
             case .active(let location):
                 hoverLocation = location
-                // invert y at the source
                 hoverLocation.y = height - hoverLocation.y
-                if isHovering == false{
-                }
-                isHovering = true
             case .ended:
-                isHovering = false
+                if hitTestTrace {print("HitTestView: onContinuousHover .ended")}
             }
         }
+        // not needed at all. Just FYI at the moment
         .onHover(perform: {_ in
+            if hitTestTrace {print("HitTestView: onHover")}
         })
         
 #if os(macOS)
@@ -91,7 +91,7 @@ struct HitTestView: View {
                 }
             }
             .onEnded { _ in
-                hoverLocation = .zero  // don't think this is needed.
+                //hoverLocation = .zero  // don't think this is needed.
                 isDrag = false
                 isShift = false
                 if !settings.pedal {
@@ -106,6 +106,7 @@ struct HitTestView: View {
         .gesture(
             DragGesture(minimumDistance: 0, coordinateSpace: .local)
                 .onChanged { value in
+                    if hitTestTrace {print("HitTestView: DragGesture .onChanged called without shift")}
                     hoverLocation = value.location
                     hoverLocation.y = height - hoverLocation.y
                     isDrag = true
@@ -119,16 +120,18 @@ struct HitTestView: View {
                         sound.startSound(amp: 1)
                         isSound = true
                     }
-                    if hitTestTrace {print("HitTestView: DragGesture called. isDrag = \(isDrag), isShift = \(isShift), isSound = \(isSound)")}
+                    if hitTestTrace {print("HitTestView: DragGesture .onChanged called. isDrag = \(isDrag), isShift = \(isShift), isSound = \(isSound)")}
                 }
                 .onEnded { _ in
                     //hoverLocation = .zero  // this has been causing occasional bad values leaking into drag gestures. Don't think it is actually needed.
                     isDrag = false
                     isShift = false
-                    isSound = false
                     // if pedal is true, then use pointer out of graph to turn off sound
-                    if !settings.pedal {sound.stopSound()}
-                    if hitTestTrace {print("HitTestView: DragGesture: Drag ended without shift. isDrag = \(isDrag), isShift = \(isShift), isSound = \(isSound)")}
+                    if !settings.pedal {
+                        sound.stopSound()
+                        isSound = false
+                    }
+                    if hitTestTrace {print("HitTestView: DragGesture: .onEnded called. Drag ended without shift. isDrag = \(isDrag), isShift = \(isShift), isSound = \(isSound)")}
                 }
         )
 #if os(iOS)
