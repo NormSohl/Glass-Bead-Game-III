@@ -30,16 +30,20 @@ struct DiamondView: View {
                         normalizedValue: diamond.xElement.valueNormalized,
                         screenSize:size.width)
 
-                    // diamond size
-                    var diamondSize = (size.width / 35) * diamond.sizeNormalized
+                    // diamond size (15% smaller than the original sizing, per Norm)
+                    var diamondSize = (size.width / 35) * diamond.sizeNormalized * 0.85
                     if diamondSize < 4 {diamondSize =  4}
-                    
+
                     // diamond color
                     var diamondShade = diamond.sizeNormalized
                     if diamondShade > 0.6 {diamondShade = 1.0}
                     if diamondShade <= 0.6 {diamondShade = diamondShade * 1.5} // brighten the fifth
                     var color = Color(red: diamondShade, green: diamondShade, blue: 0.0)
-                    if diamond.mydissonance == 1.0 {color = Color(red: 0.0, green: 0.0, blue: 0.0)}
+                    // was pure black - now that black is meaningful elsewhere (the dissonance
+                    // field's zero-roughness color), a black diamond blended into the background
+                    // instead of reading as a marker. Light gray stays visually distinct from
+                    // both the yellow consonance scale and the red triple-dissonance diamond.
+                    if diamond.mydissonance == 1.0 {color = Color(red: 0.75, green: 0.75, blue: 0.78)}
                     if diamond.mydissonance == 3.0 {color = Color(red: 0.8, green: 0.3, blue: 0.3)}
                     //if element.mydissonance == 2.0 {color = Color(red: 0.9, green: 0.3, blue: 0.3)}  // 2 never appears
                     //print("DiamondView: element.dissonance = \(element.mydissonance)")
