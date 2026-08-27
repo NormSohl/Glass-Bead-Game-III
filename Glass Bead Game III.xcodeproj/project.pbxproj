@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0634BD102B8A8912001E3644 /* TickView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0634BD0F2B8A8912001E3644 /* TickView.swift */; };
-		06824BDE2B881E3C002E9661 /* Glass_Bead_Game_2App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BDD2B881E3C002E9661 /* Glass_Bead_Game_2App.swift */; };
+		06824BDE2B881E3C002E9661 /* Glass_Bead_Game_IIIApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BDD2B881E3C002E9661 /* Glass_Bead_Game_IIIApp.swift */; };
 		06824BE22B881E3D002E9661 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 06824BE12B881E3D002E9661 /* Assets.xcassets */; };
 		06824BE62B881E3D002E9661 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 06824BE52B881E3D002E9661 /* Preview Assets.xcassets */; };
 		06824BFC2B886963002E9661 /* DissonanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF52B886962002E9661 /* DissonanceView.swift */; };
@@ -32,10 +32,10 @@
 
 /* Begin PBXFileReference section */
 		0634BD0F2B8A8912001E3644 /* TickView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickView.swift; sourceTree = "<group>"; };
-		06824BDA2B881E3C002E9661 /* Glass Bead Game 2.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Glass Bead Game 2.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		06824BDD2B881E3C002E9661 /* Glass_Bead_Game_2App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Glass_Bead_Game_2App.swift; sourceTree = "<group>"; };
+		06824BDA2B881E3C002E9661 /* Glass Bead Game III.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Glass Bead Game III.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		06824BDD2B881E3C002E9661 /* Glass_Bead_Game_IIIApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Glass_Bead_Game_IIIApp.swift; sourceTree = "<group>"; };
 		06824BE12B881E3D002E9661 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		06824BE32B881E3D002E9661 /* Glass_Bead_Game_2.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Glass_Bead_Game_2.entitlements; sourceTree = "<group>"; };
+		06824BE32B881E3D002E9661 /* Glass_Bead_Game_III.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Glass_Bead_Game_III.entitlements; sourceTree = "<group>"; };
 		06824BE52B881E3D002E9661 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		06824BF52B886962002E9661 /* DissonanceView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DissonanceView.swift; sourceTree = "<group>"; };
 		06824BF62B886962002E9661 /* ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -84,7 +84,7 @@
 		06824BD12B881E3C002E9661 = {
 			isa = PBXGroup;
 			children = (
-				06824BDC2B881E3C002E9661 /* Glass Bead Game 2 */,
+				06824BDC2B881E3C002E9661 /* Glass Bead Game III */,
 				06824BDB2B881E3C002E9661 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -92,23 +92,23 @@
 		06824BDB2B881E3C002E9661 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				06824BDA2B881E3C002E9661 /* Glass Bead Game 2.app */,
+				06824BDA2B881E3C002E9661 /* Glass Bead Game III.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		06824BDC2B881E3C002E9661 /* Glass Bead Game 2 */ = {
+		06824BDC2B881E3C002E9661 /* Glass Bead Game III */ = {
 			isa = PBXGroup;
 			children = (
-				06824BDD2B881E3C002E9661 /* Glass_Bead_Game_2App.swift */,
+				06824BDD2B881E3C002E9661 /* Glass_Bead_Game_IIIApp.swift */,
 				06D0626B2BAA9A9000C68262 /* Data */,
 				06824BF42B88691F002E9661 /* View */,
 				06D062232BAA951B00C68262 /* Sound */,
 				06824BE12B881E3D002E9661 /* Assets.xcassets */,
-				06824BE32B881E3D002E9661 /* Glass_Bead_Game_2.entitlements */,
+				06824BE32B881E3D002E9661 /* Glass_Bead_Game_III.entitlements */,
 				06824C092B886A5C002E9661 /* Preview Content */,
 			);
-			path = "Glass Bead Game 2";
+			path = "Glass Bead Game III";
 			sourceTree = SOURCE_ROOT;
 		};
 		06824BF42B88691F002E9661 /* View */ = {
@@ -123,7 +123,7 @@
 				0634BD0F2B8A8912001E3644 /* TickView.swift */,
 			);
 			name = View;
-			path = "Glass Bead Game 2/View";
+			path = "Glass Bead Game III/View";
 			sourceTree = SOURCE_ROOT;
 		};
 		06824C092B886A5C002E9661 /* Preview Content */ = {
@@ -142,7 +142,7 @@
 				06D062242BAA952900C68262 /* Audio */,
 			);
 			name = Sound;
-			path = "Glass Bead Game 2/Sound";
+			path = "Glass Bead Game III/Sound";
 			sourceTree = SOURCE_ROOT;
 		};
 		06D062242BAA952900C68262 /* Audio */ = {
@@ -156,7 +156,7 @@
 				06D0627F2BAFB99100C68262 /* testAudio.swift */,
 			);
 			name = Audio;
-			path = "Glass Bead Game 2/Sound/Audio";
+			path = "Glass Bead Game III/Sound/Audio";
 			sourceTree = SOURCE_ROOT;
 		};
 		06D0622C2BAA953300C68262 /* Score */ = {
@@ -210,7 +210,7 @@
 				06D062712BAA9D5500C68262 /* MIDI.swift */,
 			);
 			name = MIDI;
-			path = "Glass Bead Game 2/Sound/MIDI";
+			path = "Glass Bead Game III/Sound/MIDI";
 			sourceTree = SOURCE_ROOT;
 		};
 		06D0626B2BAA9A9000C68262 /* Data */ = {
@@ -227,9 +227,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		06824BD92B881E3C002E9661 /* Glass Bead Game 2 */ = {
+		06824BD92B881E3C002E9661 /* Glass Bead Game III */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 06824BE92B881E3D002E9661 /* Build configuration list for PBXNativeTarget "Glass Bead Game 2" */;
+			buildConfigurationList = 06824BE92B881E3D002E9661 /* Build configuration list for PBXNativeTarget "Glass Bead Game III" */;
 			buildPhases = (
 				06824BD62B881E3C002E9661 /* Sources */,
 				06824BD72B881E3C002E9661 /* Frameworks */,
@@ -239,9 +239,9 @@
 			);
 			dependencies = (
 			);
-			name = "Glass Bead Game 2";
-			productName = "Glass Bead Game 2";
-			productReference = 06824BDA2B881E3C002E9661 /* Glass Bead Game 2.app */;
+			name = "Glass Bead Game III";
+			productName = "Glass Bead Game III";
+			productReference = 06824BDA2B881E3C002E9661 /* Glass Bead Game III.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -259,7 +259,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 06824BD52B881E3C002E9661 /* Build configuration list for PBXProject "Glass Bead Game 2" */;
+			buildConfigurationList = 06824BD52B881E3C002E9661 /* Build configuration list for PBXProject "Glass Bead Game III" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -272,7 +272,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				06824BD92B881E3C002E9661 /* Glass Bead Game 2 */,
+				06824BD92B881E3C002E9661 /* Glass Bead Game III */,
 			);
 		};
 /* End PBXProject section */
@@ -296,7 +296,7 @@
 			files = (
 				06824BFF2B886963002E9661 /* DiamondView.swift in Sources */,
 				06D0626C2BAA9A9000C68262 /* ControlData.swift in Sources */,
-				06824BDE2B881E3C002E9661 /* Glass_Bead_Game_2App.swift in Sources */,
+				06824BDE2B881E3C002E9661 /* Glass_Bead_Game_IIIApp.swift in Sources */,
 				06824BFD2B886963002E9661 /* ContentView.swift in Sources */,
 				06824BFE2B886963002E9661 /* HitTestView.swift in Sources */,
 				06D062702BAA9C4E00C68262 /* Sound.swift in Sources */,
@@ -442,12 +442,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = "Glass Bead Game 2/Glass_Bead_Game_2.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "Glass Bead Game III/Glass_Bead_Game_III.entitlements";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_ASSET_PATHS = "\"Glass Bead Game 2/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"Glass Bead Game III/Preview Content\"";
 				DEVELOPMENT_TEAM = 342G7AUKSH;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -469,7 +469,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.sohl.norm.Glass-Bead-Game-2";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.sohl.norm.Glass-Bead-Game-III";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
@@ -485,12 +485,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = "Glass Bead Game 2/Glass_Bead_Game_2.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "Glass Bead Game III/Glass_Bead_Game_III.entitlements";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_ASSET_PATHS = "\"Glass Bead Game 2/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"Glass Bead Game III/Preview Content\"";
 				DEVELOPMENT_TEAM = 342G7AUKSH;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -512,7 +512,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.sohl.norm.Glass-Bead-Game-2";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.sohl.norm.Glass-Bead-Game-III";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
@@ -526,7 +526,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		06824BD52B881E3C002E9661 /* Build configuration list for PBXProject "Glass Bead Game 2" */ = {
+		06824BD52B881E3C002E9661 /* Build configuration list for PBXProject "Glass Bead Game III" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				06824BE72B881E3D002E9661 /* Debug */,
@@ -535,7 +535,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		06824BE92B881E3D002E9661 /* Build configuration list for PBXNativeTarget "Glass Bead Game 2" */ = {
+		06824BE92B881E3D002E9661 /* Build configuration list for PBXNativeTarget "Glass Bead Game III" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				06824BEA2B881E3D002E9661 /* Debug */,
