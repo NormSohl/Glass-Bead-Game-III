@@ -11,141 +11,188 @@ struct ControlView: View {
     @ObservedObject var settings: AppSettings
     
     var body: some View {
-        VStack(
-            alignment: .leading
-        ){
-            let color = Color(red: 0.2, green: 0.4, blue: 0.8)
-            Text("Glass Bead Game").bold().font(Font.headline)
-            Divider()
-            Toggle("Diamonds", isOn: $settings.showDiamonds).tint(color)
-            Toggle("Drone", isOn: $settings.playDrone).tint(color).onChange(of: settings.playDrone){sound.enableDrone = settings.playDrone}
-            Toggle("Note X", isOn: $settings.playNoteX).tint(color).onChange(of: settings.playNoteX){sound.enableX = settings.playNoteX}
-            Toggle("Note Y", isOn: $settings.playNoteY).tint(color).onChange(of: settings.playNoteY){sound.enableY = settings.playNoteY}
-            Toggle("Snapping", isOn: $settings.snap).tint(color)
-            Toggle("pedal", isOn: $settings.pedal).tint(color)
-            Divider()
-#if os(iOS)
-            Text("Harmonics:")
-#endif
-            Picker("Harmonics:", selection: $settings.selectedLimit) { // picker does not show label. Don't know why. using Text to fake
-                Text("3").tag(Limit.Three)
-                Text("5").tag(Limit.Five)
-                Text("7").tag(Limit.Seven)
-                Text("9").tag(Limit.Nine)
-                Text("11").tag(Limit.Eleven)
-                Text("13").tag(Limit.Thirteen)
-                Text("17").tag(Limit.Seventeen)
-                Text("19").tag(Limit.Nineteen)
-            }
-            .accentColor(.blue)
-            .pickerStyle(.segmented)
-            Text("(Number of harmonic partials used to generate the scale used in the graph)")
-            Divider()
-            
-#if os(iOS)
-            Text("View:")
-#endif
-            Picker("View:", selection: $settings.selectedGraphShape){
-                ForEach(GraphShape.allCases) { shape in
-                    Text(shape.rawValue.capitalized)
-                }
-            }
-            .accentColor(.blue)
-            .pickerStyle(.segmented)
-            .onChange(of: settings.selectedGraphShape){
-                setView()
-            }
-    
-            Divider()
+        ZStack{
+            Color.black.ignoresSafeArea(.all)
+            VStack(
+                alignment: .leading
+            ){
+                let tintcolor = Color(red: 0.2, green: 0.4, blue: 0.8)
+                //let textcolor = Color(.white)
                 
-            Toggle("Use internal synth", isOn:$settings.useSynth)
-                .tint(color)
-                .onChange(of: settings.useSynth) {sound.outputToAudio = settings.useSynth}
-            
-            Toggle("Use Midi", isOn:$settings.useMIDI)
-                .tint(color)
-                .onChange(of: settings.useMIDI) {sound.outputToMidi = settings.useMIDI}
-            
-            
-            Toggle("Use MPE", isOn:$settings.useMIDI_MPE)
-                .tint(color)
-                .onChange(of: settings.useMIDI_MPE) {sound.midi.useMPE(useMpe: settings.useMIDI_MPE)}
-                .disabled(!settings.useMIDI)
+                Text("A Glass Bead Game").bold().font(Font.headline).foregroundStyle(.white)
+                Divider()
+                Toggle(isOn: $settings.showDiamonds, label:{
+                    Text("Diamonds")
+                })
+                .tint(tintcolor)
+                .foregroundStyle(.white)
+                
+                Toggle("Drone", isOn: $settings.playDrone)
+                    .tint(tintcolor)
+                    .onChange(of: settings.playDrone){sound.enableDrone = settings.playDrone}
+                    .foregroundStyle(.white)
+                
+                Toggle("Note X", isOn: $settings.playNoteX)
+                    .tint(tintcolor)
+                    .onChange(of: settings.playNoteX){sound.enableX = settings.playNoteX}
+                    .foregroundStyle(.white)
+
+                Toggle("Note Y", isOn: $settings.playNoteY)
+                    .tint(tintcolor)
+                    .onChange(of: settings.playNoteY){sound.enableY = settings.playNoteY}
+                    .foregroundStyle(.white)
+                    .foregroundStyle(.white)
+
+                Toggle("Snapping", isOn: $settings.snap)
+                    .tint(tintcolor)
+                    .foregroundStyle(.white)
+                
+                Toggle("pedal", isOn: $settings.pedal)
+                    .tint(tintcolor)
+                    .foregroundStyle(.white)
+
+                Divider()
 #if os(iOS)
-            Text("MIDI Destination:")
+                Text("Harmonics:").foregroundStyle(.white)
 #endif
-            Picker("MIDI Destination:" ,selection: $settings.destinationIndex) {
-                ForEach(sound.midi.midiDestinations.indices, id: \.self) { index in
-                    Text(sound.midi.midiDestinations[index].name)
+                Picker("Harmonics:", selection: $settings.selectedLimit) { // picker does not show label. Don't know why. using Text to fake
+                    Text("3").tag(Limit.Three)
+                    Text("5").tag(Limit.Five)
+                    Text("7").tag(Limit.Seven)
+                    Text("9").tag(Limit.Nine)
+                    Text("11").tag(Limit.Eleven)
+                    Text("13").tag(Limit.Thirteen)
+                    Text("17").tag(Limit.Seventeen)
+                    Text("19").tag(Limit.Nineteen)
                 }
-            }
-            .onChange(of: settings.destinationIndex) {
-                let destinationIndex = settings.destinationIndex
-                //print(settings.destinationIndex,destinationIndex)
-                sound.midi.setMidiDestination(destination: destinationIndex)
-            }
-            .pickerStyle(.automatic)
+                .listItemTint(.blue)
+                .background(tintcolor)
+                //.foregroundStyle(tintcolor)
+                //.accentColor(tintcolor)
+                .pickerStyle(.segmented)
+                //.foregroundColor(.white)
+                //.colorInvert()
+                Text("(Number of harmonic partials used to generate the scale used in the graph)").foregroundStyle(.white)
+                
+                Divider()
+                
+#if os(iOS)
+                Text("View:").foregroundStyle(.white)
+#endif
+                Picker("View:", selection: $settings.selectedGraphShape){
+                    ForEach(GraphShape.allCases) { shape in
+                        Text(shape.rawValue.capitalized).foregroundStyle(.white)
+                    }
+                }
+                .listItemTint(.white)
+                .background(tintcolor)
+                //.accentColor(.blue)
+                .pickerStyle(.segmented)
+                //.foregroundStyle(.white)
+                .onChange(of: settings.selectedGraphShape){
+                    setView()
+                }
+                
+                Divider()
+                
+                Toggle("Use internal synth", isOn:$settings.useSynth)
+                    .tint(tintcolor)
+                    .onChange(of: settings.useSynth) {sound.outputToAudio = settings.useSynth}
+                    .foregroundStyle(.white)
+                
+                Toggle("Use Midi", isOn:$settings.useMIDI)
+                    .tint(tintcolor)
+                    .onChange(of: settings.useMIDI) {sound.outputToMidi = settings.useMIDI}
+                    .foregroundStyle(.white)
+                
+                Toggle("Use MPE", isOn:$settings.useMIDI_MPE)
+                    .tint(tintcolor)
+                    .onChange(of: settings.useMIDI_MPE) {sound.midi.useMPE(useMpe: settings.useMIDI_MPE)}
+                    .disabled(!settings.useMIDI)
+                    .foregroundStyle(.white)
+                
+                Divider().foregroundColor(.white)
+#if os(iOS)
+                Text("MIDI Destination:").foregroundStyle(.white)
+#endif
+                Picker("MIDI Destination:" ,selection: $settings.destinationIndex) {
+                    ForEach(sound.midi.midiDestinations.indices, id: \.self) { index in
+                        Text(sound.midi.midiDestinations[index].name).foregroundStyle(.white)
+                    }
+                }
+                .listItemTint(.white)
+                .background(tintcolor)
+                .onChange(of: settings.destinationIndex) {
+                    let destinationIndex = settings.destinationIndex
+                    //print(settings.destinationIndex,destinationIndex)
+                    sound.midi.setMidiDestination(destination: destinationIndex)
+                }
+                .pickerStyle(.menu)
                 .disabled(!settings.useMIDI)
+                .tint(.white)
+                
+                Divider()
+                
                 let details = "Midi channels 1, 2, and 3 are sending A: 440 hz" // to the \(sound.midi.midiDestinations[settings.destinationIndex].name)"
- 
-            Button("Tune Midi"){
-                if settings.tuneMidi == false{
-                    sound.midi.tuneStart()
-                    settings.tuneMidi = true
+                Button("Tune Midi"){
+                    if settings.tuneMidi == false{
+                        sound.midi.tuneStart()
+                        settings.tuneMidi = true
+                    }
+                    else {
+                        sound.midi.tuneStop()
+                        settings.tuneMidi = false
+                    }
                 }
-                else {
-                    sound.midi.tuneStop()
-                    settings.tuneMidi = false
-                }
-            }
-            .buttonStyle(.borderedProminent)
-            .alert(
+                .buttonStyle(.borderedProminent)
+                .alert(
                     "Tuning",
                     isPresented: $settings.tuneMidi,
-                       presenting: details
+                    presenting: details
                 ) { details in
                     Button(role: .cancel) {
                         sound.midi.tuneStop()
-                     } label: {
-                         Text("Stop")
-                     }
+                    } label: {
+                        Text("Stop")
+                    }
                     
                 } message:{ details in
                     Text(details)
                 }
                 .disabled(!settings.useMIDI)
-
-            let details2 = "Midi test sent" //to the \(sound.midi.midiDestinations[settings.destinationIndex].name)"
-            
-            Button("Test"){
-                if settings.test == false{
-                    sound.midi.test(enable: true)
-                    settings.test = true
+                
+                let details2 = "Midi test sent" //to the \(sound.midi.midiDestinations[settings.destinationIndex].name)"
+                
+                Button("Test"){
+                    if settings.test == false{
+                        sound.midi.test(enable: true)
+                        settings.test = true
+                    }
+                    else {
+                        sound.midi.test(enable: false)
+                        settings.test = false
+                    }
                 }
-                else {
-                    sound.midi.test(enable: false)
-                    settings.test = false
-                }
-            }
-            .buttonStyle(.borderedProminent)
-            .alert(
+                .buttonStyle(.borderedProminent)
+                .alert(
                     "Testing",
                     isPresented: $settings.test,
-                       presenting: details2
+                    presenting: details2
                 ) { details2 in
                     Button(role: .cancel) {
                         sound.midi.test(enable: false )
-                     } label: {
-                         Text("Stop")
-                     }
+                    } label: {
+                        Text("Stop")
+                    }
                     
                 } message:{ details2 in
                     Text(details2)
                 }
                 .disabled(!settings.useMIDI)
-            
-            Spacer()
-        }.padding([.leading,.trailing,.top], 20)
+                
+                Spacer()
+            }.padding([.leading,.trailing,.top], 20)
+        }
     }
     
     func setView() {

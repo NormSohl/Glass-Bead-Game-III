@@ -23,7 +23,8 @@ struct Ticks: View {
     //let Mysize: Double
     
     var body: some View {
-        Canvas(){ context, size in
+        Canvas(){
+            context, size in
             var tickLocation = 0.0
             var startLocation = CGPoint(x:0.0,y:0.0)
             var endLocation = CGPoint(x:0.0,y:0.0)
@@ -88,7 +89,7 @@ struct Ticks: View {
                 while myTick < 0 {myTick = myTick + 12}
                 while myTick > 12 {myTick = myTick - 12}
                 
-                let _ = context.draw(Text(noteNames[myTick]).font(.custom("SFPro", size: 15)),at: textLocation)
+                let _ = context.draw(Text(noteNames[myTick]).font(.custom("SFPro", size: 15)).foregroundStyle(.white),at: textLocation)
                 //let _ = context.draw(Text("X").font(.custom("SFPro", size: 15)),at: textLocation)
                 //let _ = context.draw(Text(noteNames[tick]).font(.custom("SFPro", size: 15)),at: textLocation)
             }

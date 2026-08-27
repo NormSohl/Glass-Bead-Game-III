@@ -67,10 +67,11 @@ struct HitTestView: View {
                 if hitTestTrace {print("HitTestView: onContinuousHover .ended")}
             }
         }
-        // not needed at all. Just FYI at the moment
+        // not needed at all?
         .onHover(perform: {_ in
             if hitTestTrace {print("HitTestView: onHover")}
-        })
+        }
+    )
         
 #if os(macOS)
         .gesture(
