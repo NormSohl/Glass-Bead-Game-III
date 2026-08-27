@@ -32,6 +32,13 @@ struct ControlView: View {
                 .tint(tintcolor)
                 .foregroundStyle(.white)
 
+                Toggle(isOn: $settings.useLinearHarmonicWeighting, label:{
+                    Text("Linear Weighting")
+                })
+                .tint(tintcolor)
+                .foregroundStyle(.white)
+                .disabled(!settings.showDissonance)
+
                 Toggle("Drone", isOn: $settings.playDrone)
                     .tint(tintcolor)
                     .onChange(of: settings.playDrone){sound.enableDrone = settings.playDrone}

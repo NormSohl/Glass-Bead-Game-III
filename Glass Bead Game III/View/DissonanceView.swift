@@ -28,11 +28,16 @@ struct DissonanceView: View {
             Canvas { context, size in
                 guard let limit = limitMap[settings.selectedLimit], limit > 0 else { return }
 
+                let weighting: Dissonance.HarmonicWeighting = settings.useLinearHarmonicWeighting
+                    ? { Dissonance.linearHarmonicWeight($0, limit: limit) }
+                    : Dissonance.harmonicWeight
+
                 let grid = Dissonance.roughnessGrid(
                     scale: scale,
                     rootFrequency: settings.rootFrequency,
                     limit: limit,
-                    resolution: gridResolution
+                    resolution: gridResolution,
+                    weighting: weighting
                 )
                 guard let maxRoughness = grid.flatMap({ $0 }).max(), maxRoughness > 0 else { return }
 

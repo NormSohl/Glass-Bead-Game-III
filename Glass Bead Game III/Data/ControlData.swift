@@ -11,6 +11,7 @@ import SwiftUI
 class AppSettings: ObservableObject{
     @Published var showDiamonds: Bool = true
     @Published var showDissonance: Bool = false // opt-in: unverified visually, and recomputes a full grid on toggle/limit/resize
+    @Published var useLinearHarmonicWeighting: Bool = true // linear vs. 1/n falloff for the dissonance field's harmonic weighting; linear is the default
     @Published var selectedLimit: Limit = Limit.eleven
     @Published var playDrone: Bool = true
     @Published var playNoteX: Bool = true
