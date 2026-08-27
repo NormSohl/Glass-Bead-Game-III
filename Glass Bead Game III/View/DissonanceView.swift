@@ -54,12 +54,14 @@ struct DissonanceView: View {
         }
     }
 
-    // Low roughness fades toward transparent, so consonant regions blend into the black
-    // background instead of competing with the diamonds/grid drawn on top of this layer;
-    // high roughness glows warm. A first guess, not a considered design - needs eyes on
-    // the actual render to know if it reads well at all.
+    // Inverted from the first pass: no dissonance is light (a warm cream), maximum
+    // dissonance is black - opaque throughout, since roughness is now encoded directly in
+    // luminance rather than faded into the black background via opacity. A first guess,
+    // not a considered design - needs eyes on the actual render to know if it reads well,
+    // and note this now fully covers the graph rather than only highlighting hot spots.
     private func roughnessColor(_ normalizedRoughness: Double) -> Color {
         let t = min(max(normalizedRoughness, 0), 1)
-        return Color(red: t, green: t * 0.35, blue: t * 0.15, opacity: t * 0.9)
+        let lightR = 1.0, lightG = 0.957, lightB = 0.878 // warm cream at zero roughness
+        return Color(red: lightR * (1 - t), green: lightG * (1 - t), blue: lightB * (1 - t), opacity: 1.0)
     }
 }

@@ -124,15 +124,16 @@ final class DissonanceTests: XCTestCase {
 
     // MARK: pluggable weighting scheme
 
-    func testRoughnessBetweenTonesDefaultsToOneOverNWeighting() {
-        let withDefault = Dissonance.roughnessBetweenTones(frequencyA: 200, frequencyB: 250, limit: 5)
-        let withExplicitOneOverN = Dissonance.roughnessBetweenTones(frequencyA: 200, frequencyB: 250, limit: 5, weighting: Dissonance.harmonicWeight)
-        XCTAssertEqual(withDefault, withExplicitOneOverN, accuracy: 0.0000001)
+    func testRoughnessBetweenTonesDefaultsToLinearWeighting() {
+        let limit = 5
+        let withDefault = Dissonance.roughnessBetweenTones(frequencyA: 200, frequencyB: 250, limit: limit)
+        let withExplicitLinear = Dissonance.roughnessBetweenTones(frequencyA: 200, frequencyB: 250, limit: limit, weighting: { Dissonance.linearHarmonicWeight($0, limit: limit) })
+        XCTAssertEqual(withDefault, withExplicitLinear, accuracy: 0.0000001)
     }
 
-    func testRoughnessBetweenTonesWithLinearWeightingDiffersFromOneOverN() {
+    func testLinearWeightingDiffersFromOneOverNWeighting() {
         let limit = 5
-        let oneOverN = Dissonance.roughnessBetweenTones(frequencyA: 200, frequencyB: 250, limit: limit)
+        let oneOverN = Dissonance.roughnessBetweenTones(frequencyA: 200, frequencyB: 250, limit: limit, weighting: Dissonance.harmonicWeight)
         let linear = Dissonance.roughnessBetweenTones(frequencyA: 200, frequencyB: 250, limit: limit, weighting: { Dissonance.linearHarmonicWeight($0, limit: limit) })
         XCTAssertNotEqual(oneOverN, linear, accuracy: 0.0000001)
     }
@@ -140,7 +141,7 @@ final class DissonanceTests: XCTestCase {
     func testRoughnessGridAcceptsACustomWeighting() {
         let scale = Scale(limit: 5, highestRatio: 2.0, lowestRatio: 0.5)
         let limit = 5
-        let oneOverN = Dissonance.roughnessGrid(scale: scale, rootFrequency: 261.63, limit: limit, resolution: 6)
+        let oneOverN = Dissonance.roughnessGrid(scale: scale, rootFrequency: 261.63, limit: limit, resolution: 6, weighting: Dissonance.harmonicWeight)
         let linear = Dissonance.roughnessGrid(scale: scale, rootFrequency: 261.63, limit: limit, resolution: 6, weighting: { Dissonance.linearHarmonicWeight($0, limit: limit) })
         XCTAssertNotEqual(oneOverN[3][3], linear[3][3], accuracy: 0.0000001)
     }

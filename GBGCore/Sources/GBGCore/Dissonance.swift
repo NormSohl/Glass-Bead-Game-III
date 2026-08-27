@@ -10,9 +10,13 @@
 //  - Harmonic count per tone is tied to the same `limit` used for scale/diamond
 //    generation, so the roughness field scales with the same complexity knob as
 //    everything else (Scale, Diamonds).
-//  - Each tone is treated as an idealized harmonic series with 1/n amplitude
-//    falloff (the standard assumption in this literature - not universally true
-//    of real instruments, but a defensible starting idealization).
+//  - Each tone is treated as an idealized harmonic series with a linear amplitude
+//    falloff (1.0 at the fundamental down to 1/limit at the highest included
+//    harmonic) - the default weighting as of this pass, chosen over the more
+//    standard 1/n falloff because it visibly reveals more structure in the field
+//    between the octaves (middle harmonics stay comparatively louder, so more
+//    harmonic-pair combinations contribute). 1/n (harmonicWeight) is still
+//    available and tested as an alternative.
 //  - Roughness between two partials is a function of their beat rate (the
 //    absolute difference between their frequencies): a Gaussian bell peaking at
 //    33 Hz - Helmholtz's estimate (via Ellis's appendix to his translation of
@@ -33,17 +37,17 @@ enum Dissonance {
     /// A harmonic weighting scheme: given a 1-indexed harmonic number, returns its amplitude weight.
     typealias HarmonicWeighting = (Int) -> Double
 
-    /// Amplitude weight of the nth harmonic (1-indexed) of an idealized tone: 1/n falloff.
-    /// The default weighting scheme everywhere below.
+    /// Amplitude weight of the nth harmonic (1-indexed) of an idealized tone: the standard
+    /// 1/n falloff from this literature. Available as an alternative to the default below.
     static func harmonicWeight(_ harmonicNumber: Int) -> Double {
         1.0 / Double(harmonicNumber)
     }
 
-    /// Alternative weighting: falls off in a straight line from 1.0 at the fundamental to
-    /// 1/limit at the highest included harmonic, rather than 1/n's curved falloff. Being
-    /// tried against 1/n per Norm's request to see if more of the field's structure shows
-    /// up between the octaves - higher harmonics stay comparatively louder here than under
-    /// 1/n, so more harmonic-pair combinations contribute meaningfully to the field.
+    /// Default weighting: falls off in a straight line from 1.0 at the fundamental to
+    /// 1/limit at the highest included harmonic, rather than 1/n's curved falloff. Chosen
+    /// over 1/n because middle harmonics stay comparatively louder here, so more
+    /// harmonic-pair combinations contribute meaningfully to the field - visibly reveals
+    /// more structure between the octaves.
     static func linearHarmonicWeight(_ harmonicNumber: Int, limit: Int) -> Double {
         Double(limit - harmonicNumber + 1) / Double(limit)
     }
@@ -75,8 +79,11 @@ enum Dissonance {
     }
 
     /// Total roughness between two tones' full harmonic series (`limit` harmonics each),
-    /// summed over every harmonic-of-A x harmonic-of-B pair.
-    static func roughnessBetweenTones(frequencyA: Double, frequencyB: Double, limit: Int, weighting: HarmonicWeighting = harmonicWeight) -> Double {
+    /// summed over every harmonic-of-A x harmonic-of-B pair. Defaults to linear weighting
+    /// (nil means "use linearHarmonicWeight for this limit"); a default parameter can't
+    /// reference the `limit` parameter directly, so the fallback is resolved in the body.
+    static func roughnessBetweenTones(frequencyA: Double, frequencyB: Double, limit: Int, weighting: HarmonicWeighting? = nil) -> Double {
+        let weighting = weighting ?? { linearHarmonicWeight($0, limit: limit) }
         var total = 0.0
         for harmonicA in 1...limit {
             let freqA = harmonicFrequency(fundamental: frequencyA, harmonicNumber: harmonicA)
@@ -92,7 +99,8 @@ enum Dissonance {
 
     /// Total roughness field value for a candidate (root, X, Y) triad: the sum of pairwise
     /// roughness across all three tone pairs (root x X, root x Y, X x Y).
-    static func totalRoughness(rootFrequency: Double, xFrequency: Double, yFrequency: Double, limit: Int, weighting: HarmonicWeighting = harmonicWeight) -> Double {
+    static func totalRoughness(rootFrequency: Double, xFrequency: Double, yFrequency: Double, limit: Int, weighting: HarmonicWeighting? = nil) -> Double {
+        let weighting = weighting ?? { linearHarmonicWeight($0, limit: limit) }
         let rootX = roughnessBetweenTones(frequencyA: rootFrequency, frequencyB: xFrequency, limit: limit, weighting: weighting)
         let rootY = roughnessBetweenTones(frequencyA: rootFrequency, frequencyB: yFrequency, limit: limit, weighting: weighting)
         let xY = roughnessBetweenTones(frequencyA: xFrequency, frequencyB: yFrequency, limit: limit, weighting: weighting)
@@ -106,8 +114,9 @@ enum Dissonance {
     /// Indexed [row][col]: row 0 is the lowest pitch (bottom of the graph), col 0 is the
     /// lowest pitch (left of the graph) - same orientation as the rest of the graph's
     /// coordinate space. Each cell is evaluated at its center point along that axis.
-    static func roughnessGrid(scale: Scale, rootFrequency: Double, limit: Int, resolution: Int, weighting: HarmonicWeighting = harmonicWeight) -> [[Double]] {
+    static func roughnessGrid(scale: Scale, rootFrequency: Double, limit: Int, resolution: Int, weighting: HarmonicWeighting? = nil) -> [[Double]] {
         guard resolution > 0, limit > 0 else { return [] }
+        let weighting = weighting ?? { linearHarmonicWeight($0, limit: limit) }
 
         func frequency(atFraction fraction: Double) -> Double {
             let normalized = scale.lowestRatioNormalized + scale.rangeNormalized * fraction
