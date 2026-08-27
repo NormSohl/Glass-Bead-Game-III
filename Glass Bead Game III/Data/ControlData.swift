@@ -26,8 +26,8 @@ class AppSettings: ObservableObject{
     @Published var selectedGraphShape: GraphShape = .square
     
     // root pitch
-    @Published var rootFrequency: Double = 440.0 // A4, concert pitch  // no UI yet if ever. MIDI note number 69
-    @Published var rootMidiNote: Int = 69  // A4
+    @Published var rootFrequency: Double = 261.6255653005986 // middle c  // no UI yet if ever. MIDI note number 60
+    @Published var rootMidiNote: Int = 60  // middle c
 
     //@Published var numberOfOctaves: Double = 2
     // Highest ratio =

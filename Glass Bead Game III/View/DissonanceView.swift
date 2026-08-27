@@ -59,13 +59,18 @@ struct DissonanceView: View {
         }
     }
 
-    // Back to the original direction (briefly inverted, then reverted): low roughness
-    // fades toward transparent, so consonant regions blend into the black background
-    // instead of competing with the diamonds/grid drawn on top of this layer; high
-    // roughness glows warm. A first guess, not a considered design - needs eyes on the
-    // actual render to know if it reads well at all.
+    // Gamma < 1 lifts the midtones before coloring, without touching the peak (still full
+    // intensity at t=1). Picked by comparing renders at 1.0/0.5/0.35/0.25: without it, the
+    // color/opacity are normalized against the field's global max (the unison ring, ~4.6),
+    // which squashed the third/fourth/fifth ridges toward near-invisible. 0.5 keeps unison
+    // reading as the clear strongest point while making those ridges legible.
+    private let gamma = 0.5
+
+    // Low roughness fades toward transparent, so consonant regions blend into the black
+    // background instead of competing with the diamonds/grid drawn on top of this layer;
+    // high roughness glows warm.
     private func roughnessColor(_ normalizedRoughness: Double) -> Color {
-        let t = min(max(normalizedRoughness, 0), 1)
+        let t = pow(min(max(normalizedRoughness, 0), 1), gamma)
         return Color(red: t, green: t * 0.35, blue: t * 0.15, opacity: t * 0.9)
     }
 }
