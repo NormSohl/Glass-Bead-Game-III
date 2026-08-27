@@ -15,11 +15,14 @@
 //    of real instruments, but a defensible starting idealization).
 //  - Roughness between two partials is a function of their beat rate (the
 //    absolute difference between their frequencies): a Gaussian bell peaking at
-//    an arbitrary "maximum roughness" beat rate, tapering to ~0 at unison and
-//    ~0 by roughly twice the peak. Symmetric for now - real roughness curves are
-//    probably asymmetric (e.g. easing differently once the beat rate itself
-//    lands on a harmonic relationship), but that's a possible future refinement,
-//    not built here.
+//    33 Hz - Helmholtz's estimate (via Ellis's appendix to his translation of
+//    Helmholtz's "On the Sensations of Tone") of the beat rate at which two
+//    partials sound maximally rough, as a fixed rate rather than one scaled to
+//    the critical bandwidth at a given register the way later models (Plomp-
+//    Levelt, Sethares) do. Tapers to ~0 at unison and ~0 by roughly twice the
+//    peak. Symmetric for now - real roughness curves are probably asymmetric
+//    (e.g. easing differently once the beat rate itself lands on a harmonic
+//    relationship), but that's a possible future refinement, not built here.
 //  - Total roughness for a candidate (root, X, Y) triad sums pairwise roughness
 //    across every harmonic-of-A x harmonic-of-B combination, for all three tone
 //    pairs (root x X, root x Y, X x Y) - not just matching harmonic numbers.
@@ -37,9 +40,17 @@ enum Dissonance {
         fundamental * Double(harmonicNumber)
     }
 
+    /// Helmholtz's estimate (via Ellis) of the beat rate, in Hz, at which two partials sound
+    /// maximally rough. A fixed rate, not scaled to register/critical bandwidth.
+    static let peakRoughnessBeatRate: Double = 33.0
+
+    /// Width of the roughness curve's falloff on either side of the peak. Not from Helmholtz/Ellis -
+    /// chosen so the curve is practically zero at unison and by roughly double the peak beat rate.
+    static let roughnessCurveSigma: Double = 10.0
+
     /// Roughness contributed by two partials beating `beatRate` Hz apart, before amplitude weighting.
     /// A Gaussian bell peaking at `peakBeatRate`, so it's ~0 at 0 Hz and ~0 by roughly `2 * peakBeatRate`.
-    static func roughness(beatRate: Double, peakBeatRate: Double = 30.0, sigma: Double = 10.0) -> Double {
+    static func roughness(beatRate: Double, peakBeatRate: Double = peakRoughnessBeatRate, sigma: Double = roughnessCurveSigma) -> Double {
         let distanceFromPeak = beatRate - peakBeatRate
         return exp(-(distanceFromPeak * distanceFromPeak) / (2 * sigma * sigma))
     }

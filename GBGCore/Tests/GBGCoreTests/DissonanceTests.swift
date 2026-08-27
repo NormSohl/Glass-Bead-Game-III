@@ -24,21 +24,22 @@ final class DissonanceTests: XCTestCase {
 
     // MARK: roughness(beatRate:) - the Gaussian bell
 
-    func testRoughnessPeaksAtThirtyBeatsPerSecond() {
-        XCTAssertEqual(Dissonance.roughness(beatRate: 30), 1.0, accuracy: 0.0000001)
+    func testRoughnessPeaksAtThePeakBeatRate() {
+        XCTAssertEqual(Dissonance.roughness(beatRate: Dissonance.peakRoughnessBeatRate), 1.0, accuracy: 0.0000001)
     }
 
     func testRoughnessIsSymmetricAroundThePeak() {
-        XCTAssertEqual(Dissonance.roughness(beatRate: 20), Dissonance.roughness(beatRate: 40), accuracy: 0.0000001)
-        XCTAssertEqual(Dissonance.roughness(beatRate: 10), Dissonance.roughness(beatRate: 50), accuracy: 0.0000001)
+        let peak = Dissonance.peakRoughnessBeatRate
+        XCTAssertEqual(Dissonance.roughness(beatRate: peak - 10), Dissonance.roughness(beatRate: peak + 10), accuracy: 0.0000001)
+        XCTAssertEqual(Dissonance.roughness(beatRate: peak - 20), Dissonance.roughness(beatRate: peak + 20), accuracy: 0.0000001)
     }
 
-    func testRoughnessTapersToPracticallyZeroAtUnisonAndBySixty() {
+    func testRoughnessTapersToPracticallyZeroAtUnisonAndByTwiceThePeak() {
         XCTAssertLessThan(Dissonance.roughness(beatRate: 0), 0.02)
-        XCTAssertLessThan(Dissonance.roughness(beatRate: 60), 0.02)
+        XCTAssertLessThan(Dissonance.roughness(beatRate: 2 * Dissonance.peakRoughnessBeatRate), 0.02)
     }
 
-    func testRoughnessStaysLowWellBeyondSixty() {
+    func testRoughnessStaysLowWellBeyondThePeak() {
         XCTAssertLessThan(Dissonance.roughness(beatRate: 200), 0.0001)
     }
 
@@ -71,9 +72,9 @@ final class DissonanceTests: XCTestCase {
         XCTAssertEqual(result, Dissonance.roughness(beatRate: 0), accuracy: 0.0000001)
     }
 
-    func testRoughnessBetweenTonesHitsPeakWhenFundamentalsAreThirtyHertzApart() {
-        // limit 1: only the fundamentals (weight 1 each) are compared, 30 Hz apart is the peak
-        let result = Dissonance.roughnessBetweenTones(frequencyA: 200, frequencyB: 230, limit: 1)
+    func testRoughnessBetweenTonesHitsPeakWhenFundamentalsAreThePeakBeatRateApart() {
+        // limit 1: only the fundamentals (weight 1 each) are compared
+        let result = Dissonance.roughnessBetweenTones(frequencyA: 200, frequencyB: 200 + Dissonance.peakRoughnessBeatRate, limit: 1)
         XCTAssertEqual(result, 1.0, accuracy: 0.0000001)
     }
 
@@ -154,11 +155,12 @@ final class DissonanceTests: XCTestCase {
 
     func testTotalRoughnessAtUnisonTriadIsLowerThanASpreadOutTriad() {
         // root, X, and Y all on top of each other: every pairwise beat rate involving the
-        // fundamentals is 0 (near-zero roughness). A triad whose fundamentals sit ~30 Hz
-        // apart lands pairwise roughness right at the peak, so it should score higher.
+        // fundamentals is 0 (near-zero roughness). A triad whose fundamentals sit one and two
+        // peak-beat-rates apart lands pairwise roughness right at the peak, so it should score higher.
         let root = 200.0
+        let peak = Dissonance.peakRoughnessBeatRate
         let unison = Dissonance.totalRoughness(rootFrequency: root, xFrequency: root, yFrequency: root, limit: 1)
-        let spread = Dissonance.totalRoughness(rootFrequency: root, xFrequency: root + 30, yFrequency: root + 60, limit: 1)
+        let spread = Dissonance.totalRoughness(rootFrequency: root, xFrequency: root + peak, yFrequency: root + 2 * peak, limit: 1)
         XCTAssertLessThan(unison, spread)
     }
 }
