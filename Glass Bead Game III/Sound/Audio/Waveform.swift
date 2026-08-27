@@ -39,9 +39,7 @@ class Additive:WaveForm {
             return Additive.total
     }
 }
-    
-//    let twoPi = 2 * Float.pi
-    
+
 class WhiteNoise:WaveForm {
     override func getValue(phase: Double) -> Double{
         return (Double(arc4random_uniform(UINT32_MAX)) / Double(UINT32_MAX)) * 2 - 1

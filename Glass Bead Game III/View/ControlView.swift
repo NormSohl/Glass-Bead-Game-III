@@ -17,8 +17,7 @@ struct ControlView: View {
                 alignment: .leading
             ){
                 let tintcolor = Color(red: 0.2, green: 0.4, blue: 0.8)
-                //let textcolor = Color(.white)
-                
+
                 Text("A Glass Bead Game").bold().font(Font.headline).foregroundStyle(.white)
                 Divider()
                 Toggle(isOn: $settings.showDiamonds, label:{
@@ -40,7 +39,6 @@ struct ControlView: View {
                 Toggle("Note Y", isOn: $settings.playNoteY)
                     .tint(tintcolor)
                     .onChange(of: settings.playNoteY){sound.enableY = settings.playNoteY}
-                    .foregroundStyle(.white)
                     .foregroundStyle(.white)
 
                 Toggle("Snapping", isOn: $settings.snap)
@@ -67,11 +65,7 @@ struct ControlView: View {
                 }
                 .listItemTint(.blue)
                 .background(tintcolor)
-                //.foregroundStyle(tintcolor)
-                //.accentColor(tintcolor)
                 .pickerStyle(.segmented)
-                //.foregroundColor(.white)
-                //.colorInvert()
                 Text("(Number of harmonic partials used to generate the scale used in the graph)").foregroundStyle(.white)
                 
                 Divider()
@@ -86,9 +80,7 @@ struct ControlView: View {
                 }
                 .listItemTint(.white)
                 .background(tintcolor)
-                //.accentColor(.blue)
                 .pickerStyle(.segmented)
-                //.foregroundStyle(.white)
                 .onChange(of: settings.selectedGraphShape){
                     setView()
                 }

@@ -1,6 +1,6 @@
 //
 //  DissonanceView.swift
-//  Glass Bead Game
+//  Glass Bead Game III
 //
 //  Created by Norman Sohl on 4/19/23.
 //

@@ -105,7 +105,6 @@ struct Scale {
         }
         // calculate the hit test range
         for x in 0..<scale.count {
-            //print("Scale: \(scale[x])")
             if x == 0 {
                 // the first scale element does not have a lower bounds beyond its own valueNormalized since there is no element lower than it in the list
                 scale[x].lowerBounds = scale[x].valueNormalized
@@ -122,10 +121,6 @@ struct Scale {
         }
         // and do the final upper bounds which is set to the valueNormalized since there is no higher scale element in the list.  Similar to the first scale element
         scale[scale.count-1].upperBounds = scale[scale.count-1].valueNormalized
-        
-        //for element in scale {
-        //    print("Scale: element = \(element)")
-        //}
     }
     
     func convertScaleValueToScreenUnits(

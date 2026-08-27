@@ -22,7 +22,6 @@ struct GraphView: View {
                 // top tick marks
                 Ticks(border: settings.border, alignment: .top, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized)
                     .frame(height: settings.border)
-                    //.rotationEffect(.degrees(0))
                 // top right corner
                 Corner(border: settings.border)
             }
@@ -31,7 +30,6 @@ struct GraphView: View {
                 // left border
                 Ticks(border: settings.border, alignment: .leading, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized)
                     .frame(width: settings.border)
-                    //.rotationEffect(.degrees(0), anchor: .leading)
                 ZStack(){
                     // graph
                     Graph(scale: scale)
@@ -45,7 +43,6 @@ struct GraphView: View {
                 // right border
                 Ticks(border: settings.border, alignment: .trailing, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized)
                     .frame(width: settings.border)
-                    //.rotationEffect(.degrees(180))
             }
             
             HStack(alignment: .bottom, spacing:0){  // bottom border
@@ -54,7 +51,6 @@ struct GraphView: View {
                 // bottom tick marks
                 Ticks(border: settings.border, alignment: .bottom, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized)
                     .frame(height: settings.border)
-                    //.rotationEffect(.degrees(180))
                 // bottom right corner
                 Corner(border: settings.border)
             }

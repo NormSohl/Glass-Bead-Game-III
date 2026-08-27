@@ -15,8 +15,8 @@ class Sound {
     
     var outputToAudio = true
     var outputToMidi = true
-    //var outputToMidiMPE = true
-    
+
+
     var enableDrone = true
     var enableX = true
     var enableY = true

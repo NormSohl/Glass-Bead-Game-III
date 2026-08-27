@@ -17,17 +17,14 @@ struct NoteEntry{
 // midi number to frequency according to http://www.phys.unsw.edu.au/jw/notes.html
 // m is midi number
 // fm is frequency for that midi number
-//var m = 21 // midi number for A0
-//var fm  =  pow(2, (m - 69)/12) * 440 // 440 Hz
 
 class NoteList{
-    
+
     var list:[NoteEntry] = []
     let noteNames = ["C","C#","D","Eb","E","F","F#","G","Ab","A", "A","Bb","B","C"]
     let octaves = [0,1,2,3,4,5,6,7,8]
-    
+
     init(){
-        //print ("NoteList: Init:")
         var noteNameIndex = 0
         var octaveIndex = 0
         
@@ -40,7 +37,6 @@ class NoteList{
                 noteMIDI: UInt8(midiNum))
             
             list.append(entry)
-            //print ("NoteList: NoteEntry added: midiNum = \(entry.noteMIDI), noteName = \(entry.noteName), octave = \(entry.octave), frequency = \(entry.noteFreq)")
 
             noteNameIndex += 1
             if noteNameIndex >= 12 {
@@ -62,12 +58,10 @@ class NoteList{
     func searchList(frequency: Double)->listReturn{
         var ret = listReturn()
         for i in 0 ..< list.count {  // less than max element because we may evaluate for i+1 below.
-            print("NoteList: searchList: frequency = \(frequency), \(list[i].noteFreq), count = \(i)")
             if list[i].noteFreq == frequency {
                 // nailed it! hit the exact frequency. This is a corner case and will not be hit very often
                 ret.lowerNote = list[i]
                 ret.higherNote = list[i]
-                print("NoteList: searchList: match!")
                 return ret
             }
             if list[i].noteFreq > frequency {
@@ -77,7 +71,6 @@ class NoteList{
                 }
                 ret.lowerNote = list[i-1]
                 ret.higherNote = list[i]
-                print("NoteList: searchList: Greater Than!")
                 return ret
             }
         }

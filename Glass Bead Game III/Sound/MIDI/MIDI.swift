@@ -277,20 +277,8 @@ class Midi{
         }
     }
 
-    func setOutputToMPE(pitchBendRange: Int){
-        pitchBendRangeMPE = pitchBendRange
-    }
-
     func setRootNote(note: Int){
         rootMidiNote = note
-    }
-
-    func setXNote(note: Int){
-        xMidiNote = note
-    }
-
-    func setYNote(note: Int){
-        yMidiNote = note
     }
 
     func tuneStart(){
@@ -334,11 +322,8 @@ class Midi{
             for i in 0...numSources-1{  // does this need to be -1?
                 let device = MIDIGetSource(i)
                 var param: Unmanaged<CFString>?
-                //let err: OSStatus =
                 MIDIObjectGetStringProperty(device, kMIDIPropertyDisplayName, &param)
                 let name = (param?.takeRetainedValue() as String?) ?? "Unknown MIDI Source \(i)"
-                //print ("Source name: \(String(describing: param))")
-                //print ("Midi: Source \(i) name: \(name)")
                 midiSources.append(midiEndpoint(midiEndpoint: device, index: i, name: name))
             }
         }
@@ -533,37 +518,9 @@ class Midi{
         packet1.length = UInt16(length);
         packet1.data.0 = channelVoiceMessages.controlChange | (UInt8(channel) - 1) //(0x90 + (channel-1))
         if value != nil {packet1.data.1 = value!}
-        //packet1.data.1 = UInt8(value!)
 
         //Add oacket to packet list and send it to destNum
         var packetList = MIDIPacketList(numPackets: 1, packet: packet1);
         if !midiDestinations.isEmpty {MIDISend(outPort, midiDestinations[destNum].midiEndpoint, &packetList);}
-
-        //print ("Midi: sendMidiCC: channel = \(channel), cc = \(cc), value = \(String(describing: value ?? nil))")
-    }
-
-    private struct noteAndPitchbend{
-        var midiNote: UInt8 = 0
-        var pitchBend: UInt16 = 8192  // 0 of pitchbend range
-    }
-
-    // returns number of octaves between freq1 and freq2
-    private func numOctaves(freq1: Double, freq2:Double)->Int{
-        //no = log2(f2/f1)
-        let numOct = log2(freq1/freq2)
-        return Int(numOct)
-    }
-
-    private func testCentsToPitchBend(){
-        for pbRange in 1...12 {
-            for cents in -1200...1200 {
-                _ = PitchBendMath.centsToPitchBend(pitchBendRange: pbRange, cents: Double(cents))
-            }
-        }
-    }
-
-    private func makeStatusByte (command:Int8, channel: Int8)->Int8 {
-        let ret:Int8 = command + channel-1
-        return ret
     }
 }

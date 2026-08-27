@@ -20,8 +20,7 @@ struct Ticks: View {
     let alignment: Alignment
     let rangeBelow: Double
     let rangeAbove: Double
-    //let Mysize: Double
-    
+
     var body: some View {
         Canvas(){
             context, size in
@@ -34,10 +33,7 @@ struct Ticks: View {
             let range = abs(rangeBelow) + rangeAbove
             let numTicks = 12 * range
             let centerTick = 12 * abs(rangeBelow)
-            
-            var mySize = size.width
-            if size.height > mySize {mySize = size.height}
-            
+
             for tick in 0...Int(numTicks){
                 //deal with edges of view by nudging text and ticks into viewable area
                 var nudge = 0.0
@@ -72,8 +68,6 @@ struct Ticks: View {
                 
                 // draw tick
                 let mcolor: Color = .white
-                //let whiteTicks: Set = [0,2,4,5,7,9,11,12] // C, D, E, F, G, A, B, C
-                //if whiteTicks.contains(tick) {mcolor = .white} else {mcolor = .blue}
                 context.stroke(
                     Path { path in
                         path.move(to: startLocation)
@@ -90,8 +84,6 @@ struct Ticks: View {
                 while myTick > 12 {myTick = myTick - 12}
                 
                 let _ = context.draw(Text(noteNames[myTick]).font(.custom("SFPro", size: 15)).foregroundStyle(.white),at: textLocation)
-                //let _ = context.draw(Text("X").font(.custom("SFPro", size: 15)),at: textLocation)
-                //let _ = context.draw(Text(noteNames[tick]).font(.custom("SFPro", size: 15)),at: textLocation)
             }
         }
     }
