@@ -1,6 +1,6 @@
 //
 //  CanInterpolate.swift
-//  Glass Bead Game
+//  GBGCore
 //
 //  Created by Norman Sohl on 7/18/22.
 //

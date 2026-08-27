@@ -1,6 +1,6 @@
 //
-//  transEaseIn.swift
-//  Glass Bead Game
+//  TransEaseIn.swift
+//  GBGCore
 //
 //  Created by Norman Sohl on 7/18/22.
 //

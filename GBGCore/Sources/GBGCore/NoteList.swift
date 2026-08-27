@@ -1,6 +1,6 @@
 //
-//  NoteNameFrequency.swift
-//  Glass Bead Game 2
+//  NoteList.swift
+//  GBGCore
 //
 //  Created by Norman Sohl on 3/14/24.
 //

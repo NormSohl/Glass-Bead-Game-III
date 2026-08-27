@@ -1,6 +1,6 @@
 //
 //  Part.swift
-//  Glass Bead Game
+//  Glass Bead Game III
 //
 //  Created by Norman Sohl on 7/15/22.
 //

@@ -1,6 +1,6 @@
 //
 //  GraphView.swift
-//  Glass Bead Game
+//  Glass Bead Game III
 //
 //  Created by Norman Sohl on 6/10/22.
 //

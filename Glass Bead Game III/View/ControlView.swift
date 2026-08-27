@@ -1,6 +1,6 @@
 //
 //  ControlView.swift
-//  Glass Bead Game
+//  Glass Bead Game III
 //
 //  Created by Norman Sohl on 2/2/24.
 //

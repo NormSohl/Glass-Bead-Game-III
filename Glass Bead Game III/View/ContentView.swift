@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  GBG_01
+//  Glass Bead Game III
 //
 //  Created by Norman Sohl on 5/9/22.
 //

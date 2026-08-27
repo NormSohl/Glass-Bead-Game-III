@@ -1,6 +1,6 @@
 //
 //  TickView.swift
-//  Glass Bead Game 2
+//  Glass Bead Game III
 //
 //  Created by Norman Sohl on 2/24/24.
 //

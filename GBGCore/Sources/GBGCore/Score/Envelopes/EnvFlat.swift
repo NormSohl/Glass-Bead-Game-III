@@ -1,6 +1,6 @@
 //
 //  EnvFlat.swift
-//  Glass Bead Game
+//  GBGCore
 //
 //  Created by Norman Sohl on 7/21/22.
 //

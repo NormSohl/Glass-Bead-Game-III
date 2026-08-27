@@ -1,6 +1,6 @@
 //
 //  Diamonds.swift
-//  Glass Bead Game
+//  GBGCore
 //
 //  Created by Norman Sohl on 6/12/22.
 //

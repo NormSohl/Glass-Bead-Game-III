@@ -1,6 +1,6 @@
 //
-//  envHump.swift
-//  Glass Bead Game
+//  EnvHump.swift
+//  GBGCore
 //
 //  Created by Norman Sohl on 7/18/22.
 //

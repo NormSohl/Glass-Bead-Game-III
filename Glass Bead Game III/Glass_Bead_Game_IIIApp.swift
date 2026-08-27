@@ -1,6 +1,6 @@
 //
-//  Glass_Bead_Game_2App.swift
-//  Glass Bead Game 2
+//  Glass_Bead_Game_IIIApp.swift
+//  Glass Bead Game III
 //
 //  Created by Norman Sohl on 2/22/24.
 //
@@ -11,7 +11,7 @@ import SwiftUI
 var sound = Sound() // sound is a generic class that wraps both the audio out and midi out classes
 
 @main
-struct GBG_01App: App {
+struct GlassBeadGameIIIApp: App {
     
     init() {
         sound.initSound()
