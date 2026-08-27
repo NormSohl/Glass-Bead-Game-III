@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import CoreGraphics
 
 struct DiamondElement{
     let xElement: ScaleElement

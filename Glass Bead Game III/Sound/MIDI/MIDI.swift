@@ -134,7 +134,7 @@ class Midi{
             if rootMidiEnable {
                 rootMidiIsPlaying = true
                 // Root note on channel 1
-                RootMidiPitchBend = freqToPB(frequency: RootMidiFrequency, referenceFrequency: ReferenceFrequency, pitchBendRange: pitchBendRangeMPE)
+                RootMidiPitchBend = PitchBendMath.freqToPB(frequency: RootMidiFrequency, referenceFrequency: ReferenceFrequency, pitchBendRange: pitchBendRangeMPE)
                 sendMidiNoteOn(channel: rootMidiMPEChannel, note: RootMidiNote, velocity:RootMidiVelocity)
                 sendMidiPitchBend(channel: rootMidiMPEChannel, value: RootMidiPitchBend) // root note has centered pitchbend, should be 8192
             }
@@ -142,7 +142,7 @@ class Midi{
             if xMidiEnable {
                 xMidiIsPlaying = true
                 // X note on channel 2
-                xMidiPitchBend = freqToPB(frequency: xMidiFrequency, referenceFrequency: ReferenceFrequency, pitchBendRange: pitchBendRangeMPE)
+                xMidiPitchBend = PitchBendMath.freqToPB(frequency: xMidiFrequency, referenceFrequency: ReferenceFrequency, pitchBendRange: pitchBendRangeMPE)
                 sendMidiNoteOn(channel: xMidiMPEChannel, note: xMidiNote, velocity: xMidiVelocity)
                 sendMidiPitchBend(channel: xMidiMPEChannel, value: xMidiPitchBend)
             }
@@ -150,7 +150,7 @@ class Midi{
             if yMidiEnable {
                 yMidiIsPlaying = true
                 // Y note on channel 3
-                yMidiPitchBend = freqToPB(frequency: yMidiFrequency, referenceFrequency: ReferenceFrequency, pitchBendRange: pitchBendRangeMPE)
+                yMidiPitchBend = PitchBendMath.freqToPB(frequency: yMidiFrequency, referenceFrequency: ReferenceFrequency, pitchBendRange: pitchBendRangeMPE)
                 sendMidiNoteOn(channel: yMidiMPEChannel, note: yMidiNote, velocity: yMidiVelocity)
                 sendMidiPitchBend(channel: yMidiMPEChannel, value: yMidiPitchBend)
             }
@@ -168,7 +168,7 @@ class Midi{
                 xMidiIsPlaying = true
                 // X note on channel 2
                 sendMidiNoteOff(channel: xMidiChannel, note: xMidiNote)
-                xMidiPitchBend = freqToPB(frequency: xMidiFrequency, referenceFrequency: ReferenceFrequency, pitchBendRange: pitchBendRange)
+                xMidiPitchBend = PitchBendMath.freqToPB(frequency: xMidiFrequency, referenceFrequency: ReferenceFrequency, pitchBendRange: pitchBendRange)
                 sendMidiPitchBend(channel: xMidiChannel, value: xMidiPitchBend)
                 sendMidiNoteOn(channel: xMidiChannel, note: xMidiNote, velocity: xMidiVelocity)
             }
@@ -179,7 +179,7 @@ class Midi{
                 //print ("\nMidi: startMidi: Y")
                 // Send note off to quiet glitch when changing PB and to clear channel for new note if needed
                 sendMidiNoteOff(channel: yMidiChannel, note: yMidiNote)
-                yMidiPitchBend = freqToPB(frequency: yMidiFrequency, referenceFrequency: ReferenceFrequency, pitchBendRange: pitchBendRange)
+                yMidiPitchBend = PitchBendMath.freqToPB(frequency: yMidiFrequency, referenceFrequency: ReferenceFrequency, pitchBendRange: pitchBendRange)
                 sendMidiPitchBend(channel: yMidiChannel, value: yMidiPitchBend)
                 sendMidiNoteOn(channel: yMidiChannel, note: yMidiNote, velocity: yMidiVelocity)
             }
@@ -229,11 +229,11 @@ class Midi{
         xMidiFrequency = frequency
         if xMidiIsPlaying{
             if useMPE{
-                xMidiPitchBend = freqToPB(frequency: xMidiFrequency, referenceFrequency: ReferenceFrequency, pitchBendRange: pitchBendRangeMPE)
+                xMidiPitchBend = PitchBendMath.freqToPB(frequency: xMidiFrequency, referenceFrequency: ReferenceFrequency, pitchBendRange: pitchBendRangeMPE)
                 sendMidiPitchBend(channel: xMidiMPEChannel, value: xMidiPitchBend)
             }
             else{
-                xMidiPitchBend = freqToPB(frequency: xMidiFrequency, referenceFrequency: ReferenceFrequency, pitchBendRange: pitchBendRange)
+                xMidiPitchBend = PitchBendMath.freqToPB(frequency: xMidiFrequency, referenceFrequency: ReferenceFrequency, pitchBendRange: pitchBendRange)
                 sendMidiPitchBend(channel: xMidiChannel, value: xMidiPitchBend)
             }
 
@@ -245,11 +245,11 @@ class Midi{
         yMidiFrequency = frequency
         if yMidiIsPlaying{
             if useMPE{
-                yMidiPitchBend = freqToPB(frequency: yMidiFrequency, referenceFrequency: ReferenceFrequency, pitchBendRange: pitchBendRangeMPE)
+                yMidiPitchBend = PitchBendMath.freqToPB(frequency: yMidiFrequency, referenceFrequency: ReferenceFrequency, pitchBendRange: pitchBendRangeMPE)
                 sendMidiPitchBend(channel: yMidiMPEChannel, value: yMidiPitchBend)
             }
             else{
-                yMidiPitchBend = freqToPB(frequency: yMidiFrequency, referenceFrequency: ReferenceFrequency, pitchBendRange: pitchBendRange)
+                yMidiPitchBend = PitchBendMath.freqToPB(frequency: yMidiFrequency, referenceFrequency: ReferenceFrequency, pitchBendRange: pitchBendRange)
                 sendMidiPitchBend(channel: yMidiChannel, value: yMidiPitchBend)
             }
         }
@@ -546,30 +546,6 @@ class Midi{
         var PitchBend: UInt16 = 8192  // 0 of pitchbend range
     }
     
-    private func freqToPB(frequency: Double, referenceFrequency: Double, pitchBendRange: Int) -> Int {
-        var ret: Int = 8192
-        var cents:Double = 0
-        // get cents from root frequency compared to frequency
-        cents = 1200 * log2(frequency / referenceFrequency)
-        ret = centsToPitchBend(pitchBendRange: pitchBendRange, cents: cents)
-        return ret
-    }
-    
-    private func centsToPitchBend(pitchBendRange: Int, cents: Double) -> Int{
-        let pbRangeInCents = Double(pitchBendRange * 100)
-        if cents >= pbRangeInCents {
-            return 16383
-        }
-        
-        if cents < ( 0 - pbRangeInCents) {
-            return 0
-        }
-        
-        let centsTemp:Double = Double(cents) / (100.00 * Double(pitchBendRange))
-        let retPB: Double = (centsTemp * 8192) + 8192
-        return Int(retPB)
-    }
-    
     // returns number of octaves between freq1 and freq2
     private func numOctaves(freq1: Double, freq2:Double)->Int{
         //no = log2(f2/f1)
@@ -580,7 +556,7 @@ class Midi{
     private func testCentsToPitchBend(){
         for pbRange in 1...12 {
             for cents in -1200...1200 {
-                _ = centsToPitchBend(pitchBendRange: pbRange, cents: Double(cents))
+                _ = PitchBendMath.centsToPitchBend(pitchBendRange: pbRange, cents: Double(cents))
             }
         }
     }
