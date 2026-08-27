@@ -28,6 +28,7 @@
 		06D0627C2BAA9F3D00C68262 /* Waveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D0627B2BAA9F3D00C68262 /* Waveform.swift */; };
 		06D0627E2BAA9F9A00C68262 /* Diamonds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D0627D2BAA9F9A00C68262 /* Diamonds.swift */; };
 		D13CB79EAD6E1FD12B695C5C /* PitchBendMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4230C9DD5554EA0C553549E0 /* PitchBendMath.swift */; };
+		58102B6FDC925F577824B0D8 /* Dissonance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C9A086F5BDE794A8C87BA1D /* Dissonance.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -59,6 +60,7 @@
 		06D0627B2BAA9F3D00C68262 /* Waveform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Waveform.swift; sourceTree = "<group>"; };
 		06D0627D2BAA9F9A00C68262 /* Diamonds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GBGCore/Sources/GBGCore/Diamonds.swift"; sourceTree = SOURCE_ROOT; };
 		4230C9DD5554EA0C553549E0 /* PitchBendMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PitchBendMath.swift; path = "GBGCore/Sources/GBGCore/PitchBendMath.swift"; sourceTree = SOURCE_ROOT; };
+		2C9A086F5BDE794A8C87BA1D /* Dissonance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Dissonance.swift; path = "GBGCore/Sources/GBGCore/Dissonance.swift"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -178,6 +180,7 @@
 				06D0626A2BAA9A9000C68262 /* Scale.swift */,
 				06D062732BAA9DA500C68262 /* NoteList.swift */,
 				06D0627D2BAA9F9A00C68262 /* Diamonds.swift */,
+				2C9A086F5BDE794A8C87BA1D /* Dissonance.swift */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -271,6 +274,7 @@
 				06D062722BAA9D5500C68262 /* MIDI.swift in Sources */,
 				06D062762BAA9DDB00C68262 /* Audio.swift in Sources */,
 				D13CB79EAD6E1FD12B695C5C /* PitchBendMath.swift in Sources */,
+				58102B6FDC925F577824B0D8 /* Dissonance.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
