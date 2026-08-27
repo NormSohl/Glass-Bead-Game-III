@@ -25,7 +25,13 @@ struct ControlView: View {
                 })
                 .tint(tintcolor)
                 .foregroundStyle(.white)
-                
+
+                Toggle(isOn: $settings.showDissonance, label:{
+                    Text("Dissonance Field")
+                })
+                .tint(tintcolor)
+                .foregroundStyle(.white)
+
                 Toggle("Drone", isOn: $settings.playDrone)
                     .tint(tintcolor)
                     .onChange(of: settings.playDrone){sound.enableDrone = settings.playDrone}

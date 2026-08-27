@@ -106,6 +106,52 @@ final class DissonanceTests: XCTestCase {
         XCTAssertEqual(result, expected, accuracy: 0.0000001)
     }
 
+    // MARK: roughnessGrid
+
+    func testRoughnessGridHasRequestedDimensions() {
+        let scale = Scale(limit: 5, highestRatio: 2.0, lowestRatio: 0.5)
+        let grid = Dissonance.roughnessGrid(scale: scale, rootFrequency: 261.63, limit: 5, resolution: 10)
+        XCTAssertEqual(grid.count, 10)
+        for row in grid {
+            XCTAssertEqual(row.count, 10)
+        }
+    }
+
+    func testRoughnessGridIsEmptyForInvalidInputs() {
+        let scale = Scale(limit: 5, highestRatio: 2.0, lowestRatio: 0.5)
+        XCTAssertTrue(Dissonance.roughnessGrid(scale: scale, rootFrequency: 261.63, limit: 5, resolution: 0).isEmpty)
+        XCTAssertTrue(Dissonance.roughnessGrid(scale: scale, rootFrequency: 261.63, limit: 0, resolution: 10).isEmpty)
+    }
+
+    func testRoughnessGridValuesAreNeverNegative() {
+        let scale = Scale(limit: 5, highestRatio: 2.0, lowestRatio: 0.5)
+        let grid = Dissonance.roughnessGrid(scale: scale, rootFrequency: 261.63, limit: 5, resolution: 10)
+        for row in grid {
+            for value in row {
+                XCTAssertGreaterThanOrEqual(value, 0.0)
+            }
+        }
+    }
+
+    func testRoughnessGridCellMatchesDirectFrequencyMapping() {
+        // spot-check that grid[row][col] corresponds to the frequency you'd get by mapping
+        // that cell's center fraction through the same lowest/range normalization Scale uses
+        let scale = Scale(limit: 5, highestRatio: 2.0, lowestRatio: 0.5)
+        let rootFrequency = 200.0
+        let limit = 5
+        let resolution = 8
+        let grid = Dissonance.roughnessGrid(scale: scale, rootFrequency: rootFrequency, limit: limit, resolution: resolution)
+
+        let row = 3, col = 6
+        let yFraction = (Double(row) + 0.5) / Double(resolution)
+        let xFraction = (Double(col) + 0.5) / Double(resolution)
+        let yFrequency = rootFrequency * pow(2, scale.lowestRatioNormalized + scale.rangeNormalized * yFraction)
+        let xFrequency = rootFrequency * pow(2, scale.lowestRatioNormalized + scale.rangeNormalized * xFraction)
+        let expected = Dissonance.totalRoughness(rootFrequency: rootFrequency, xFrequency: xFrequency, yFrequency: yFrequency, limit: limit)
+
+        XCTAssertEqual(grid[row][col], expected, accuracy: 0.0000001)
+    }
+
     func testTotalRoughnessAtUnisonTriadIsLowerThanASpreadOutTriad() {
         // root, X, and Y all on top of each other: every pairwise beat rate involving the
         // fundamentals is 0 (near-zero roughness). A triad whose fundamentals sit ~30 Hz

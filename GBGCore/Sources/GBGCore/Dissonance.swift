@@ -74,4 +74,32 @@ enum Dissonance {
         let xY = roughnessBetweenTones(frequencyA: xFrequency, frequencyB: yFrequency, limit: limit)
         return rootX + rootY + xY
     }
+
+    /// Builds a `resolution` x `resolution` grid of total roughness values covering the
+    /// full X/Y range of `scale` (both axes span the same lowest-to-highest normalized
+    /// range as the graph itself), for a fixed root frequency.
+    ///
+    /// Indexed [row][col]: row 0 is the lowest pitch (bottom of the graph), col 0 is the
+    /// lowest pitch (left of the graph) - same orientation as the rest of the graph's
+    /// coordinate space. Each cell is evaluated at its center point along that axis.
+    static func roughnessGrid(scale: Scale, rootFrequency: Double, limit: Int, resolution: Int) -> [[Double]] {
+        guard resolution > 0, limit > 0 else { return [] }
+
+        func frequency(atFraction fraction: Double) -> Double {
+            let normalized = scale.lowestRatioNormalized + scale.rangeNormalized * fraction
+            return rootFrequency * pow(2, normalized)
+        }
+
+        var grid = [[Double]](repeating: [Double](repeating: 0, count: resolution), count: resolution)
+        for row in 0..<resolution {
+            let yFraction = (Double(row) + 0.5) / Double(resolution)
+            let yFrequency = frequency(atFraction: yFraction)
+            for col in 0..<resolution {
+                let xFraction = (Double(col) + 0.5) / Double(resolution)
+                let xFrequency = frequency(atFraction: xFraction)
+                grid[row][col] = totalRoughness(rootFrequency: rootFrequency, xFrequency: xFrequency, yFrequency: yFrequency, limit: limit)
+            }
+        }
+        return grid
+    }
 }

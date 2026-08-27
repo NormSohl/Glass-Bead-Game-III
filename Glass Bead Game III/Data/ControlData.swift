@@ -10,6 +10,7 @@ import SwiftUI
 
 class AppSettings: ObservableObject{
     @Published var showDiamonds: Bool = true
+    @Published var showDissonance: Bool = false // opt-in: unverified visually, and recomputes a full grid on toggle/limit/resize
     @Published var selectedLimit: Limit = Limit.eleven
     @Published var playDrone: Bool = true
     @Published var playNoteX: Bool = true

@@ -31,12 +31,14 @@ struct GraphView: View {
                 Ticks(border: settings.border, alignment: .leading, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized)
                     .frame(width: settings.border)
                 ZStack(){
+                    // dissonance field, drawn first so it sits behind the grid/diamonds
+                    DissonanceView(scale: scale, settings: settings, showDissonance: settings.showDissonance)
                     // graph
                     Graph(scale: scale)
                     DiamondView(diamonds: diamonds,
                                 showDiamonds: settings.showDiamonds,
                                 scale: scale)
-                    
+
                     HitTestView(scale:scale, settings: settings)
                 }.border(.orange)
 
