@@ -21,12 +21,15 @@ struct ContentView: View {
                 GraphView(scale: scale,
                           diamonds: diamonds,
                           settings: settings
-                ).rotationEffect(.degrees(settings.viewRotation)).scaleEffect(CGSize(width: settings.viewScale, height: settings.viewScale)).offset(x: settings.viewOffsetX, y: settings.viewOffsetY)
+                )
+                .rotationEffect(.degrees(settings.viewRotation))
+                .scaleEffect(CGSize(width: settings.viewScale, height: settings.viewScale))
+                .offset(x: settings.viewOffsetX, y: settings.viewOffsetY)
             }
             .aspectRatio(1/1, contentMode: settings.contentMode)
             .layoutPriority(1)
             .background()
-            .animation(/*@START_MENU_TOKEN@*/.easeIn/*@END_MENU_TOKEN@*/, value: settings.viewRotation)
+            .animation(.easeIn, value: settings.viewRotation)
             
             ControlView(settings: settings).background().frame(minWidth: 200)// all ui in right panel goes here
         }

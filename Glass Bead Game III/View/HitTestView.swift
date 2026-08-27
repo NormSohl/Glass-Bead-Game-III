@@ -7,9 +7,10 @@
 
 import SwiftUI
 
-@available(macOS 13.0, *)
-
-var height = 0.0  // placed in global scope to resolve inconsistant behavior when placed in view
+// Deliberately module-scope rather than @State on HitTestView: an earlier attempt to
+// keep this as view state caused inconsistent behavior. Left as-is until that can be
+// re-verified interactively (needs eyes on the running app, not just a clean build).
+var height = 0.0
 
 struct HitTestView: View {
     // manage debug trace in hitTest

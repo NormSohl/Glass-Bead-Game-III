@@ -7,7 +7,10 @@
 
 import SwiftUI
 
-enum Alignment {
+// Named distinctly from SwiftUI's own Alignment type, which this file also uses
+// implicitly via HStack/VStack elsewhere in the app - same name, different type,
+// would otherwise be a trap for whichever Alignment is actually in scope.
+enum TickAlignment {
     case top
     case bottom
     case leading
@@ -17,7 +20,7 @@ enum Alignment {
 // tick marks
 struct Ticks: View {
     let border:Double
-    let alignment: Alignment
+    let alignment: TickAlignment
     let rangeBelow: Double
     let rangeAbove: Double
 
