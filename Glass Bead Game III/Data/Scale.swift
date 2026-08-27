@@ -104,7 +104,7 @@ struct Scale {
             x += 1
         }
         // calculate the hit test range
-        for x in 0...scale.count-1 {
+        for x in 0..<scale.count {
             //print("Scale: \(scale[x])")
             if x == 0 {
                 // the first scale element does not have a lower bounds beyond its own valueNormalized since there is no element lower than it in the list

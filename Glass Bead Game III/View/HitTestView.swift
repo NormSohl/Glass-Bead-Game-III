@@ -13,7 +13,7 @@ var height = 0.0  // placed in global scope to resolve inconsistant behavior whe
 
 struct HitTestView: View {
     // manage debug trace in hitTest
-    let hitTestTrace = true
+    let hitTestTrace = false
     
     let scale: Scale
     let settings: AppSettings

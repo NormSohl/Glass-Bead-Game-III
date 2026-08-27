@@ -72,6 +72,9 @@ class NoteList{
             }
             if list[i].noteFreq > frequency {
                 // process for the first element that is higher than the search frequency
+                if i == 0 {
+                    return ret  // frequency is below the lowest entry, out of range
+                }
                 ret.lowerNote = list[i-1]
                 ret.higherNote = list[i]
                 print("NoteList: searchList: Greater Than!")

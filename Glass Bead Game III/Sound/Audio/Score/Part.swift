@@ -30,7 +30,7 @@ class Part:Node, HasLength{
 
     // find the note that contains timeSlice. This is a brute force search that should only be called to start.
     func getCurrentNote (timeSlice:Int)->Note?{
-        for index:Int in 0...memberList.endIndex{
+        for index:Int in 0..<memberList.endIndex{
             let note:Note = memberList[index] as! Note
             if timeSlice >= note.startTime && timeSlice <= note.endTime {
                 currentNoteIndex = index
@@ -44,7 +44,7 @@ class Part:Node, HasLength{
     // this needs to be fast as it is called from the audio render loop. Can it be optimized?
     func getNextNote()->Note?{
         currentNoteIndex += 1
-        if currentNoteIndex <= memberList.endIndex{
+        if currentNoteIndex < memberList.endIndex{
             return memberList[currentNoteIndex] as? Note
         }
         else{

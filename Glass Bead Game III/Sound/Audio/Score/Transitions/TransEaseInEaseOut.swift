@@ -18,6 +18,6 @@ class TransEaseInEaseOut:Transition{
     override func interpolate(percentComplete:Double) -> Double {
         location = start + ((end-start) * percentComplete)
         // convert location to radians, perform sin on that value
-        return  (1 + sin( location * 180 / .pi)) / 2
+        return  (1 + sin( location * .pi / 180)) / 2
     }
 }

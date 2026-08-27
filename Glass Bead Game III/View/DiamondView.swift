@@ -44,36 +44,21 @@ struct DiamondView: View {
                     //if element.mydissonance == 2.0 {color = Color(red: 0.9, green: 0.3, blue: 0.3)}  // 2 never appears
                     //print("DiamondView: element.dissonance = \(element.mydissonance)")
                     
+                    let diamondPath = Path { path in
+                        path.move(to: CGPoint (x:xLocationInScreenUnits-diamondSize, y:yLocationInScreenUnits))
+                        // upper left line
+                        path.addLine(to: CGPoint(x:xLocationInScreenUnits, y:yLocationInScreenUnits+diamondSize))
+                        // upper right line
+                        path.addLine(to: CGPoint(x:xLocationInScreenUnits+diamondSize, y:yLocationInScreenUnits))
+                        // lower right line
+                        path.addLine(to: CGPoint(x:xLocationInScreenUnits, y:yLocationInScreenUnits-diamondSize))
+                        // lower left line
+                        path.closeSubpath()
+                    }
                     // draw fill
-                    context.fill(
-                        Path { path in
-                            path.move(to: CGPoint (x:xLocationInScreenUnits-diamondSize, y:yLocationInScreenUnits))
-                            // upper left line
-                            path.addLine(to: CGPoint(x:xLocationInScreenUnits, y:yLocationInScreenUnits+diamondSize))
-                            // upper right line
-                            path.addLine(to: CGPoint(x:xLocationInScreenUnits+diamondSize, y:yLocationInScreenUnits))
-                            // lower right line
-                            path.addLine(to: CGPoint(x:xLocationInScreenUnits, y:yLocationInScreenUnits-diamondSize))
-                            // lower left line
-                            path.closeSubpath()
-                        },
-                        with: .color(color)
-                    )
+                    context.fill(diamondPath, with: .color(color))
                     // draw border
-                    context.stroke(
-                        Path { path in
-                            path.move(to: CGPoint (x:xLocationInScreenUnits-diamondSize, y:yLocationInScreenUnits))
-                            // upper left line
-                            path.addLine(to: CGPoint(x:xLocationInScreenUnits, y:yLocationInScreenUnits+diamondSize))
-                            // upper right line
-                            path.addLine(to: CGPoint(x:xLocationInScreenUnits+diamondSize, y:yLocationInScreenUnits))
-                            // lower right line
-                            path.addLine(to: CGPoint(x:xLocationInScreenUnits, y:yLocationInScreenUnits-diamondSize))
-                            // lower left line
-                            path.closeSubpath()
-                        },
-                        with: .color(.gray)
-                    )
+                    context.stroke(diamondPath, with: .color(.gray))
                 }
             }
         }

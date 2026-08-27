@@ -20,6 +20,6 @@ class EnvHump:Envelope {
         location = start + ((end-start) * percentComplete)
         // convert location to radians, perform sin on that value
         // turn negitive to 0 values to 0 to positive
-        return 1 + sin(location * 180 / .pi)
+        return 1 + sin(location * .pi / 180)
     }
 }

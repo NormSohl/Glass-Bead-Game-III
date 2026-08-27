@@ -70,7 +70,7 @@ class Triad{
     }
     
     func setTriadYAmplitude(amplitude:Double){
-        Triad.tone1.setAmplitude(inAmplitude: amplitude)
+        Triad.tone3.setAmplitude(inAmplitude: amplitude)
         //print("Triad: setYAmplitude: amplitude = \(amplitude)")
     }
     

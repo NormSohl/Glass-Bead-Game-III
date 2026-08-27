@@ -335,7 +335,7 @@ class Midi{
                 var param: Unmanaged<CFString>?
                 //let err: OSStatus =
                 MIDIObjectGetStringProperty(device, kMIDIPropertyDisplayName, &param)
-                let name =  param!.takeRetainedValue() as String
+                let name = (param?.takeRetainedValue() as String?) ?? "Unknown MIDI Source \(i)"
                 //print ("Source name: \(String(describing: param))")
                 //print ("Midi: Source \(i) name: \(name)")
                 midiSources.append(midiEndpoint(midiEndpoint: device, index: i, name: name))
@@ -350,7 +350,7 @@ class Midi{
                 let device = MIDIGetDestination(i)
                 var param: Unmanaged<CFString>?
                 MIDIObjectGetStringProperty(device, kMIDIPropertyDisplayName, &param)
-                let name =  param!.takeRetainedValue() as String
+                let name = (param?.takeRetainedValue() as String?) ?? "Unknown MIDI Destination \(i)"
                 midiDestinations.append(midiEndpoint(midiEndpoint: device, index: i, name: name))
             }
         }
@@ -536,7 +536,7 @@ class Midi{
 
         //Add oacket to packet list and send it to destNum
         var packetList = MIDIPacketList(numPackets: 1, packet: packet1);
-        if destNum >= 1 {MIDISend(outPort, midiDestinations[destNum].midiEndpoint, &packetList);}
+        if !midiDestinations.isEmpty {MIDISend(outPort, midiDestinations[destNum].midiEndpoint, &packetList);}
         
         //print ("Midi: sendMidiCC: channel = \(channel), cc = \(cc), value = \(String(describing: value ?? nil))")
     }
