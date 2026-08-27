@@ -27,7 +27,7 @@ struct DiamondElement{
 }
 
 struct Diamonds {
-    var DiamondList:[DiamondElement] = []
+    var diamondList:[DiamondElement] = []
     var scale: Scale
     
     init (scale:Scale){
@@ -66,7 +66,7 @@ struct Diamonds {
                         sizeNorm = 1 - sizeNorm
 
                         let element = DiamondElement (x: x, y: y, z: z, sizeNorm: Double(sizeNorm), dissonance: dissonance, highestRatioNormalized: scale.highestRatioNormalized)
-                        DiamondList.append(element)
+                        diamondList.append(element)
                        // print ("diamond added: x = ", element.xElement.numerator, "/", element.xElement.denominator,
                        //        " y = ",element.yElement.numerator,"/", element.yElement.denominator,
                        //        " z = ",element.zElement.numerator, "/", element.zElement.denominator,

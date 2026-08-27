@@ -15,7 +15,7 @@ struct ContentView: View {
             ZStack(){
                 Color.black.ignoresSafeArea(.all)
                 // create scale and diamonds on the fly
-                let intLimit = LimitMap[settings.selectedLimit]
+                let intLimit = limitMap[settings.selectedLimit]
                 let scale = Scale(limit: intLimit ?? 0, highestRatio: settings.highestRatio, lowestRatio: settings.lowestRatio)
                 let diamonds = Diamonds(scale:scale)
                 GraphView(scale: scale,

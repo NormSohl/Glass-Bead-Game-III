@@ -56,14 +56,14 @@ struct ControlView: View {
                 Text("Harmonics:").foregroundStyle(.white)
 #endif
                 Picker("Harmonics:", selection: $settings.selectedLimit) { // picker does not show label. Don't know why. using Text to fake
-                    Text("3").tag(Limit.Three)
-                    Text("5").tag(Limit.Five)
-                    Text("7").tag(Limit.Seven)
-                    Text("9").tag(Limit.Nine)
-                    Text("11").tag(Limit.Eleven)
-                    Text("13").tag(Limit.Thirteen)
-                    Text("17").tag(Limit.Seventeen)
-                    Text("19").tag(Limit.Nineteen)
+                    Text("3").tag(Limit.three)
+                    Text("5").tag(Limit.five)
+                    Text("7").tag(Limit.seven)
+                    Text("9").tag(Limit.nine)
+                    Text("11").tag(Limit.eleven)
+                    Text("13").tag(Limit.thirteen)
+                    Text("17").tag(Limit.seventeen)
+                    Text("19").tag(Limit.nineteen)
                 }
                 .listItemTint(.blue)
                 .background(tintcolor)
@@ -198,21 +198,21 @@ struct ControlView: View {
     func setView() {
         // square graph
         switch settings.selectedGraphShape {
-        case .Square:
+        case .square:
             settings.viewRotation = 0.0 // rotation in degrees
             settings.viewScale = 1.0 // scaling 0.0 equals no change. negitive and positve are possible .73 is good for 45 degree rotation
             settings.viewOffsetX = 0.0 // horizontal offset
             settings.viewOffsetY = 0.0 // Vertical offset, inverted. negative numbers to go up
             settings.contentMode = .fit
             
-        case .Diamond:
+        case .diamond:
             settings.viewRotation = -45.0 // rotation in degrees
             settings.viewScale = 0.73 // scaling 0.0 equals no change. negitive and positve are possible .73 is good for 45 degree rotation
             settings.viewOffsetX = 0.0 // horizontal offset
             settings.viewOffsetY = 0.0 // Vertical offset, inverted. negative numbers to go up
             settings.contentMode = .fit
             
-        case .Triangle:
+        case .triangle:
             settings.viewRotation = 45.0 // rotation in degrees
             settings.viewScale = 0.73 // scaling 0.0 equals no change. negitive and positve are possible .73 is good for 45 degree rotation
             settings.viewOffsetX = 0.0 // horizontal offset

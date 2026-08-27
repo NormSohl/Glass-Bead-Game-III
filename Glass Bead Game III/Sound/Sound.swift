@@ -59,14 +59,14 @@ class Sound {
     }
     
     func setPitchBendRange(pitchBendRange: Int){
-        midi.setMidiPitchBendRange(PitchBendRange: pitchBendRange)
+        midi.setMidiPitchBendRange(pitchBendRange: pitchBendRange)
     }
-    
+
     func setPitchBendRangeMPE(pitchBendRange: Int){
-        midi.setMidiPitchBendRangeMPE(PitchBendRange: pitchBendRange)
+        midi.setMidiPitchBendRangeMPE(pitchBendRange: pitchBendRange)
     }
-    
+
     func setRootNote(midiNote: Int){
-        midi.setRootNote(Note: midiNote)
+        midi.setRootNote(note: midiNote)
     }
 }

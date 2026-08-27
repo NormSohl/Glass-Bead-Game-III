@@ -35,8 +35,8 @@ struct Ticks: View {
             let numTicks = 12 * range
             let centerTick = 12 * abs(rangeBelow)
             
-            var MySize = size.width
-            if size.height > MySize {MySize = size.height}
+            var mySize = size.width
+            if size.height > mySize {mySize = size.height}
             
             for tick in 0...Int(numTicks){
                 //deal with edges of view by nudging text and ticks into viewable area

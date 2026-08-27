@@ -69,12 +69,12 @@ struct Scale {
         for x in 1...self.limit {
             for y in 1...self.limit {
                 // above 1/1
-                let ElementUp = ScaleElement (numerator: x, denominator: y, highestRatio: self.highestRatio)
-                scale.append(ElementUp)
-                
+                let elementUp = ScaleElement (numerator: x, denominator: y, highestRatio: self.highestRatio)
+                scale.append(elementUp)
+
                 // below 1/1 (the upside-down)
-                let ElementDown = ScaleElement (numerator: y, denominator: x, highestRatio: self.lowestRatio)
-                scale.append(ElementDown)
+                let elementDown = ScaleElement (numerator: y, denominator: x, highestRatio: self.lowestRatio)
+                scale.append(elementDown)
             }
         }
         // remove scale elements above highestRatio

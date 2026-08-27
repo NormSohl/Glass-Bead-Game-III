@@ -16,7 +16,7 @@ struct DiamondView: View {
     var body: some View {
         if showDiamonds {
             Canvas(){context, size in
-                for diamond in diamonds.DiamondList {
+                for diamond in diamonds.diamondList {
                     
                     // get screen location for Y
                     var yLocationInScreenUnits = scale.convertScaleValueToScreenUnits(

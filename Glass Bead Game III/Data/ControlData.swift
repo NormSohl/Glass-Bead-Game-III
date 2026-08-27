@@ -10,7 +10,7 @@ import SwiftUI
 
 class AppSettings: ObservableObject{
     @Published var showDiamonds: Bool = true
-    @Published var selectedLimit: Limit = Limit.Eleven
+    @Published var selectedLimit: Limit = Limit.eleven
     @Published var playDrone: Bool = true
     @Published var playNoteX: Bool = true
     @Published var playNoteY: Bool = true
@@ -21,7 +21,7 @@ class AppSettings: ObservableObject{
     @Published var useMIDI_MPE: Bool = true
     @Published var tuneMidi: Bool = false
     @Published var test: Bool = false
-    @Published var selectedGraphShape: GraphShape = .Square
+    @Published var selectedGraphShape: GraphShape = .square
     
     // root pitch
     @Published var rootFrequency: Double = 261.6255653005986 // middle c  // no UI yet if ever. MIDI note number 60
@@ -79,23 +79,23 @@ class AppSettings: ObservableObject{
 }
 
 enum Limit: String, CaseIterable, Identifiable {
-    case Three, Five, Seven, Nine, Eleven, Thirteen, Seventeen, Nineteen
+    case three, five, seven, nine, eleven, thirteen, seventeen, nineteen
     var id: Self { self }
 }
 
 enum GraphShape: String, CaseIterable, Identifiable {
-    case Square, Diamond, Triangle
+    case square, diamond, triangle
     var id: Self {self}
 }
 
-let LimitMap: [Limit: Int] = [
-    Limit.Three: 3,
-    Limit.Five: 5,
-    Limit.Seven: 7,
-    Limit.Nine: 9,
-    Limit.Eleven: 11,
-    Limit.Thirteen: 13,
-    Limit.Seventeen: 17,
-    Limit.Nineteen: 19
+let limitMap: [Limit: Int] = [
+    Limit.three: 3,
+    Limit.five: 5,
+    Limit.seven: 7,
+    Limit.nine: 9,
+    Limit.eleven: 11,
+    Limit.thirteen: 13,
+    Limit.seventeen: 17,
+    Limit.nineteen: 19
 ]
 

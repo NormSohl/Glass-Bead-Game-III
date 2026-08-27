@@ -10,7 +10,7 @@ final class TransitionEnvelopeTests: XCTestCase {
     }
 
     func testTransLinearIsIdentity() {
-        let t = transLinear()
+        let t = TransLinear()
         XCTAssertEqual(t.interpolate(percentComplete: 0), 0, accuracy: 0.0001)
         XCTAssertEqual(t.interpolate(percentComplete: 0.5), 0.5, accuracy: 0.0001)
         XCTAssertEqual(t.interpolate(percentComplete: 1), 1, accuracy: 0.0001)
