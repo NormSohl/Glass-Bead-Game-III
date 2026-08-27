@@ -54,7 +54,7 @@ class AppSettings: ObservableObject{
     
     // square graph: default. should really zero these out at init and let the UI set the appropriate values, even for defaults
     @Published var viewRotation: Double = 0.0 // rotation in degrees
-    @Published var viewScale: Double = 1.0 // scaling 1.0 equals no change. negitive and positve are possible .73 is good for 45 degree rotation
+    @Published var viewScale: Double = 1.0 // scaling 1.0 equals no change. negative and positive are possible .73 is good for 45 degree rotation
     @Published var viewOffsetX: Double = 0.0 // horizontal offset
     @Published var viewOffsetY: Double = 0.0 // Vertical offset, inverted. negative numbers to go up
     @Published var contentMode: ContentMode = .fit

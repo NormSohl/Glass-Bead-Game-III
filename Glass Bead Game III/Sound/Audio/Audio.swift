@@ -22,7 +22,7 @@ class Audio {
     
     var triad = Triad()
     
-    // variables for systhesis of signal
+    // variables for synthesis of signal
     var sampleRate: Double
     
     init(){

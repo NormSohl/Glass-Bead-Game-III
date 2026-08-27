@@ -389,7 +389,7 @@ class Midi{
         packet1.data.0 = channelVoiceMessages.noteOn | (UInt8(channel) - 1) //(0x90 + (channel-1))
         packet1.data.1 = UInt8(note)
         packet1.data.2 = UInt8(velocity)
-        //Add oacket to packet list and send it to destNum
+        //Add packet to packet list and send it to destNum
         var packetList = MIDIPacketList(numPackets: 1, packet: packet1);
         if !midiDestinations.isEmpty {MIDISend(outPort, midiDestinations[destNum].midiEndpoint, &packetList);}
     }
@@ -403,7 +403,7 @@ class Midi{
         packet1.data.0 = channelVoiceMessages.noteOff | (UInt8(channel) - 1) //UInt8(0x80 + (channel-1))
         packet1.data.1 = UInt8(note)
         packet1.data.2 = 0
-        //Add oacket to packet list and send it to destNum
+        //Add packet to packet list and send it to destNum
         var packetList:MIDIPacketList = MIDIPacketList(numPackets: 1, packet: packet1);
         if !midiDestinations.isEmpty {MIDISend(outPort, midiDestinations[destNum].midiEndpoint, &packetList);}
     }
@@ -426,7 +426,7 @@ class Midi{
         packet1.data.0 = 0xE0 + (UInt8(channel) - 1)//UInt8(channelVoiceMessages.pitchBendChange + (channel - 1))
         packet1.data.1 = lsb8
         packet1.data.2 = msb8
-        //Add oacket to packet list and send it to destNum
+        //Add packet to packet list and send it to destNum
         var packetList:MIDIPacketList = MIDIPacketList(numPackets: 1, packet: packet1);
 
         if !midiDestinations.isEmpty{
@@ -519,7 +519,7 @@ class Midi{
         packet1.data.0 = channelVoiceMessages.controlChange | (UInt8(channel) - 1) //(0x90 + (channel-1))
         if value != nil {packet1.data.1 = value!}
 
-        //Add oacket to packet list and send it to destNum
+        //Add packet to packet list and send it to destNum
         var packetList = MIDIPacketList(numPackets: 1, packet: packet1);
         if !midiDestinations.isEmpty {MIDISend(outPort, midiDestinations[destNum].midiEndpoint, &packetList);}
     }

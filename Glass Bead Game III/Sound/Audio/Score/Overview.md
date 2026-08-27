@@ -6,7 +6,7 @@ Most of the input and output objects are normalized to a range of 0 to 1 where i
 
 Simply put this is how it works:
 
-A loadScore object is created, and given a pointer to a score text file. Dee exampleScore.txt for an example.
+A loadScore object is created, and given a pointer to a score text file. See exampleScore.txt for an example.
 
 This score is parsed, and a tree of objects are created. They have the following structure:
 
@@ -69,7 +69,7 @@ They rely on the function interpolate, which takes a 0 to 1 value indicating how
 
 These objects conform to the CanInterpolate protocol.
 
-There are several kinds of envelopes that are supported. An envelope takes in a value that indicates the percentage of completion for the envelope, 0 to 1. The envelope returns a value of 0 to 1 indicating the absolute amplitude of the envelope. It is the responsibility of the consuming object to decide what to map the envelope to and how to scale it, either negatively or positively. Envelopes differ from Tramsitions in that they start and end with 0
+There are several kinds of envelopes that are supported. An envelope takes in a value that indicates the percentage of completion for the envelope, 0 to 1. The envelope returns a value of 0 to 1 indicating the absolute amplitude of the envelope. It is the responsibility of the consuming object to decide what to map the envelope to and how to scale it, either negatively or positively. Envelopes differ from Transitions in that they start and end with 0
 
 * ADSR is the traditional attack, decay, sustain, release envelope invented by Bob Moog.
 * Hump is a simple arc derived from a 1/2 section of a sine wave.
@@ -80,7 +80,7 @@ Transitions are like envelopes, except that they transition from 0 to 1
 * EaseOut is the opposite.
 
 # Overview of audio system
-Hiarchy:
+Hierarchy:
 
 AudioUtil
     Triad
@@ -95,7 +95,7 @@ The Audio.Triad object has a pointer to the Score object. It can call the Score 
 
 ## Tone
 Each Tone object manages the low level loops for one tone, and define the waveform used to generate the signal.
-Each has an exposed Frquency and Amplitude property that is used to control the rendering of the tone:
+Each has an exposed Frequency and Amplitude property that is used to control the rendering of the tone:
 
 * setPitch(Double)  // frequency in Hz.
 * setAmplitude(Double)  // 0 to 1 value used to scale the rendered output.

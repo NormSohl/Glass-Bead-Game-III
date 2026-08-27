@@ -192,21 +192,21 @@ struct ControlView: View {
         switch settings.selectedGraphShape {
         case .square:
             settings.viewRotation = 0.0 // rotation in degrees
-            settings.viewScale = 1.0 // scaling 0.0 equals no change. negitive and positve are possible .73 is good for 45 degree rotation
+            settings.viewScale = 1.0 // scaling 0.0 equals no change. negative and positive are possible .73 is good for 45 degree rotation
             settings.viewOffsetX = 0.0 // horizontal offset
             settings.viewOffsetY = 0.0 // Vertical offset, inverted. negative numbers to go up
             settings.contentMode = .fit
             
         case .diamond:
             settings.viewRotation = -45.0 // rotation in degrees
-            settings.viewScale = 0.73 // scaling 0.0 equals no change. negitive and positve are possible .73 is good for 45 degree rotation
+            settings.viewScale = 0.73 // scaling 0.0 equals no change. negative and positive are possible .73 is good for 45 degree rotation
             settings.viewOffsetX = 0.0 // horizontal offset
             settings.viewOffsetY = 0.0 // Vertical offset, inverted. negative numbers to go up
             settings.contentMode = .fit
             
         case .triangle:
             settings.viewRotation = 45.0 // rotation in degrees
-            settings.viewScale = 0.73 // scaling 0.0 equals no change. negitive and positve are possible .73 is good for 45 degree rotation
+            settings.viewScale = 0.73 // scaling 0.0 equals no change. negative and positive are possible .73 is good for 45 degree rotation
             settings.viewOffsetX = 0.0 // horizontal offset
             settings.viewOffsetY = -400 // Vertical offset, inverted. negative numbers to go up
             settings.contentMode = .fill

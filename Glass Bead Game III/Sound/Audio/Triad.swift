@@ -91,7 +91,7 @@ class Triad{
         let value1 = tone1.getValue()
         let value2 = tone2.getValue()
         let value3 = tone3.getValue()
-        let toneMix = (value1+value2+value3) / 3  // want to keep the ampitude equal or below 1.0
+        let toneMix = (value1+value2+value3) / 3  // want to keep the amplitude equal or below 1.0
         return toneMix
     }
 

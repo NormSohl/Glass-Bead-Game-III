@@ -190,7 +190,7 @@ struct HitTestView: View {
             let screenRatio = screenLocation / graphSize //0 to 1 value in linear measure, not log as is needed for frequency
             // value is linear between 0 and rangeNormalized
             var value = scale.rangeNormalized * screenRatio
-            // adjust tp be negitive if needed
+            // adjust to be negative if needed
             value = value + scale.lowestRatioNormalized
             
             // convert to frequency ratio
