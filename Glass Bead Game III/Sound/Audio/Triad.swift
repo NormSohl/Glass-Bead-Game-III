@@ -80,6 +80,10 @@ class Triad{
         }
     }
 
+    func setTriadRootAmplitude(amplitude:Double){
+        tone1.setAmplitude(inAmplitude: amplitude)
+    }
+
     func setTriadXAmplitude(amplitude:Double){
         tone2.setAmplitude(inAmplitude: amplitude)
     }
