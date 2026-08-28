@@ -126,6 +126,17 @@ enum Dissonance {
         // both axes share the same fraction-to-frequency mapping, so compute it once per index
         let frequencyAt = (0..<resolution).map { frequency(atFraction: (Double($0) + 0.5) / Double(resolution)) }
 
+        // roughnessBetweenTones(root, ·) has only one free argument (root is always the fixed
+        // frequency), so the root-X and root-Y terms are the same function evaluated at a
+        // position, not two independent things to compute - one 1D table serves both, reused
+        // as a lookup instead of recomputed inside the O(resolution^2) loop below. This does
+        // NOT extend to the X-Y term: unlike root, X and Y both range freely across the axis,
+        // and roughness depends on absolute frequency register, not just the interval between
+        // two tones (the same reason a higher root frequency produces tighter banding) - so
+        // X-Y genuinely needs its own computation per cell. Its own X<->Y symmetry is already
+        // covered by the mirroring below.
+        let rootTermAt = frequencyAt.map { roughnessBetweenTones(frequencyA: rootFrequency, frequencyB: $0, limit: limit, weighting: weighting) }
+
         var grid = [[Double]](repeating: [Double](repeating: 0, count: resolution), count: resolution)
         // totalRoughness(root, X, Y) is symmetric under swapping X and Y (rootX + rootY + xY
         // is invariant, since roughnessBetweenTones is itself symmetric in its two frequency
@@ -134,9 +145,12 @@ enum Dissonance {
         // computing; the other triangle is a mirror, cutting the cost roughly in half.
         for row in 0..<resolution {
             let yFrequency = frequencyAt[row]
+            let rootY = rootTermAt[row]
             for col in row..<resolution {
                 let xFrequency = frequencyAt[col]
-                let value = totalRoughness(rootFrequency: rootFrequency, xFrequency: xFrequency, yFrequency: yFrequency, limit: limit, weighting: weighting)
+                let rootX = rootTermAt[col]
+                let xY = roughnessBetweenTones(frequencyA: xFrequency, frequencyB: yFrequency, limit: limit, weighting: weighting)
+                let value = rootX + rootY + xY
                 grid[row][col] = value
                 grid[col][row] = value
             }
