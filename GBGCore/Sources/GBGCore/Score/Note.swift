@@ -1,6 +1,6 @@
 //
 //  Note.swift
-//  Glass Bead Game III
+//  GBGCore
 //
 //  Created by Norman Sohl on 7/15/22.
 //

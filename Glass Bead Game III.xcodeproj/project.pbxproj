@@ -31,6 +31,18 @@
 		06D0627E2BAA9F9A00C68262 /* Diamonds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D0627D2BAA9F9A00C68262 /* Diamonds.swift */; };
 		D13CB79EAD6E1FD12B695C5C /* PitchBendMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4230C9DD5554EA0C553549E0 /* PitchBendMath.swift */; };
 		58102B6FDC925F577824B0D8 /* Dissonance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C9A086F5BDE794A8C87BA1D /* Dissonance.swift */; };
+		1CEE7F232CCE43049B36A9CD /* Score.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B5EEAFEC18240E68222DD2A /* Score.swift */; };
+		85FD6AE3376142C4A4BE5B4C /* Part.swift in Sources */ = {isa = PBXBuildFile; fileRef = B44A9E78ECCB40A7889B50BA /* Part.swift */; };
+		BC79BAD185DC4108ACE79514 /* Note.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32B6E6FC16324783ADF4A0DC /* Note.swift */; };
+		CC37DD5838374BC5BCB6F342 /* Node.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7745DFA8EAC44FE99E4BA906 /* Node.swift */; };
+		1CF95C0BFB2646A59527456A /* CanInterpolate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A64780C745840FFA558ED24 /* CanInterpolate.swift */; };
+		B226878ECF1E429FA36A5EE0 /* TransFlat.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAD3C3850B46463EA9A8B8F1 /* TransFlat.swift */; };
+		26AFEA8D715C4DC68C2B23A4 /* TransLinear.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90A86A6108F843E6A6998886 /* TransLinear.swift */; };
+		8A7C9E55DD6E4450BBC8F754 /* TransEaseIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD416230ADC34629BEACE774 /* TransEaseIn.swift */; };
+		EBB8E4F6E4174D3EAF3BCC8B /* TransEaseOut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86D35CD180DF467FA1E8C526 /* TransEaseOut.swift */; };
+		CDEACC9D141444D1B8009415 /* TransEaseInEaseOut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A52075AE67A446B9494A7EA /* TransEaseInEaseOut.swift */; };
+		E46334BD03EE4B8BB04A0CFB /* EnvFlat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ADD26ED3FE6445B9B45E463 /* EnvFlat.swift */; };
+		49B3D845B54741948633F175 /* EnvHump.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F8E0AEAAE564748A3F90F67 /* EnvHump.swift */; };
 		27666EFEDFAE47B9B5BEFA03 /* Tetrads.swift in Sources */ = {isa = PBXBuildFile; fileRef = 969B21853F07434ABDC656B9 /* Tetrads.swift */; };
 		7D3C1B6AEB034D858BEA5666 /* TetradLayers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A067C57A9A74BFC83299838 /* TetradLayers.swift */; };
 		8CFA26E61CFF41F3AE63BE38 /* TetradView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6DF75EF1C024FBCA782C7AE /* TetradView.swift */; };
@@ -51,11 +63,19 @@
 		06824BF82B886962002E9661 /* DiamondView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DiamondView.swift; sourceTree = "<group>"; };
 		06824BFA2B886963002E9661 /* GraphView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GraphView.swift; sourceTree = "<group>"; };
 		06824BFB2B886963002E9661 /* ControlView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControlView.swift; sourceTree = "<group>"; };
-		06D0622D2BAA953300C68262 /* Part.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Part.swift; sourceTree = "<group>"; };
-		06D0622E2BAA953300C68262 /* Score.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Score.swift; sourceTree = "<group>"; };
-		06D0622F2BAA953300C68262 /* Note.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Note.swift; sourceTree = "<group>"; };
 		06D062312BAA953300C68262 /* Overview.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Overview.md; sourceTree = "<group>"; };
-		06D062322BAA953300C68262 /* Node.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Node.swift; sourceTree = "<group>"; };
+		3B5EEAFEC18240E68222DD2A /* Score.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Score.swift; path = "GBGCore/Sources/GBGCore/Score/Score.swift"; sourceTree = SOURCE_ROOT; };
+		B44A9E78ECCB40A7889B50BA /* Part.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Part.swift; path = "GBGCore/Sources/GBGCore/Score/Part.swift"; sourceTree = SOURCE_ROOT; };
+		32B6E6FC16324783ADF4A0DC /* Note.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Note.swift; path = "GBGCore/Sources/GBGCore/Score/Note.swift"; sourceTree = SOURCE_ROOT; };
+		7745DFA8EAC44FE99E4BA906 /* Node.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Node.swift; path = "GBGCore/Sources/GBGCore/Score/Node.swift"; sourceTree = SOURCE_ROOT; };
+		6A64780C745840FFA558ED24 /* CanInterpolate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CanInterpolate.swift; path = "GBGCore/Sources/GBGCore/Score/CanInterpolate.swift"; sourceTree = SOURCE_ROOT; };
+		EAD3C3850B46463EA9A8B8F1 /* TransFlat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TransFlat.swift; path = "GBGCore/Sources/GBGCore/Score/Transitions/TransFlat.swift"; sourceTree = SOURCE_ROOT; };
+		90A86A6108F843E6A6998886 /* TransLinear.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TransLinear.swift; path = "GBGCore/Sources/GBGCore/Score/Transitions/TransLinear.swift"; sourceTree = SOURCE_ROOT; };
+		AD416230ADC34629BEACE774 /* TransEaseIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TransEaseIn.swift; path = "GBGCore/Sources/GBGCore/Score/Transitions/TransEaseIn.swift"; sourceTree = SOURCE_ROOT; };
+		86D35CD180DF467FA1E8C526 /* TransEaseOut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TransEaseOut.swift; path = "GBGCore/Sources/GBGCore/Score/Transitions/TransEaseOut.swift"; sourceTree = SOURCE_ROOT; };
+		5A52075AE67A446B9494A7EA /* TransEaseInEaseOut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TransEaseInEaseOut.swift; path = "GBGCore/Sources/GBGCore/Score/Transitions/TransEaseInEaseOut.swift"; sourceTree = SOURCE_ROOT; };
+		1ADD26ED3FE6445B9B45E463 /* EnvFlat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EnvFlat.swift; path = "GBGCore/Sources/GBGCore/Score/Envelopes/EnvFlat.swift"; sourceTree = SOURCE_ROOT; };
+		9F8E0AEAAE564748A3F90F67 /* EnvHump.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EnvHump.swift; path = "GBGCore/Sources/GBGCore/Score/Envelopes/EnvHump.swift"; sourceTree = SOURCE_ROOT; };
 		06D062682BAA9A9000C68262 /* ControlData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControlData.swift; sourceTree = "<group>"; };
 		06D0626A2BAA9A9000C68262 /* Scale.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "GBGCore/Sources/GBGCore/Scale.swift"; sourceTree = SOURCE_ROOT; };
 		06D0626F2BAA9C4E00C68262 /* Sound.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sound.swift; sourceTree = "<group>"; };
@@ -168,10 +188,6 @@
 			isa = PBXGroup;
 			children = (
 				06D062312BAA953300C68262 /* Overview.md */,
-				06D0622E2BAA953300C68262 /* Score.swift */,
-				06D0622F2BAA953300C68262 /* Note.swift */,
-				06D0622D2BAA953300C68262 /* Part.swift */,
-				06D062322BAA953300C68262 /* Node.swift */,
 			);
 			path = Score;
 			sourceTree = "<group>";
@@ -196,6 +212,18 @@
 				2C9A086F5BDE794A8C87BA1D /* Dissonance.swift */,
 				969B21853F07434ABDC656B9 /* Tetrads.swift */,
 				7A067C57A9A74BFC83299838 /* TetradLayers.swift */,
+				3B5EEAFEC18240E68222DD2A /* Score.swift */,
+				B44A9E78ECCB40A7889B50BA /* Part.swift */,
+				32B6E6FC16324783ADF4A0DC /* Note.swift */,
+				7745DFA8EAC44FE99E4BA906 /* Node.swift */,
+				6A64780C745840FFA558ED24 /* CanInterpolate.swift */,
+				EAD3C3850B46463EA9A8B8F1 /* TransFlat.swift */,
+				90A86A6108F843E6A6998886 /* TransLinear.swift */,
+				AD416230ADC34629BEACE774 /* TransEaseIn.swift */,
+				86D35CD180DF467FA1E8C526 /* TransEaseOut.swift */,
+				5A52075AE67A446B9494A7EA /* TransEaseInEaseOut.swift */,
+				1ADD26ED3FE6445B9B45E463 /* EnvFlat.swift */,
+				9F8E0AEAAE564748A3F90F67 /* EnvHump.swift */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -295,6 +323,18 @@
 				27666EFEDFAE47B9B5BEFA03 /* Tetrads.swift in Sources */,
 				7D3C1B6AEB034D858BEA5666 /* TetradLayers.swift in Sources */,
 				8CFA26E61CFF41F3AE63BE38 /* TetradView.swift in Sources */,
+				1CEE7F232CCE43049B36A9CD /* Score.swift in Sources */,
+				85FD6AE3376142C4A4BE5B4C /* Part.swift in Sources */,
+				BC79BAD185DC4108ACE79514 /* Note.swift in Sources */,
+				CC37DD5838374BC5BCB6F342 /* Node.swift in Sources */,
+				1CF95C0BFB2646A59527456A /* CanInterpolate.swift in Sources */,
+				B226878ECF1E429FA36A5EE0 /* TransFlat.swift in Sources */,
+				26AFEA8D715C4DC68C2B23A4 /* TransLinear.swift in Sources */,
+				8A7C9E55DD6E4450BBC8F754 /* TransEaseIn.swift in Sources */,
+				EBB8E4F6E4174D3EAF3BCC8B /* TransEaseOut.swift in Sources */,
+				CDEACC9D141444D1B8009415 /* TransEaseInEaseOut.swift in Sources */,
+				E46334BD03EE4B8BB04A0CFB /* EnvFlat.swift in Sources */,
+				49B3D845B54741948633F175 /* EnvHump.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
