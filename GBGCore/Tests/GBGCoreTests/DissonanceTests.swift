@@ -206,6 +206,43 @@ final class DissonanceTests: XCTestCase {
         XCTAssertEqual(grid[row][col], expected, accuracy: 0.0000001)
     }
 
+    func testRoughnessGridIsSymmetricAcrossTheDiagonal() {
+        // the whole field mirrors across X=Y: totalRoughness is symmetric under swapping X
+        // and Y, and both axes share the same fraction mapping, so grid[row][col] must equal
+        // grid[col][row] everywhere - this is exactly what roughnessGrid's mirroring
+        // optimization relies on, verified independently of that implementation detail.
+        let scale = Scale(limit: 7, highestRatio: 2.0, lowestRatio: 0.5)
+        let grid = Dissonance.roughnessGrid(scale: scale, rootFrequency: 300, limit: 7, resolution: 12)
+        for row in 0..<12 {
+            for col in 0..<12 {
+                XCTAssertEqual(grid[row][col], grid[col][row], accuracy: 0.0000001, "mismatch at (\(row),\(col))")
+            }
+        }
+    }
+
+    func testRoughnessGridMatchesBruteForcePerCellComputation() {
+        // full-grid regression check for the mirroring optimization: every cell must match
+        // what a naive, unmirrored per-cell computation would produce
+        let scale = Scale(limit: 5, highestRatio: 2.0, lowestRatio: 0.5)
+        let rootFrequency = 261.63
+        let limit = 5
+        let resolution = 10
+        let grid = Dissonance.roughnessGrid(scale: scale, rootFrequency: rootFrequency, limit: limit, resolution: resolution)
+
+        func frequency(atFraction fraction: Double) -> Double {
+            rootFrequency * pow(2, scale.lowestRatioNormalized + scale.rangeNormalized * fraction)
+        }
+
+        for row in 0..<resolution {
+            let yFrequency = frequency(atFraction: (Double(row) + 0.5) / Double(resolution))
+            for col in 0..<resolution {
+                let xFrequency = frequency(atFraction: (Double(col) + 0.5) / Double(resolution))
+                let expected = Dissonance.totalRoughness(rootFrequency: rootFrequency, xFrequency: xFrequency, yFrequency: yFrequency, limit: limit)
+                XCTAssertEqual(grid[row][col], expected, accuracy: 0.0000001, "mismatch at (\(row),\(col))")
+            }
+        }
+    }
+
     func testTotalRoughnessAtUnisonTriadIsLowerThanASpreadOutTriad() {
         // root, X, and Y all on top of each other: every pairwise beat rate involving the
         // fundamentals is 0 (near-zero roughness). A triad whose fundamentals sit one and two

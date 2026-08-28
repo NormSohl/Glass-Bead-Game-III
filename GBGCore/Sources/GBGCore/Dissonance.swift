@@ -123,14 +123,22 @@ enum Dissonance {
             return rootFrequency * pow(2, normalized)
         }
 
+        // both axes share the same fraction-to-frequency mapping, so compute it once per index
+        let frequencyAt = (0..<resolution).map { frequency(atFraction: (Double($0) + 0.5) / Double(resolution)) }
+
         var grid = [[Double]](repeating: [Double](repeating: 0, count: resolution), count: resolution)
+        // totalRoughness(root, X, Y) is symmetric under swapping X and Y (rootX + rootY + xY
+        // is invariant, since roughnessBetweenTones is itself symmetric in its two frequency
+        // arguments), and both grid axes share the same fraction mapping above - so
+        // grid[row][col] == grid[col][row] always. Only the diagonal and one triangle need
+        // computing; the other triangle is a mirror, cutting the cost roughly in half.
         for row in 0..<resolution {
-            let yFraction = (Double(row) + 0.5) / Double(resolution)
-            let yFrequency = frequency(atFraction: yFraction)
-            for col in 0..<resolution {
-                let xFraction = (Double(col) + 0.5) / Double(resolution)
-                let xFrequency = frequency(atFraction: xFraction)
-                grid[row][col] = totalRoughness(rootFrequency: rootFrequency, xFrequency: xFrequency, yFrequency: yFrequency, limit: limit, weighting: weighting)
+            let yFrequency = frequencyAt[row]
+            for col in row..<resolution {
+                let xFrequency = frequencyAt[col]
+                let value = totalRoughness(rootFrequency: rootFrequency, xFrequency: xFrequency, yFrequency: yFrequency, limit: limit, weighting: weighting)
+                grid[row][col] = value
+                grid[col][row] = value
             }
         }
         return grid
