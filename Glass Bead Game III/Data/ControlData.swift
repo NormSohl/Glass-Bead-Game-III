@@ -32,9 +32,10 @@ class AppSettings: ObservableObject{
     @Published var rootFrequency: Double = 261.6255653005986 // middle c  // no UI yet if ever. MIDI note number 60
     @Published var rootMidiNote: Int = 60  // middle c
 
-    // Z: the third moving tone, controlled by the vertical slider strip. Not yet wired into
-    // Sound/Triad (deferred - see the depth-slider design notes), so this is display-only for now:
-    // ZSliderView publishes the touched pitch here, nothing plays it yet.
+    // Z: the third moving tone, controlled by the vertical slider strip - a real 4th voice,
+    // wired into Sound/Triad/MIDI the same way X/Y are. ZSliderView publishes the touched pitch
+    // here every frame (also read directly by TetradView to pick the crossfade layer) and calls
+    // sound.setZPitch(frequency:) to make it audible.
     @Published var zFrequency: Double = 261.6255653005986 // starts at unison with the root
 
     //@Published var numberOfOctaves: Double = 2
