@@ -37,11 +37,13 @@ struct HitTestView: View {
             // hit test x
             let xHit = pitchHitTest(scale: scale, screenLocation: hoverLocation.x, graphSize: size.width, rootFrequency: rootFrequency, snapped: snapped)
             sound.setXPitch(frequency: xHit.frequency)
+            settings.xFrequency = xHit.frequency
             crosshairPoint.x = xHit.crosshair
 
             // hit test y
             let yHit = pitchHitTest(scale: scale, screenLocation: hoverLocation.y, graphSize: size.height, rootFrequency: rootFrequency, snapped: snapped)
             sound.setYPitch(frequency: yHit.frequency)
+            settings.yFrequency = yHit.frequency
             
             // crosshair
             crosshairPoint.y = yHit.crosshair

@@ -32,10 +32,13 @@ class AppSettings: ObservableObject{
     @Published var rootFrequency: Double = 261.6255653005986 // middle c  // no UI yet if ever. MIDI note number 60
     @Published var rootMidiNote: Int = 60  // middle c
 
-    // Z: the third moving tone, controlled by the vertical slider strip - a real 4th voice,
-    // wired into Sound/Triad/MIDI the same way X/Y are. ZSliderView publishes the touched pitch
-    // here every frame (also read directly by TetradView to pick the crossfade layer) and calls
-    // sound.setZPitch(frequency:) to make it audible.
+    // X/Y/Z: the graph's three moving tones. HitTestView/ZSliderView publish the currently
+    // touched pitch here every frame (X/Y added alongside ScoreCapture, mirroring how
+    // ZSliderView already published zFrequency for TetradView to read) - this is the graph's
+    // one place to read "what's currently selected" from outside the touch-handling views
+    // themselves, e.g. for ScoreCapture to read when writing a chord into a Score.
+    @Published var xFrequency: Double = 261.6255653005986 // starts at unison with the root
+    @Published var yFrequency: Double = 261.6255653005986 // starts at unison with the root
     @Published var zFrequency: Double = 261.6255653005986 // starts at unison with the root
 
     //@Published var numberOfOctaves: Double = 2
