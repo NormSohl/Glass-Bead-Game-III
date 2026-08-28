@@ -20,27 +20,55 @@ class Sound {
     var enableDrone = true
     var enableX = true
     var enableY = true
-    
+    var enableZ = true
+
+    // How many touch zones (the X/Y graph, the Z slider) are currently held down. X/Y and Z are
+    // independent simultaneous touches now, but they share one audio engine/MIDI stream - so
+    // starting/stopping is reference-counted rather than gated by either touch alone, or
+    // releasing one finger while the other is still held would wrongly silence everything.
+    private var activeTouchCount = 0
+
     func initSound(){
         midi.initMidi()
     }
-    
+
     func startSound(amp: Float){
         audio.triad.enableTriadRootTone(enable: enableDrone)
         audio.triad.enableTriadXTone(enable: enableX)
         audio.triad.enableTriadYTone(enable: enableY)
-        
+        audio.triad.enableTriadZTone(enable: enableZ)
+
         midi.rootMidiEnable = enableDrone
         midi.xMidiEnable = enableX
         midi.yMidiEnable = enableY
-        
+        midi.zMidiEnable = enableZ
+
         if outputToAudio {audio.startAudio(amp: amp)}
         if outputToMidi {midi.startMidi()}
     }
-    
+
     func stopSound(){
         audio.stopAudio()
         midi.stopMidi()
+    }
+
+    /// Call when a touch zone (graph or Z slider) begins. Starts sound only on the 0->1
+    /// transition, so a second simultaneous touch doesn't redundantly restart it.
+    func beginTouch(amp: Float) {
+        activeTouchCount += 1
+        if activeTouchCount == 1 {
+            startSound(amp: amp)
+        }
+    }
+
+    /// Call when a touch zone ends. Stops sound only once every touch has ended (unless `pedal`
+    /// is held, matching the existing sustain-pedal behavior - sound keeps going regardless of
+    /// touch state until the pedal itself is released).
+    func endTouch(pedal: Bool) {
+        activeTouchCount = max(0, activeTouchCount - 1)
+        if activeTouchCount == 0 && !pedal {
+            stopSound()
+        }
     }
     
     func setRootPitch(frequency: Double){
@@ -56,6 +84,11 @@ class Sound {
     func setYPitch(frequency: Double){
         audio.triad.setTriadYPitch(frequency: frequency)
         midi.setMidiYPitch(frequency: frequency)
+    }
+
+    func setZPitch(frequency: Double){
+        audio.triad.setTriadZPitch(frequency: frequency)
+        midi.setMidiZPitch(frequency: frequency)
     }
     
     func setPitchBendRange(pitchBendRange: Int){

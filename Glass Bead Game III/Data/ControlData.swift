@@ -10,12 +10,15 @@ import SwiftUI
 
 class AppSettings: ObservableObject{
     @Published var showDiamonds: Bool = true
+    @Published var showSettings: Bool = false // settings panel is a popover now, freeing the right edge for the Z slider
     @Published var showDissonance: Bool = false // opt-in: unverified visually, and recomputes a full grid on toggle/limit/resize
+    @Published var showTetrads: Bool = false // opt-in: the Z-aware depth-slider layer view, alongside (not replacing) showDiamonds
     @Published var useLinearHarmonicWeighting: Bool = true // linear vs. 1/n falloff for the dissonance field's harmonic weighting; linear is the default
     @Published var selectedLimit: Limit = Limit.eleven
     @Published var playDrone: Bool = true
     @Published var playNoteX: Bool = true
     @Published var playNoteY: Bool = true
+    @Published var playNoteZ: Bool = true
     @Published var snap: Bool = true
     @Published var pedal: Bool = false
     @Published var useSynth: Bool = true
@@ -28,6 +31,11 @@ class AppSettings: ObservableObject{
     // root pitch
     @Published var rootFrequency: Double = 261.6255653005986 // middle c  // no UI yet if ever. MIDI note number 60
     @Published var rootMidiNote: Int = 60  // middle c
+
+    // Z: the third moving tone, controlled by the vertical slider strip. Not yet wired into
+    // Sound/Triad (deferred - see the depth-slider design notes), so this is display-only for now:
+    // ZSliderView publishes the touched pitch here, nothing plays it yet.
+    @Published var zFrequency: Double = 261.6255653005986 // starts at unison with the root
 
     //@Published var numberOfOctaves: Double = 2
     // Highest ratio =

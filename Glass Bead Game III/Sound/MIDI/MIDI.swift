@@ -35,6 +35,11 @@ class Midi{
     private var yMidiVelocity: Int = 100
     private var yMidiPitchBend: Int = 8192
 
+    private var zMidiFrequency: Double = 0.0
+    private var zMidiNote: Int = 60 // middle c
+    private var zMidiVelocity: Int = 100
+    private var zMidiPitchBend: Int = 8192
+
     private var pitchBendRange: Int = 0
     private var pitchBendRangeMPE: Int = 0
     //private var PitchMidiNote: UInt8 = 60 // middle C
@@ -55,22 +60,26 @@ class Midi{
     var rootMidiEnable = true
     var xMidiEnable = true
     var yMidiEnable = true
+    var zMidiEnable = true
 
     // midi notes on?
     var rootMidiIsPlaying = false
     var xMidiIsPlaying = false
     var yMidiIsPlaying = false
+    var zMidiIsPlaying = false
 
     // midi channels
     var rootMidiChannel = 1
     var xMidiChannel = 2
     var yMidiChannel = 3
+    var zMidiChannel = 4
 
     // midi MPE channels
     // MPE channel 1 is master channel for zone
     var rootMidiMPEChannel = 2
     var xMidiMPEChannel = 3
     var yMidiMPEChannel = 4
+    var zMidiMPEChannel = 5
 
     // list of possible midi notes
     var noteList = NoteList()
@@ -154,6 +163,14 @@ class Midi{
                 sendMidiNoteOn(channel: yMidiMPEChannel, note: yMidiNote, velocity: yMidiVelocity)
                 sendMidiPitchBend(channel: yMidiMPEChannel, value: yMidiPitchBend)
             }
+
+            if zMidiEnable {
+                zMidiIsPlaying = true
+                // Z note on channel 5
+                zMidiPitchBend = PitchBendMath.freqToPB(frequency: zMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
+                sendMidiNoteOn(channel: zMidiMPEChannel, note: zMidiNote, velocity: zMidiVelocity)
+                sendMidiPitchBend(channel: zMidiMPEChannel, value: zMidiPitchBend)
+            }
         }
         else { // not MPE
             if rootMidiEnable {
@@ -183,6 +200,15 @@ class Midi{
                 sendMidiPitchBend(channel: yMidiChannel, value: yMidiPitchBend)
                 sendMidiNoteOn(channel: yMidiChannel, note: yMidiNote, velocity: yMidiVelocity)
             }
+
+            if zMidiEnable {
+                zMidiIsPlaying = true
+                // Z note on channel 4
+                sendMidiNoteOff(channel: zMidiChannel, note: zMidiNote)
+                zMidiPitchBend = PitchBendMath.freqToPB(frequency: zMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRange)
+                sendMidiPitchBend(channel: zMidiChannel, value: zMidiPitchBend)
+                sendMidiNoteOn(channel: zMidiChannel, note: zMidiNote, velocity: zMidiVelocity)
+            }
         }
     }
 
@@ -191,6 +217,7 @@ class Midi{
         rootMidiIsPlaying = false
         xMidiIsPlaying = false
         yMidiIsPlaying = false
+        zMidiIsPlaying = false
 
         if useMPE{
             //print ("Midi: stopMidi: Root")
@@ -201,6 +228,9 @@ class Midi{
 
             //print ("Midi: stopMidi: Y")
             sendMidiNoteOff(channel: 4, note: yMidiNote)
+
+            //print ("Midi: stopMidi: Z")
+            sendMidiNoteOff(channel: 5, note: zMidiNote)
         }
         else {
             //print ("Midi: stopMidi: Root")
@@ -211,6 +241,9 @@ class Midi{
 
             //print ("Midi: stopMidi: Y")
             sendMidiNoteOff(channel: 3, note: yMidiNote)
+
+            //print ("Midi: stopMidi: Z")
+            sendMidiNoteOff(channel: 4, note: zMidiNote)
         }
     }
 
@@ -256,6 +289,21 @@ class Midi{
         if midiTrace { print("Midi: SetYMidiPitch: frequency = \(yMidiFrequency)")}
     }
 
+    func setMidiZPitch(frequency: Double){
+        zMidiFrequency = frequency
+        if zMidiIsPlaying{
+            if useMPE{
+                zMidiPitchBend = PitchBendMath.freqToPB(frequency: zMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
+                sendMidiPitchBend(channel: zMidiMPEChannel, value: zMidiPitchBend)
+            }
+            else{
+                zMidiPitchBend = PitchBendMath.freqToPB(frequency: zMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRange)
+                sendMidiPitchBend(channel: zMidiChannel, value: zMidiPitchBend)
+            }
+        }
+        if midiTrace { print("Midi: SetZMidiPitch: frequency = \(zMidiFrequency)")}
+    }
+
     func setMidiPitchBendRange(pitchBendRange: Int){
         // parameter shares a name with the property it sets, so `self.` disambiguates
         self.pitchBendRange = pitchBendRange
@@ -286,6 +334,7 @@ class Midi{
         setMidiRootPitch(frequency: 440)
         setMidiXPitch(frequency: 440)
         setMidiYPitch(frequency: 440)
+        setMidiZPitch(frequency: 440)
         if midiTrace {print("Midi: tuneStart")}
         startMidi()
     }

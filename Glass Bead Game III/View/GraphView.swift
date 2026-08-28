@@ -10,8 +10,9 @@ import SwiftUI
 struct GraphView: View {
     let scale: Scale
     let diamonds:Diamonds
+    let tetradLayers: TetradLayers
     let settings: AppSettings
-    
+
     var body: some View {
         
         VStack(alignment: .leading, spacing:0){// group of all graph elements
@@ -38,6 +39,10 @@ struct GraphView: View {
                     DiamondView(diamonds: diamonds,
                                 showDiamonds: settings.showDiamonds,
                                 scale: scale)
+                    TetradView(tetradLayers: tetradLayers,
+                               scale: scale,
+                               settings: settings,
+                               showTetrads: settings.showTetrads)
 
                     HitTestView(scale:scale, settings: settings)
                 }.border(.orange)

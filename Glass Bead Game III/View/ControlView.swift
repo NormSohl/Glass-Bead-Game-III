@@ -13,6 +13,7 @@ struct ControlView: View {
     var body: some View {
         ZStack{
             Color.black.ignoresSafeArea(.all)
+            ScrollView {
             VStack(
                 alignment: .leading
             ){
@@ -28,6 +29,12 @@ struct ControlView: View {
 
                 Toggle(isOn: $settings.showDissonance, label:{
                     Text("Dissonance Field")
+                })
+                .tint(tintcolor)
+                .foregroundStyle(.white)
+
+                Toggle(isOn: $settings.showTetrads, label:{
+                    Text("Tetrad Layers (Z)")
                 })
                 .tint(tintcolor)
                 .foregroundStyle(.white)
@@ -52,6 +59,11 @@ struct ControlView: View {
                 Toggle("Note Y", isOn: $settings.playNoteY)
                     .tint(tintcolor)
                     .onChange(of: settings.playNoteY){sound.enableY = settings.playNoteY}
+                    .foregroundStyle(.white)
+
+                Toggle("Note Z", isOn: $settings.playNoteZ)
+                    .tint(tintcolor)
+                    .onChange(of: settings.playNoteZ){sound.enableZ = settings.playNoteZ}
                     .foregroundStyle(.white)
 
                 Toggle("Snapping", isOn: $settings.snap)
@@ -138,7 +150,7 @@ struct ControlView: View {
                 
                 Divider()
                 
-                let details = "Midi channels 1, 2, and 3 are sending A: 440 hz" // to the \(sound.midi.midiDestinations[settings.destinationIndex].name)"
+                let details = "Midi channels 1, 2, 3, and 4 are sending A: 440 hz" // to the \(sound.midi.midiDestinations[settings.destinationIndex].name)"
                 Button("Tune Midi"){
                     if settings.tuneMidi == false{
                         sound.midi.tuneStart()
@@ -197,6 +209,7 @@ struct ControlView: View {
                 
                 Spacer()
             }.padding([.leading,.trailing,.top], 20)
+            }
         }
     }
     

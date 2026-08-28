@@ -14,25 +14,29 @@ class Triad{
     let rootAmplitude: Double = 0.77
     let xAmplitude: Double = 1.15
     let yAmplitude: Double = 1.15
+    let zAmplitude: Double = 1.15
 
     var rootPitch: Double = 0.0
 
     var tone1: Tone
     var tone2: Tone
     var tone3: Tone
+    var tone4: Tone
 
     init() {
         // property initializers can't reference sibling instance properties (self isn't
-        // available yet), so tone1/2/3 are built here instead, off the amplitude constants above
+        // available yet), so tone1/2/3/4 are built here instead, off the amplitude constants above
         tone1 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: rootAmplitude)
         tone2 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: xAmplitude)
         tone3 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: yAmplitude)
+        tone4 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: zAmplitude)
     }
 
     func setTriadSampleRate (sampleRate:Double){
         tone1.setSampleRate(inSampleRate: sampleRate)
         tone2.setSampleRate(inSampleRate: sampleRate)
         tone3.setSampleRate(inSampleRate: sampleRate)
+        tone4.setSampleRate(inSampleRate: sampleRate)
     }
 
     func setTriadRootPitch(frequency:Double){
@@ -67,12 +71,25 @@ class Triad{
         }
     }
 
+    func enableTriadZTone(enable: Bool){
+        if enable == true {
+            tone4.setAmplitude(inAmplitude: zAmplitude)
+        }
+        else {
+            tone4.setAmplitude(inAmplitude: 0.0)
+        }
+    }
+
     func setTriadXAmplitude(amplitude:Double){
         tone2.setAmplitude(inAmplitude: amplitude)
     }
 
     func setTriadYAmplitude(amplitude:Double){
         tone3.setAmplitude(inAmplitude: amplitude)
+    }
+
+    func setTriadZAmplitude(amplitude:Double){
+        tone4.setAmplitude(inAmplitude: amplitude)
     }
 
     func getTriadRootPitch() -> Double{
@@ -87,11 +104,16 @@ class Triad{
         tone3.setPitch(inFrequency: frequency)
     }
 
+    func setTriadZPitch(frequency:Double){
+        tone4.setPitch(inFrequency: frequency)
+    }
+
     func getTriadValue() -> Double{
         let value1 = tone1.getValue()
         let value2 = tone2.getValue()
         let value3 = tone3.getValue()
-        let toneMix = (value1+value2+value3) / 3  // want to keep the amplitude equal or below 1.0
+        let value4 = tone4.getValue()
+        let toneMix = (value1+value2+value3+value4) / 4  // want to keep the amplitude equal or below 1.0
         return toneMix
     }
 
@@ -100,5 +122,6 @@ class Triad{
         tone1.incrementPhase()
         tone2.incrementPhase()
         tone3.incrementPhase()
+        tone4.incrementPhase()
     }
 }

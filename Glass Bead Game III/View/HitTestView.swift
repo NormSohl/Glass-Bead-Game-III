@@ -31,13 +31,16 @@ struct HitTestView: View {
             height = size.height
             
             if hitTestTrace {print("HitTestView: isHovering")}
+            let rootFrequency = sound.audio.triad.getTriadRootPitch()
+            let snapped = !isShift
+
             // hit test x
-            let xHit = hitTest(graphSize: size.width, screenLocation: hoverLocation.x)
+            let xHit = pitchHitTest(scale: scale, screenLocation: hoverLocation.x, graphSize: size.width, rootFrequency: rootFrequency, snapped: snapped)
             sound.setXPitch(frequency: xHit.frequency)
             crosshairPoint.x = xHit.crosshair
-            
+
             // hit test y
-            let yHit = hitTest(graphSize: size.height, screenLocation: hoverLocation.y)
+            let yHit = pitchHitTest(scale: scale, screenLocation: hoverLocation.y, graphSize: size.height, rootFrequency: rootFrequency, snapped: snapped)
             sound.setYPitch(frequency: yHit.frequency)
             
             // crosshair
@@ -88,7 +91,7 @@ struct HitTestView: View {
                 isDrag = true
                 isShift = true
                 if isSound == false{
-                    sound.startSound(amp: 1)
+                    sound.beginTouch(amp: 1)
                     isSound = true
                 }
             }
@@ -96,8 +99,8 @@ struct HitTestView: View {
                 //hoverLocation = .zero  // don't think this is needed.
                 isDrag = false
                 isShift = false
+                sound.endTouch(pedal: settings.pedal)
                 if !settings.pedal {
-                    sound.stopSound()
                     isSound = false
                 }
             }
@@ -119,7 +122,7 @@ struct HitTestView: View {
                         else {isShift = true}
                     }
                     if isSound == false{
-                        sound.startSound(amp: 1)
+                        sound.beginTouch(amp: 1)
                         isSound = true
                     }
                     if hitTestTrace {print("HitTestView: DragGesture .onChanged called. isDrag = \(isDrag), isShift = \(isShift), isSound = \(isSound)")}
@@ -128,9 +131,9 @@ struct HitTestView: View {
                     //hoverLocation = .zero  // this has been causing occasional bad values leaking into drag gestures. Don't think it is actually needed.
                     isDrag = false
                     isShift = false
-                    // if pedal is true, then use pointer out of graph to turn off sound
+                    // if pedal is true, sound keeps going until the pedal itself is released
+                    sound.endTouch(pedal: settings.pedal)
                     if !settings.pedal {
-                        sound.stopSound()
                         isSound = false
                     }
                     if hitTestTrace {print("HitTestView: DragGesture: .onEnded called. Drag ended without shift. isDrag = \(isDrag), isShift = \(isShift), isSound = \(isSound)")}
@@ -139,77 +142,5 @@ struct HitTestView: View {
 #if os(iOS)
         .defersSystemGestures(on: .all)
 #endif
-    }
-    
-    func hitTest(graphSize: Double, screenLocation: Double)->(frequency: Double, crosshair: Double){
-        // init return values
-        var frequency: Double = 0.0
-        var crosshair: Double = 0.0
-        
-        // hit test for hoverLocation
-        var lowerBounds: Double = 0.0
-        var upperBounds: Double = 0.0
-        
-        for scaleElement in scale.scale {
-            // process for x axis
-            lowerBounds = scale.convertScaleValueToScreenUnits(
-                normalizedValue: scaleElement.lowerBounds,
-                screenSize: graphSize)
-            
-            upperBounds = scale.convertScaleValueToScreenUnits(
-                normalizedValue: scaleElement.upperBounds,
-                screenSize: graphSize)
-
-            if screenLocation >= lowerBounds && screenLocation <= upperBounds {
-                //print("HitTest: X axis")
-                let ret = hitTestCore(
-                    screenLocation: screenLocation,
-                    graphSize: graphSize,
-                    scaleElement: scaleElement)
-                frequency = ret.frequency
-                crosshair = ret.crosshair
-                break;
-            }
-        }
-        if hitTestTrace { print("HitTestView: hitTest called with return of: frequency: \(frequency), crosshair: \(crosshair)" )}
-        return (frequency: frequency, crosshair: crosshair)
-    }
-    
-    func hitTestCore(
-        screenLocation: Double,
-        graphSize: Double,
-        scaleElement: ScaleElement
-    )->(frequency: Double, crosshair: Double){
-        
-        // init return values
-        var frequency: Double = 0.0
-        var crosshair: Double = 0.0
-        
-        if isShift {
-            // if shift is pressed, play the unsnapped pitch, else play snapped value.
-            let screenRatio = screenLocation / graphSize //0 to 1 value in linear measure, not log as is needed for frequency
-            // value is linear between 0 and rangeNormalized
-            var value = scale.rangeNormalized * screenRatio
-            // adjust to be negative if needed
-            value = value + scale.lowestRatioNormalized
-            
-            // convert to frequency ratio
-            let frequencyRatio = pow(2, value)
-            frequency =  (sound.audio.triad.getTriadRootPitch() * frequencyRatio) // apply the ratio to the root frequency to get an actual frequency
-            // dont snap the crosshair
-            crosshair = scale.convertScaleValueToScreenUnits(
-                normalizedValue: value,
-                screenSize: graphSize)
-        }
-        else{  // shift is not pressed, play snapped value from scale
-            frequency = (sound.audio.triad.getTriadRootPitch() * scaleElement.value)
-            
-            // snap the crosshair
-            crosshair = scale.convertScaleValueToScreenUnits(
-                normalizedValue: scaleElement.valueNormalized,
-                screenSize: graphSize)
-        }
-        if hitTestTrace { print("HitTestView: hitTestCore called with return of: frequency: \(frequency), crosshair: \(crosshair)" )}
-        return (frequency, crosshair)
     }
 }
