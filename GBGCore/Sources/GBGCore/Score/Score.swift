@@ -8,56 +8,63 @@
 import Foundation
 
 // Score holds Parts. Usually three in gbg
-class Score:Node, HasLength {
-    var memberList: [Node] = []
-    var parentNode: Node? = nil
-    
-    var name:String = ""
-    var beatsPerMin:Int = 0
-    
+class Score: HasLength {
+    var parts: [Part] = []
+
+    var name: String = ""
+    var beatsPerMin: Int = 0
+
     init (name:String, beatsPerMin:Int){
         self.name = name
         self.beatsPerMin = beatsPerMin
     }
-    
+
+    func addPart(_ part: Part) {
+        parts.append(part)
+    }
+
     // functions to serve data to the audio render loop
     // first, a brute force function to get an initial set of three notes at a particular timeSlice
     func getTriadNotes(timeSlice:Int)->TriadParts
     {
         var triadParts:TriadParts = TriadParts()
-        
-        if memberList.count == 3 {   // all is good, assumes that score has three parts, ordered as:
-            triadParts.drone = memberList[0] as? Part    // memberList[0] = drone
-            triadParts.x = memberList[1] as? Part        // memberList[1] = tone x
-            triadParts.y = memberList[2] as? Part        // memberList[2] = tone y
+
+        if parts.count == 3 {   // all is good, assumes that score has three parts, ordered as:
+            triadParts.drone = parts[0]    // parts[0] = drone
+            triadParts.x = parts[1]        // parts[1] = tone x
+            triadParts.y = parts[2]        // parts[2] = tone y
         }
         else{
             print ("Wrong number of parts in score! Should be three parts.")
         }
         return triadParts
     }
-    
-    //    // query the parts and average their values
-    //    func render (timeSlice:Int)->Double{
-    //        var value = 0.0
-    //        for node in self.memberList {
-    //            let part = node as! Part
-    //            //value += part.render(timeSlice:timeSlice)
-    //            //value /= Double(memberList.count)
-    //        }
-    //        return value
-    //   }
-    
+
     func getLengthInSamples()->Int{
         var length = 0
-        for node in memberList {
-            let part = node as! Part
-            let loopLength = part.getLengthInSamples()
-            if loopLength > length{
-                length = loopLength
+        for part in parts {
+            let partLength = part.getLengthInSamples()
+            if partLength > length{
+                length = partLength
             }
         }
         return length
+    }
+
+    // Ripple time edits apply to every Part in lockstep. Chord identity is defined purely by
+    // notes across different Parts sharing the same startTime (there's no explicit chord
+    // object) - if one Part's notes shifted independently of another's, notes that used to
+    // sound together would silently drift apart in absolute time and stop reading as a chord.
+    func insertTime(at: Int, duration: Int) {
+        for part in parts {
+            part.insertTime(at: at, duration: duration)
+        }
+    }
+
+    func deleteTime(from: Int, duration: Int) {
+        for part in parts {
+            part.deleteTime(from: from, duration: duration)
+        }
     }
 }
 

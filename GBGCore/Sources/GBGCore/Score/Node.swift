@@ -8,7 +8,11 @@
 import Foundation
 
 // superclass for all classes that have a member list
-
+//
+// Score/Part/Note no longer use this - their hierarchy is fixed (Score -> Part -> Note, Note
+// always terminal), so their child lists are concretely typed (Score.parts: [Part], Part.notes:
+// [Note]) rather than routed through this generic protocol. Kept in case something with a real
+// recursive/polymorphic tree shape needs it later.
 protocol Node:AnyObject {
     var memberList:[Node] {get set}
     var parentNode:Node? {get set}

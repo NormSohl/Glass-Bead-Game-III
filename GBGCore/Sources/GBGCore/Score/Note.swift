@@ -29,6 +29,13 @@ class Note:HasLength{
     func getStartTime()->Int {
         return self.startTime
     }
+
+    // 0 to 1 position of an absolute sample time within this note - the inverse of startTime/
+    // endTime, for callers (Part's insert/split logic) that need to evaluate this note's own
+    // pitch/amplitude curves at a specific cut point rather than at "now."
+    func percentComplete(at time: Int) -> Double {
+        Double(time - startTime) / Double(endTime - startTime)
+    }
     
     // TODO: Returns the length of the note based on its start time and end time
     func getLengthInSamples()->Int{
