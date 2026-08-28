@@ -48,10 +48,10 @@ final class TransitionEnvelopeTests: XCTestCase {
     // NOTE: this locks in the class's *actual* current behavior. Its header comment
     // promises a 0-to-1-to-0 hump, but the formula never reaches 0 and peaks at 2,
     // not 1. Flagging as a likely bug rather than silently encoding it as correct.
-    func testEnvHumpCurrentlyPeaksAtTwoNotOne() {
+    func testEnvHumpStartsAndEndsAtZeroPeakingAtOne() {
         let e = EnvHump()
-        XCTAssertEqual(e.interpolate(percentComplete: 0), 1, accuracy: 0.0001)
-        XCTAssertEqual(e.interpolate(percentComplete: 0.5), 2, accuracy: 0.0001)
-        XCTAssertEqual(e.interpolate(percentComplete: 1), 1, accuracy: 0.0001)
+        XCTAssertEqual(e.interpolate(percentComplete: 0), 0, accuracy: 0.0001)
+        XCTAssertEqual(e.interpolate(percentComplete: 0.5), 1, accuracy: 0.0001)
+        XCTAssertEqual(e.interpolate(percentComplete: 1), 0, accuracy: 0.0001)
     }
 }

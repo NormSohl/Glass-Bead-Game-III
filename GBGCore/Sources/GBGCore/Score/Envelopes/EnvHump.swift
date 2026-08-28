@@ -19,7 +19,7 @@ class EnvHump:Envelope {
     override func interpolate(percentComplete:Double) -> Double {
         location = start + ((end-start) * percentComplete)
         // convert location to radians, perform sin on that value
-        // turn negative to 0 values to 0 to positive
-        return 1 + sin(location * .pi / 180)
+        // sin over 0...180 degrees is already 0 -> 1 -> 0 on its own, no shift needed
+        return sin(location * .pi / 180)
     }
 }
