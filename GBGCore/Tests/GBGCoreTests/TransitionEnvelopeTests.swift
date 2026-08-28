@@ -28,14 +28,11 @@ final class TransitionEnvelopeTests: XCTestCase {
         XCTAssertEqual(t.interpolate(percentComplete: 1), 1, accuracy: 0.0001)
     }
 
-    // NOTE: this locks in the class's *actual* current behavior, which runs from
-    // 1 down to 0 -- the opposite of what its own "always start at 0 and end at 1"
-    // header comment promises. Flagging as a likely bug rather than silently
-    // encoding the wrong direction as "correct": see conversation notes.
-    func testTransEaseInEaseOutCurrentlyRunsOneToZero() {
+    func testTransEaseInEaseOutGoesZeroToOne() {
         let t = TransEaseInEaseOut()
-        XCTAssertEqual(t.interpolate(percentComplete: 0), 1, accuracy: 0.0001)
-        XCTAssertEqual(t.interpolate(percentComplete: 1), 0, accuracy: 0.0001)
+        XCTAssertEqual(t.interpolate(percentComplete: 0), 0, accuracy: 0.0001)
+        XCTAssertEqual(t.interpolate(percentComplete: 0.5), 0.5, accuracy: 0.0001)
+        XCTAssertEqual(t.interpolate(percentComplete: 1), 1, accuracy: 0.0001)
     }
 
     func testEnvFlatIsAlwaysOne() {
