@@ -52,24 +52,23 @@ struct ControlView: View {
                     }
                 }
 
+                // No onChange sync needed here (or for Note X/Y/Z below) - Sound.enableDrone
+                // reads settings.playDrone straight through sound.settings, so the toggle's own
+                // @Published state already is the state Sound sees, live.
                 Toggle("Drone", isOn: $settings.playDrone)
                     .tint(tintcolor)
-                    .onChange(of: settings.playDrone){sound.enableDrone = settings.playDrone}
                     .foregroundStyle(.white)
-                
+
                 Toggle("Note X", isOn: $settings.playNoteX)
                     .tint(tintcolor)
-                    .onChange(of: settings.playNoteX){sound.enableX = settings.playNoteX}
                     .foregroundStyle(.white)
 
                 Toggle("Note Y", isOn: $settings.playNoteY)
                     .tint(tintcolor)
-                    .onChange(of: settings.playNoteY){sound.enableY = settings.playNoteY}
                     .foregroundStyle(.white)
 
                 Toggle("Note Z", isOn: $settings.playNoteZ)
                     .tint(tintcolor)
-                    .onChange(of: settings.playNoteZ){sound.enableZ = settings.playNoteZ}
                     .foregroundStyle(.white)
 
                 Toggle("Snapping", isOn: $settings.snap)

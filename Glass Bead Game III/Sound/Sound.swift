@@ -16,15 +16,20 @@ class Sound {
     var outputToAudio = true
     var outputToMidi = true
 
-
-    // enableDrone's default is kept in sync with AppSettings.playDrone's own default (false) -
-    // this field is only ever written by ControlView's onChange(of: settings.playDrone), which
-    // fires on toggle changes, never at launch, so a mismatched pair of defaults here would
-    // leave the drone audibly playing despite the Drone toggle showing unchecked.
-    var enableDrone = false
-    var enableX = true
-    var enableY = true
-    var enableZ = true
+    // Attached once by AppSettings.init() (sound.settings = self) - Sound is a plain global
+    // constructed before any AppSettings exists, so this starts nil and is filled in as soon as
+    // one is. enableDrone/enableX/enableY/enableZ below read straight through it rather than
+    // keeping their own copies: those used to be separate stored `var`s with their own hardcoded
+    // defaults, written only by ControlView's onChange(of: settings.playDrone) (etc.) - which
+    // fires on toggle changes, never at launch, so the two defaults had to be hand-kept in sync
+    // and silently drifted out of sync at least once (drone audibly playing despite the Drone
+    // toggle showing unchecked). Reading straight through settings removes the second copy
+    // entirely - the toggle's own state is the only state, so there's nothing left to drift.
+    weak var settings: AppSettings?
+    var enableDrone: Bool { settings?.playDrone ?? false }
+    var enableX: Bool { settings?.playNoteX ?? false }
+    var enableY: Bool { settings?.playNoteY ?? false }
+    var enableZ: Bool { settings?.playNoteZ ?? false }
 
     // How many touch zones (the X/Y graph, the Z slider) are currently held down. X/Y and Z are
     // independent simultaneous touches now, but they share one audio engine/MIDI stream - so

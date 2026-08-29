@@ -27,10 +27,9 @@ class AppSettings: ObservableObject{
     @Published var selectedLimit: Limit = Limit.eleven
     // Norm: with the 3rd moving tone on by default, Z sits at unison (= the drone's own pitch)
     // until touched, so playing the drone too just doubles a tone already sounding - off by
-    // default now that Z covers it; still available via its own toggle. Sound.enableDrone's own
-    // default is kept in sync with this (see Sound.swift) since nothing pushes this value to it
-    // except the toggle's onChange - a mismatched pair of defaults would leave the drone audibly
-    // playing despite the unchecked toggle.
+    // default now that Z covers it; still available via its own toggle. This is the only copy
+    // of the drone's enabled state - Sound.enableDrone reads straight through sound.settings
+    // (wired below in init()) rather than keeping a separately-defaulted copy.
     @Published var playDrone: Bool = false
     @Published var playNoteX: Bool = true
     @Published var playNoteY: Bool = true
@@ -114,6 +113,9 @@ class AppSettings: ObservableObject{
         sound.setRootNote(midiNote: self.rootMidiNote)
         sound.setPitchBendRange(pitchBendRange: self.pitchBendRange)
         sound.setPitchBendRangeMPE(pitchBendRange: self.pitchBendRangeMPE)
+        // Lets Sound's enableDrone/enableX/enableY/enableZ read playDrone/playNoteX/Y/Z straight
+        // through this instance instead of keeping their own separately-defaulted copies.
+        sound.settings = self
     }
 }
 
