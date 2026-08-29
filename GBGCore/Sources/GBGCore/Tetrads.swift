@@ -39,13 +39,20 @@ struct TetradElement {
     let locationNormalized: CGPoint
     let sizeNormalized: Double
     let dissonanceCount: Int // 0...6: how many of the six pairs among {root,X,Y,Z} coincide
+    // 0, 1, or 3: how many of the three pairs among just {X:Y, X:Z, Y:Z} coincide - excludes
+    // every root-involving pair (root:X, root:Y, root:Z). Norm's coloring rule for the 3-tone
+    // view deliberately drops the drone from consideration: 2 is not achievable (equality among
+    // three elements is transitive - X=Y and X=Z forces Y=Z, so it's always 0, 1, or 3, same
+    // structural reasoning as dissonanceCount's own 4/5 gap).
+    let movingToneUnisonCount: Int
 
-    init(x: ScaleElement, y: ScaleElement, z: ScaleElement, sizeNormalized: Double, dissonanceCount: Int, highestRatioNormalized: Double) {
+    init(x: ScaleElement, y: ScaleElement, z: ScaleElement, sizeNormalized: Double, dissonanceCount: Int, movingToneUnisonCount: Int, highestRatioNormalized: Double) {
         self.xElement = x
         self.yElement = y
         self.zElement = z
         self.sizeNormalized = sizeNormalized
         self.dissonanceCount = dissonanceCount
+        self.movingToneUnisonCount = movingToneUnisonCount
         // same X/Y screen mapping Diamonds uses - Z is the depth axis, not part of on-screen location
         self.locationNormalized = CGPoint(x: x.valueNormalized / highestRatioNormalized, y: y.valueNormalized)
     }
@@ -87,6 +94,15 @@ struct Tetrads {
                     if xz.dissonance == 1.0 { dissonanceCount += 1 } // X:Z unison
                     if yz.dissonance == 1.0 { dissonanceCount += 1 } // Y:Z unison
 
+                    // Same three checks, but counted separately from the root-involving three -
+                    // Norm's coloring rule for the 3-tone view: red when all three moving tones
+                    // coincide, white when exactly two of the three do, yellow when none do,
+                    // regardless of where the drone sits.
+                    var movingToneUnisonCount = 0
+                    if xy.dissonance == 1.0 { movingToneUnisonCount += 1 }
+                    if xz.dissonance == 1.0 { movingToneUnisonCount += 1 }
+                    if yz.dissonance == 1.0 { movingToneUnisonCount += 1 }
+
                     // largest numerator/denominator across all six ratios (root:X, root:Y,
                     // root:Z, X:Y, X:Z, Y:Z) - same size rule Diamonds uses, extended from
                     // three ratios to six
@@ -102,6 +118,7 @@ struct Tetrads {
                         x: x, y: y, z: z,
                         sizeNormalized: sizeNormalized,
                         dissonanceCount: dissonanceCount,
+                        movingToneUnisonCount: movingToneUnisonCount,
                         highestRatioNormalized: scale.highestRatioNormalized
                     ))
                 }

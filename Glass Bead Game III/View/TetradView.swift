@@ -7,13 +7,18 @@
 //  Opt-in via its own toggle, independent of the existing 2D Diamonds view, so the two can be
 //  compared directly while this is still new/untested on device.
 //
-//  Color scheme settled in the depth-slider design notes: dissonanceCount 0 (all four pitches
-//  distinct) is gray, 1/2/3 (some but not all coincide) is white, 6 (root=X=Y=Z) is red -
-//  reusing DiamondView's existing gray/red RGB values for visual continuity with the 2D view.
+//  Color scheme, per Norm (2026-08-28, revised after adding the third moving tone): with three
+//  moving tones now in play, the drone/root is dropped from the color calculation entirely -
+//  movingToneUnisonCount (0/1/3, see Tetrads.swift) drives it instead of the old six-pair
+//  dissonanceCount. Red when all three moving tones coincide (X=Y=Z, regardless of root), white
+//  when exactly two of the three do, yellow - gradient by size, DiamondView's exact formula -
+//  when none do. (2 is structurally impossible, same as the old scheme's 4/5 gap.)
 //
-//  Size/color/geometry otherwise mirror DiamondView exactly, so a tetrad layer at weight 1.0
-//  (Z sitting exactly on a scale value) looks identical to the equivalent 2D diamond - matching
-//  the verified reduction-to-2D behavior in TetradsTests.
+//  Size/geometry mirror DiamondView exactly, so a tetrad layer at weight 1.0 (Z sitting exactly
+//  on a scale value) lines up with the equivalent 2D diamond - matching the verified
+//  reduction-to-2D behavior in TetradsTests. Colors intentionally differ from DiamondView's own
+//  (which still colors by the six-pair dissonanceCount, including the drone) since the two views
+//  are never shown at once - Tetrad Layers fully replaces Diamonds when the 3rd moving tone is on.
 
 import SwiftUI
 
@@ -84,7 +89,9 @@ struct TetradView: View {
                         screenSize: size.width)
 
                     let tetradSize = entry.size
-                    let color = TetradView.color(forDissonanceCount: tetrad.dissonanceCount)
+                    let color = TetradView.color(
+                        forMovingToneUnisonCount: tetrad.movingToneUnisonCount,
+                        sizeNormalized: tetrad.sizeNormalized)
 
                     let tetradPath = Path { path in
                         path.move(to: CGPoint(x: xLocationInScreenUnits - tetradSize, y: yLocationInScreenUnits))
@@ -100,11 +107,15 @@ struct TetradView: View {
         }
     }
 
-    private static func color(forDissonanceCount dissonanceCount: Int) -> Color {
-        switch dissonanceCount {
-        case 6: return Color(red: 0.8, green: 0.3, blue: 0.3) // root = X = Y = Z, the absolute center
-        case 0: return Color(red: 0.75, green: 0.75, blue: 0.78) // all four pitches distinct
-        default: return Color(red: 1.0, green: 1.0, blue: 1.0) // 1, 2, or 3: some but not all coincide
+    private static func color(forMovingToneUnisonCount movingToneUnisonCount: Int, sizeNormalized: Double) -> Color {
+        switch movingToneUnisonCount {
+        case 3: return Color(red: 0.8, green: 0.3, blue: 0.3) // X = Y = Z, drone excluded
+        case 1: return Color(red: 1.0, green: 1.0, blue: 1.0) // exactly two of the three coincide
+        default: // 0: none of the three coincide - DiamondView's exact yellow-gradient-by-size formula
+            var shade = sizeNormalized
+            if shade > 0.6 { shade = 1.0 }
+            if shade <= 0.6 { shade = shade * 1.5 }
+            return Color(red: shade, green: shade, blue: 0.0)
         }
     }
 }
