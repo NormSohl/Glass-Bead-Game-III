@@ -128,6 +128,19 @@ class Sound {
         if activeTouchCount == 0 && !pedal { stopEngine() }
     }
 
+    /// Call when the pedal toggle itself is released (not a touch ending) - Norm: a real damper
+    /// pedal silences whatever it was sustaining the instant it's lifted, not on the next key
+    /// press. Nothing was calling this before, so unchecking "pedal" while a touch-released note
+    /// was still sustaining left it sounding indefinitely - confirmed directly by logging live
+    /// tone amplitudes across a release-while-sustaining test. No-op if something is still
+    /// actively touched (lifting the pedal mid-touch shouldn't cut off an active touch, only
+    /// whatever was ONLY still sounding because of the pedal).
+    func releasePedal() {
+        guard activeTouchCount == 0 else { return }
+        applyLiveVoiceEnables()
+        stopEngine()
+    }
+
     func setRootPitch(frequency: Double){
         audio.triad.setTriadRootPitch (frequency: frequency)
         midi.setMidiReferencePitch(frequency: frequency)

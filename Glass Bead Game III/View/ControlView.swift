@@ -88,6 +88,12 @@ struct ControlView: View {
                 Toggle("pedal", isOn: $settings.pedal)
                     .tint(tintcolor)
                     .foregroundStyle(.white)
+                    // Norm: releasing a real damper pedal silences whatever it was sustaining
+                    // right away, not on the next touch - sound.releasePedal() is a no-op if
+                    // something is still actively touched.
+                    .onChange(of: settings.pedal) {
+                        if !settings.pedal { sound.releasePedal() }
+                    }
 
                 Divider()
 #if os(iOS)
