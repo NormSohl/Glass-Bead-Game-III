@@ -26,6 +26,10 @@ struct ControlView: View {
                 })
                 .tint(tintcolor)
                 .foregroundStyle(.white)
+                // Tetrad Layers is the generalization Diamonds reduces to at Z=unison (see
+                // TetradsTests) - not a separate thing to compare against, so it takes over
+                // entirely rather than drawing alongside it.
+                .disabled(settings.showTetrads)
 
                 Toggle(isOn: $settings.showDissonance, label:{
                     Text("Dissonance Field")

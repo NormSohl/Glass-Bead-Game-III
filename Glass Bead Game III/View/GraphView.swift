@@ -36,8 +36,13 @@ struct GraphView: View {
                     DissonanceView(scale: scale, settings: settings, showDissonance: settings.showDissonance)
                     // graph
                     Graph(scale: scale)
+                    // Tetrad Layers is the generalization Diamonds reduces to at Z=unison, not
+                    // an independent thing to compare against it - so it takes over entirely
+                    // (Diamonds doesn't draw at all) rather than the two overlapping, which
+                    // showed as a smaller tetrad diamond nested inside a larger, unrelated,
+                    // Z-independent 2D diamond at the same position.
                     DiamondView(diamonds: diamonds,
-                                showDiamonds: settings.showDiamonds,
+                                showDiamonds: settings.showDiamonds && !settings.showTetrads,
                                 scale: scale,
                                 showDissonanceField: settings.showDissonance)
                     TetradView(tetradLayers: tetradLayers,
