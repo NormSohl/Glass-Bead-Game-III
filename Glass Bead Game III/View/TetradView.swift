@@ -62,13 +62,11 @@ struct TetradView: View {
                 var toDraw: [(tetrad: TetradElement, weight: Double, size: Double)] = []
                 for layer in activeLayers {
                     for tetrad in layer.tetrads {
-                        // same base sizing as DiamondView, then faded by this layer's
-                        // crossfade weight - applied after the floor so a fading-out layer
-                        // still shrinks all the way to nothing rather than getting stuck at
-                        // the floor size
+                        // Same base sizing as DiamondView - Norm: size should stay put during a
+                        // cross-fade, only opacity fades (see the fill/stroke calls below), so a
+                        // fading-in tetrad reads as "becoming visible" rather than "growing."
                         var tetradSize = (size.width / 35) * tetrad.sizeNormalized * 0.85
                         if tetradSize < 4 { tetradSize = 4 }
-                        tetradSize *= layer.weight
                         toDraw.append((tetrad, layer.weight, tetradSize))
                     }
                 }
