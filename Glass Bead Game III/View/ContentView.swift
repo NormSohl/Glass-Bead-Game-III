@@ -21,6 +21,17 @@ struct ContentView: View {
     @State private var diamonds: Diamonds
     @State private var tetradLayers: TetradLayers
 
+    // The graph square's own rendered height, captured via GeometryReader below - the square
+    // (aspectRatio 1/1, contentMode .fit) ends up shorter than the row's full available height
+    // once the Z-slider's fixed 70pt is subtracted from the available width, since width becomes
+    // the limiting dimension. An HStack doesn't force siblings to a shared height, so without
+    // this the Z-slider's own Ticks/gridlines/diamonds would lay out across the *row's* full
+    // height while the square renders shorter and vertically centered within it - Norm's "letters,
+    // ticks, and intervals" not lining up. Explicitly sizing ZSliderView to this captured height
+    // makes both sides use the identical pixel range for the same scale.convertScaleValueToScreenUnits
+    // mapping.
+    @State private var graphSquareHeight: CGFloat = 0
+
     init() {
         let initialSettings = AppSettings()
         _settings = StateObject(wrappedValue: initialSettings)
@@ -64,16 +75,24 @@ struct ContentView: View {
                     }
                     .aspectRatio(1/1, contentMode: settings.contentMode)
                     .layoutPriority(1)
-                    .background()
+                    .background(
+                        GeometryReader { proxy in
+                            Color.clear
+                                .onAppear { graphSquareHeight = proxy.size.height }
+                                .onChange(of: proxy.size.height) { graphSquareHeight = proxy.size.height }
+                        }
+                    )
 
                     // Z: its own touch zone, not overlapping the graph - a separate DragGesture here
                     // tracks its own touch independently of the graph's, so both can be held at once.
                     // Hidden entirely while the 3rd moving tone is off - Norm: nothing for it
                     // to control then (no tetrad view to drive), so no point showing a control
-                    // surface for it.
+                    // surface for it. Height explicitly matched to the graph square's own
+                    // rendered height (see graphSquareHeight above) rather than left to fill
+                    // whatever the row's full height happens to be.
                     if settings.showTetrads {
                         ZSliderView(scale: scale, settings: settings)
-                            .frame(width: 70)
+                            .frame(width: 70, height: graphSquareHeight > 0 ? graphSquareHeight : nil)
                     }
                 }
 

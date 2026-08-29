@@ -32,15 +32,71 @@ struct ZSliderView: View {
     @State private var hasTouched = false
 
     var body: some View {
-        HStack(spacing: 0) {
-            Ticks(border: settings.border,
-                  alignment: .leading,
-                  rangeBelow: scale.lowestRatioNormalized,
-                  rangeAbove: scale.highestRatioNormalized)
-                .frame(width: settings.border)
+        // Mirrors GraphView's own 3-row structure (top border spacer, middle Ticks+content,
+        // bottom border spacer) so the canvas below ends up the same height *and* the same
+        // vertical position within the row as the graph's own inner content area - not just the
+        // same overall height. Without top/bottom spacers matching the graph's own 40pt top/
+        // bottom border rows, sizing this view to the graph's full outer square height (its
+        // aspectRatio square includes those borders) would still leave the canvas spanning the
+        // *entire* square top-to-bottom while the graph's real content sits inset within it,
+        // which is what caused the original "line up" bug Norm flagged - close but not exact.
+        VStack(alignment: .leading, spacing: 0) {
+            Color.clear.frame(height: settings.border)
 
-            Canvas { context, size in
-                zSliderHeight = size.height
+            HStack(spacing: 0) {
+                Ticks(border: settings.border,
+                      alignment: .leading,
+                      rangeBelow: scale.lowestRatioNormalized,
+                      rangeAbove: scale.highestRatioNormalized)
+                    .frame(width: settings.border)
+
+                Canvas { context, size in
+                    zSliderHeight = size.height
+
+                // Scale-degree gridlines and diamonds, drawn first so the touch marker stays on
+                // top - Norm: the slider should read like a compressed copy of the graph's own
+                // axis, not a bare touch strip. Same convertScaleValueToScreenUnits mapping (and,
+                // as of ContentView's graphSquareHeight, the same pixel height) the graph itself
+                // uses for its gridlines, so a given scale degree lines up row-for-row between
+                // the two. Diamonds centered horizontally in the narrow canvas, sized by each
+                // element's own numerator/denominator complexity - DiamondView's same inverted-
+                // power formula, applied to one ratio instead of an X:Y pair since there's no
+                // second axis here to pair it against.
+                for interval in scale.scale {
+                    var y = scale.convertScaleValueToScreenUnits(
+                        normalizedValue: interval.valueNormalized, screenSize: size.height)
+                    y = size.height - y
+
+                    context.stroke(
+                        Path { path in
+                            path.move(to: CGPoint(x: 0, y: y))
+                            path.addLine(to: CGPoint(x: size.width, y: y))
+                        },
+                        with: .color(.gray)
+                    )
+
+                    var sizeNormalized = Double(max(interval.numerator, interval.denominator)) / Double(scale.limit)
+                    sizeNormalized = 1 - sizeNormalized
+                    var diamondSize = (Double(size.width) / 2 - 1) * sizeNormalized
+                    if diamondSize < 2 { diamondSize = 2 }
+
+                    var shade = sizeNormalized
+                    if shade > 0.6 { shade = 1.0 }
+                    if shade <= 0.6 { shade = shade * 1.5 }
+                    let color: Color = interval.dissonance == 1.0
+                        ? Color(red: 0.75, green: 0.75, blue: 0.78) // 1/1 - the drone's own pitch
+                        : Color(red: shade, green: shade, blue: 0.0)
+
+                    let x = Double(size.width) / 2
+                    let diamondPath = Path { path in
+                        path.move(to: CGPoint(x: x - diamondSize, y: y))
+                        path.addLine(to: CGPoint(x: x, y: y + diamondSize))
+                        path.addLine(to: CGPoint(x: x + diamondSize, y: y))
+                        path.addLine(to: CGPoint(x: x, y: y - diamondSize))
+                        path.closeSubpath()
+                    }
+                    context.fill(diamondPath, with: .color(color))
+                }
 
                 // Same driven-vs-touch split as HitTestView's x/y - see AppSettings.
                 // sequencerDrivenVoices. When the sequencer owns Z (playback, scrub, or a
@@ -88,7 +144,10 @@ struct ZSliderView: View {
                             isSound = false
                         }
                     }
-            )
+                )
+            }
+
+            Color.clear.frame(height: settings.border)
         }
         .background(Color.black)
 #if os(iOS)
