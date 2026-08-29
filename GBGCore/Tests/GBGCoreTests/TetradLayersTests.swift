@@ -121,4 +121,39 @@ final class TetradLayersTests: XCTestCase {
         let zValues = Set(result.tetrads.map { Tetrads.rounded($0.zElement.valueNormalized) })
         XCTAssertEqual(zValues.count, 1)
     }
+
+    // MARK: - bracketingZKeys / nearestZKey (the Z-filtered grid's key-only views)
+
+    func testBracketingZKeysMatchesTheKeysBracketingLayersUsed() {
+        // Same bracket-finding, just the keys/weights instead of the tetrads at each key - so
+        // this must always agree with bracketingLayers on which keys and weights come back.
+        let scale = Scale(limit: 5, highestRatio: 2.0, lowestRatio: 0.5)
+        let layers = TetradLayers(scale: scale)
+        let below = layers.sortedZValues[0]
+        let above = layers.sortedZValues[1]
+        let nearAbove = below + (above - below) * 0.9
+
+        let keys = layers.bracketingZKeys(around: nearAbove)
+        let fromLayers = layers.bracketingLayers(atZNormalized: nearAbove)
+
+        XCTAssertEqual(keys.count, fromLayers.count)
+        for (key, layer) in zip(keys, fromLayers) {
+            XCTAssertEqual(key.weight, layer.weight, accuracy: 1e-9)
+            XCTAssertTrue(layer.tetrads.allSatisfy { Tetrads.rounded($0.zElement.valueNormalized) == key.key })
+        }
+    }
+
+    func testNearestZKeyMatchesTheKeyNearestLayerUsed() {
+        let scale = Scale(limit: 5, highestRatio: 2.0, lowestRatio: 0.5)
+        let layers = TetradLayers(scale: scale)
+        let below = layers.sortedZValues[0]
+        let above = layers.sortedZValues[1]
+        let nearAbove = below + (above - below) * 0.9
+
+        let key = layers.nearestZKey(to: nearAbove)
+        let fromLayer = layers.nearestLayer(atZNormalized: nearAbove)
+
+        XCTAssertEqual(key, above)
+        XCTAssertTrue(fromLayer.tetrads.allSatisfy { Tetrads.rounded($0.zElement.valueNormalized) == key })
+    }
 }

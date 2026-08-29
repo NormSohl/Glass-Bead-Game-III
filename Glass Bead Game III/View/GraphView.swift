@@ -35,7 +35,7 @@ struct GraphView: View {
                     // dissonance field, drawn first so it sits behind the grid/diamonds
                     DissonanceView(scale: scale, settings: settings, showDissonance: settings.showDissonance)
                     // graph
-                    Graph(scale: scale, settings: settings)
+                    Graph(scale: scale, tetradLayers: tetradLayers, settings: settings)
                     // Tetrad Layers is the generalization Diamonds reduces to at Z=unison, not
                     // an independent thing to compare against it - so it takes over entirely
                     // (Diamonds doesn't draw at all) rather than the two overlapping, which
@@ -85,48 +85,61 @@ struct Corner: View {
 
 struct Graph: View {
     var scale: Scale
+    var tetradLayers: TetradLayers
     @ObservedObject var settings: AppSettings
 
     var body: some View {
         Canvas(){context, size in
+            func drawLine(for interval: ScaleElement, weight: Double) {
+                // Horizontal line
+                var yIntervalInScreenUnits = scale.convertScaleValueToScreenUnits(
+                    normalizedValue: interval.valueNormalized,
+                    screenSize: size.width)
+                // y screen values are inverted
+                yIntervalInScreenUnits = size.width - yIntervalInScreenUnits
+
+                var path = Path()
+                path.move(to: CGPoint(x: 0, y: yIntervalInScreenUnits))
+                path.addLine(to: CGPoint(x: size.width, y: yIntervalInScreenUnits))
+
+                // Vertical line
+                let xIntervalInScreenUnits = scale.convertScaleValueToScreenUnits(
+                    normalizedValue: interval.valueNormalized,
+                    screenSize: size.height)
+                path.move(to: CGPoint(x: xIntervalInScreenUnits, y: 0))
+                path.addLine(to: CGPoint(x: xIntervalInScreenUnits, y: size.height))
+
+                context.stroke(path, with: .color(.gray.opacity(weight)))
+            }
+
             // With the 3rd moving tone on, filter the grid down to just the scale degrees that
             // actually pair with the current Z (Tetrads.elementsPairing) instead of showing every
             // scale degree regardless of Z - matches the diamonds themselves thinning out at
             // off-root Z layers. At Z=unison this is always the full scale unfiltered (see
             // elementsPairing's own doc comment), so the default view is untouched either way.
-            let intervals: [ScaleElement]
+            //
+            // Weighted by the same bracketing-Z-keys TetradView's diamonds cross-fade between
+            // (or the single nearest key when snapped), not just one hard-cutoff Z value - a
+            // line valid at one bracketing key but not the other is drawn at that key's own
+            // weight, so it fades in/out through a slide exactly like the diamonds do, rather
+            // than snapping on/off abruptly. A line valid at both keys is drawn twice, once per
+            // key's weight - alpha stacks, same as two overlapping diamonds would.
             if settings.showTetrads && settings.filterGraphLines {
                 let zValueNormalized = Tetrads.rounded(log2(settings.zFrequency / settings.rootFrequency))
-                intervals = Tetrads.elementsPairing(withNormalizedValue: zValueNormalized, in: scale)
-            } else {
-                intervals = scale.scale
-            }
-            context.stroke(
-                Path { path in
-                    for interval in intervals {
+                let zKeys: [(key: Double, weight: Double)] = settings.snap
+                    ? tetradLayers.nearestZKey(to: zValueNormalized).map { [(key: $0, weight: 1.0)] } ?? []
+                    : tetradLayers.bracketingZKeys(around: zValueNormalized)
 
-                        // Horizontal lines
-                        var yIntervalInScreenUnits = scale.convertScaleValueToScreenUnits(
-                            normalizedValue: interval.valueNormalized,
-                            screenSize:size.width)
-                        // y screen values are inverted
-                        yIntervalInScreenUnits = size.width - yIntervalInScreenUnits
-
-                        // Draw
-                        path.move(to: CGPoint (x: 0, y: yIntervalInScreenUnits))
-                        path.addLine(to: CGPoint(x: size.width, y: yIntervalInScreenUnits))
-
-                        // Vertical lines
-                        let xIntervalInScreenUnits = scale.convertScaleValueToScreenUnits(
-                            normalizedValue: interval.valueNormalized,
-                            screenSize:size.height)
-                        // draw
-                        path.move(to: CGPoint (x:xIntervalInScreenUnits, y:0))
-                        path.addLine(to: CGPoint(x:xIntervalInScreenUnits, y: size.height))
+                for (key, weight) in zKeys {
+                    for interval in Tetrads.elementsPairing(withNormalizedValue: key, in: scale) {
+                        drawLine(for: interval, weight: weight)
                     }
-                },
-                with: .color(.gray)
-            )
+                }
+            } else {
+                for interval in scale.scale {
+                    drawLine(for: interval, weight: 1.0)
+                }
+            }
         }
     }
 }
