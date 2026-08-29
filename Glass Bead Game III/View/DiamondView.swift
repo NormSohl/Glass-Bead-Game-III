@@ -12,6 +12,9 @@ struct DiamondView: View {
     var diamonds: Diamonds
     let showDiamonds: Bool
     let scale: Scale
+    // Only the Dissonance Field has anything worth seeing through a diamond - otherwise a
+    // fully opaque fill reads better, so the transparency below only applies while it's on.
+    let showDissonanceField: Bool
 
     var body: some View {
         if showDiamonds {
@@ -30,8 +33,10 @@ struct DiamondView: View {
                         normalizedValue: diamond.xElement.valueNormalized,
                         screenSize:size.width)
 
-                    // diamond size (15% smaller than the original sizing, per Norm)
-                    var diamondSize = (size.width / 35) * diamond.sizeNormalized * 0.85
+                    // diamond size - two successive 15% reductions from the original sizing,
+                    // per Norm (the second one requested 2026-08-28, after the graph started
+                    // rendering much larger following that session's window-sizing fix)
+                    var diamondSize = (size.width / 35) * diamond.sizeNormalized * 0.85 * 0.85
                     if diamondSize < 4 {diamondSize =  4}
 
                     // diamond color
@@ -59,8 +64,12 @@ struct DiamondView: View {
                         // lower left line
                         path.closeSubpath()
                     }
-                    // draw fill
-                    context.fill(diamondPath, with: .color(color))
+                    // draw fill - semi-transparent (0.7) only while the Dissonance Field is on,
+                    // so its own detail still shows through, especially the dense/interesting
+                    // structure right around unison where diamonds cluster largest and most
+                    // densely; fully opaque otherwise. Stroke always stays fully opaque so each
+                    // diamond's outline still reads clearly either way.
+                    context.fill(diamondPath, with: .color(color.opacity(showDissonanceField ? 0.7 : 1.0)))
                     // draw border
                     context.stroke(diamondPath, with: .color(.gray))
                 }

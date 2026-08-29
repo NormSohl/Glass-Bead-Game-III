@@ -20,7 +20,7 @@ import SwiftUI
 struct TetradView: View {
     let tetradLayers: TetradLayers
     let scale: Scale
-    let settings: AppSettings
+    @ObservedObject var settings: AppSettings
     let showTetrads: Bool
 
     var body: some View {

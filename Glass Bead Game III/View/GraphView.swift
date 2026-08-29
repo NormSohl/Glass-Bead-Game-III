@@ -11,10 +11,10 @@ struct GraphView: View {
     let scale: Scale
     let diamonds:Diamonds
     let tetradLayers: TetradLayers
-    let settings: AppSettings
+    @ObservedObject var settings: AppSettings
 
     var body: some View {
-        
+
         VStack(alignment: .leading, spacing:0){// group of all graph elements
             
             HStack(alignment: .top, spacing:0){  // top border
@@ -38,7 +38,8 @@ struct GraphView: View {
                     Graph(scale: scale)
                     DiamondView(diamonds: diamonds,
                                 showDiamonds: settings.showDiamonds,
-                                scale: scale)
+                                scale: scale,
+                                showDissonanceField: settings.showDissonance)
                     TetradView(tetradLayers: tetradLayers,
                                scale: scale,
                                settings: settings,

@@ -37,6 +37,14 @@ struct Ticks: View {
             let numTicks = 12 * range
             let centerTick = 12 * abs(rangeBelow)
 
+            // Label size tracks the actual space between ticks (the graph's rendered size
+            // divided across the same numTicks used for layout above), not a fixed point size -
+            // otherwise labels stay tiny on a large window and would overlap on a small one.
+            // Capped so it doesn't balloon at extreme zoom; floored so it never disappears.
+            let referenceSize = (alignment == .top || alignment == .bottom) ? size.width : size.height
+            let tickSpacing = numTicks > 0 ? referenceSize / numTicks : 15
+            let fontSize = min(18, max(8, tickSpacing * 0.55))
+
             for tick in 0...Int(numTicks){
                 //deal with edges of view by nudging text and ticks into viewable area
                 var nudge = 0.0
@@ -86,7 +94,7 @@ struct Ticks: View {
                 while myTick < 0 {myTick = myTick + 12}
                 while myTick > 12 {myTick = myTick - 12}
                 
-                let _ = context.draw(Text(noteNames[myTick]).font(.custom("SFPro", size: 15)).foregroundStyle(.white),at: textLocation)
+                let _ = context.draw(Text(noteNames[myTick]).font(.custom("SFPro", size: fontSize)).foregroundStyle(.white),at: textLocation)
             }
         }
     }
