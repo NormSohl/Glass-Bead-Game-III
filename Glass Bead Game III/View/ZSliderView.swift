@@ -43,15 +43,12 @@ struct ZSliderView: View {
         VStack(alignment: .leading, spacing: 0) {
             Color.clear.frame(height: settings.border)
 
-            HStack(spacing: 0) {
-                Ticks(border: settings.border,
-                      alignment: .leading,
-                      rangeBelow: scale.lowestRatioNormalized,
-                      rangeAbove: scale.highestRatioNormalized)
-                    .frame(width: settings.border)
-
-                Canvas { context, size in
-                    zSliderHeight = size.height
+            // No leading Ticks column here - the graph's own right-border ticks (GraphView's
+            // trailing Ticks, immediately to this view's left) already label every row at the
+            // same height now that the two are aligned; a second copy of the same letters right
+            // next to it was redundant. The canvas takes the full width freed up by removing it.
+            Canvas { context, size in
+                zSliderHeight = size.height
 
                 // Scale-degree gridlines and diamonds, drawn first so the touch marker stays on
                 // top - Norm: the slider should read like a compressed copy of the graph's own
@@ -147,8 +144,7 @@ struct ZSliderView: View {
                             isSound = false
                         }
                     }
-                )
-            }
+            )
 
             Color.clear.frame(height: settings.border)
         }
