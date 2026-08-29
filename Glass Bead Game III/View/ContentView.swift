@@ -68,8 +68,13 @@ struct ContentView: View {
 
                     // Z: its own touch zone, not overlapping the graph - a separate DragGesture here
                     // tracks its own touch independently of the graph's, so both can be held at once.
-                    ZSliderView(scale: scale, settings: settings)
-                        .frame(width: 70)
+                    // Hidden entirely while the 3rd moving tone is off - Norm: nothing for it
+                    // to control then (no tetrad view to drive), so no point showing a control
+                    // surface for it.
+                    if settings.showTetrads {
+                        ZSliderView(scale: scale, settings: settings)
+                            .frame(width: 70)
+                    }
                 }
 
                 // The drone's own on-screen representation - see RootIndicatorView's header
@@ -89,9 +94,9 @@ struct ContentView: View {
         // no dead space (see idealWindowSize) - dragging just one edge would otherwise leave
         // black borders, since the Z-slider/RootIndicatorView/sequencer strip are fixed-point-size,
         // not proportional, so only a plain resizable window (no ratio lock) can go out of sync
-        // with the square graph's own aspect. Recomputed whenever the sequencer panel's shown/
-        // hidden, since that changes the content's natural ratio too.
-        .background(WindowAspectLockView(aspectSize: idealWindowSize(sequencerShown: settings.showSequencer)))
+        // with the square graph's own aspect. Recomputed whenever the sequencer panel or the
+        // Z-slider (3rd moving tone) show/hide, since either changes the content's natural ratio.
+        .background(WindowAspectLockView(aspectSize: idealWindowSize(sequencerShown: settings.showSequencer, thirdToneShown: settings.showTetrads)))
         #endif
         .onChange(of: settings.selectedLimit) {
             rebuildScaleDependentState()

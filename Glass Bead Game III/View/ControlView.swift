@@ -38,10 +38,19 @@ struct ControlView: View {
                 .foregroundStyle(.white)
 
                 Toggle(isOn: $settings.showTetrads, label:{
-                    Text("Tetrad Layers (Z)")
+                    Text("3rd Moving Tone")
                 })
                 .tint(tintcolor)
                 .foregroundStyle(.white)
+                // Norm: turning this on should start at the 1:1 (unison) plane every time, so
+                // the display reads as unchanged at the moment it switches on (unison's tetrad
+                // slice is identical to the default 2D view) - it only switches layers once the
+                // slider is actually moved off of that plane, never just from toggling on.
+                .onChange(of: settings.showTetrads) {
+                    if settings.showTetrads {
+                        settings.zFrequency = settings.rootFrequency
+                    }
+                }
 
                 Toggle("Drone", isOn: $settings.playDrone)
                     .tint(tintcolor)

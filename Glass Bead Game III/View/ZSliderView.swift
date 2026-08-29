@@ -24,6 +24,12 @@ struct ZSliderView: View {
 
     @State private var hoverLocation: CGPoint = .zero
     @State private var isSound = false
+    // Guards against the canvas overwriting settings.zFrequency on its very first render, before
+    // any real touch - hoverLocation starts at .zero (screenLocation 0, the low end of the
+    // slider), so without this the untouched slider would silently drag zFrequency down to the
+    // scale's lowest ratio the instant it mounts, undoing ControlView's "reset to unison when
+    // the 3rd moving tone toggles on" behavior before the user ever touches it.
+    @State private var hasTouched = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -39,9 +45,10 @@ struct ZSliderView: View {
                 // Same driven-vs-touch split as HitTestView's x/y - see AppSettings.
                 // sequencerDrivenVoices. When the sequencer owns Z (playback, scrub, or a
                 // piano-roll handle drag on a Z note), the marker is drawn from whatever it
-                // already wrote into settings.zFrequency instead of from touch.
+                // already wrote into settings.zFrequency instead of from touch. Same read-only
+                // treatment applies before the first real touch (see hasTouched above).
                 let markerY: Double
-                if settings.sequencerDrivenVoices.contains(.z) {
+                if settings.sequencerDrivenVoices.contains(.z) || !hasTouched {
                     let zNormalized = log2(settings.zFrequency / settings.rootFrequency)
                     let crosshair = scale.convertScaleValueToScreenUnits(normalizedValue: zNormalized, screenSize: size.height)
                     markerY = size.height - crosshair
@@ -67,6 +74,7 @@ struct ZSliderView: View {
             .gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
                     .onChanged { value in
+                        hasTouched = true
                         hoverLocation = value.location
                         hoverLocation.y = zSliderHeight - hoverLocation.y
                         if isSound == false {
