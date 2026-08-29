@@ -121,9 +121,12 @@ struct ZSliderView: View {
                     markerY = size.height - hit.crosshair
                 }
 
+                // Red, matching TetradView.unisonColor - the red unison diamond (X = Y = Z)
+                // tracks wherever this marker currently sits, so the cursor is colored to match
+                // what it drives.
                 context.fill(
                     Path(CGRect(x: 0, y: markerY - 2, width: size.width, height: 4)),
-                    with: .color(.white)
+                    with: .color(TetradView.unisonColor)
                 )
             }
             .background(.white.opacity(0.08))

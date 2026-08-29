@@ -105,9 +105,13 @@ struct TetradView: View {
         }
     }
 
+    // Shared with ZSliderView's touch marker - the red unison diamond (X = Y = Z) tracks
+    // wherever Z currently sits, so the slider's own cursor is colored to match what it drives.
+    static let unisonColor = Color(red: 0.8, green: 0.3, blue: 0.3)
+
     private static func color(forMovingToneUnisonCount movingToneUnisonCount: Int, sizeNormalized: Double) -> Color {
         switch movingToneUnisonCount {
-        case 3: return Color(red: 0.8, green: 0.3, blue: 0.3) // X = Y = Z, drone excluded
+        case 3: return unisonColor // X = Y = Z, drone excluded
         case 1: return Color(red: 1.0, green: 1.0, blue: 1.0) // exactly two of the three coincide
         default: // 0: none of the three coincide - DiamondView's exact yellow-gradient-by-size formula
             var shade = sizeNormalized
