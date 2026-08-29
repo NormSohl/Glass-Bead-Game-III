@@ -150,12 +150,12 @@ struct ZSliderView: View {
                         hoverLocation = value.location
                         hoverLocation.y = zSliderHeight - hoverLocation.y
                         if isSound == false {
-                            sound.beginTouch(amp: 1)
+                            sound.beginZTouch(amp: 1)
                             isSound = true
                         }
                     }
                     .onEnded { _ in
-                        sound.endTouch(pedal: settings.pedal)
+                        sound.endZTouch(pedal: settings.pedal)
                         if !settings.pedal {
                             isSound = false
                         }

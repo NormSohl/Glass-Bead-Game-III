@@ -33,53 +33,101 @@ class Sound {
 
     // How many touch zones (the X/Y graph, the Z slider) are currently held down. X/Y and Z are
     // independent simultaneous touches now, but they share one audio engine/MIDI stream - so
-    // starting/stopping is reference-counted rather than gated by either touch alone, or
-    // releasing one finger while the other is still held would wrongly silence everything.
+    // starting/stopping the engine is reference-counted rather than gated by either touch alone,
+    // or releasing one finger while the other is still held would wrongly silence everything.
     private var activeTouchCount = 0
+
+    // Per-zone touch counts, separate from activeTouchCount above - Norm: touching just the
+    // Z-slider was also sounding X/Y, at whatever frequency they'd last been left at rather than
+    // anything actually chosen in that touch. X/Y now only sound while the graph itself is
+    // touched; Z only while the Z-slider is touched; both can be true at once (true multitouch),
+    // each voice reflecting only its own zone regardless of the other.
+    private var graphTouchCount = 0
+    private var zSliderTouchCount = 0
 
     func initSound(){
         midi.initMidi()
     }
 
-    func startSound(amp: Float){
-        audio.triad.enableTriadRootTone(enable: enableDrone)
-        audio.triad.enableTriadXTone(enable: enableX)
-        audio.triad.enableTriadYTone(enable: enableY)
-        audio.triad.enableTriadZTone(enable: enableZ)
+    // Sets each voice's enabled state from its own toggle AND its own zone's touch count -
+    // drone from activeTouchCount (it has no touch zone of its own, so it follows "is anything
+    // being touched"), X/Y from graphTouchCount, Z from zSliderTouchCount.
+    private func applyLiveVoiceEnables(){
+        audio.triad.enableTriadRootTone(enable: enableDrone && activeTouchCount > 0)
+        audio.triad.enableTriadXTone(enable: enableX && graphTouchCount > 0)
+        audio.triad.enableTriadYTone(enable: enableY && graphTouchCount > 0)
+        audio.triad.enableTriadZTone(enable: enableZ && zSliderTouchCount > 0)
 
-        midi.rootMidiEnable = enableDrone
-        midi.xMidiEnable = enableX
-        midi.yMidiEnable = enableY
-        midi.zMidiEnable = enableZ
+        midi.rootMidiEnable = enableDrone && activeTouchCount > 0
+        midi.xMidiEnable = enableX && graphTouchCount > 0
+        midi.yMidiEnable = enableY && graphTouchCount > 0
+        midi.zMidiEnable = enableZ && zSliderTouchCount > 0
+    }
 
+    private func startEngine(amp: Float){
         if outputToAudio {audio.startAudio(amp: amp)}
         if outputToMidi {midi.startMidi()}
     }
 
-    func stopSound(){
+    private func stopEngine(){
         audio.stopAudio()
         midi.stopMidi()
     }
 
-    /// Call when a touch zone (graph or Z slider) begins. Starts sound only on the 0->1
-    /// transition, so a second simultaneous touch doesn't redundantly restart it.
-    func beginTouch(amp: Float) {
+    /// Call when the graph (X/Y) touch zone begins. X/Y are enabled here (via
+    /// applyLiveVoiceEnables), independent of whether the Z-slider is also currently held - the
+    /// shared engine itself starts only on the overall 0->1 transition, so an already-active
+    /// Z-slider touch doesn't get redundantly restarted.
+    func beginGraphTouch(amp: Float) {
+        graphTouchCount += 1
         activeTouchCount += 1
-        if activeTouchCount == 1 {
-            startSound(amp: amp)
+        applyLiveVoiceEnables()
+        if activeTouchCount == 1 { startEngine(amp: amp) }
+    }
+
+    /// Call when the graph touch zone ends. Disables X/Y (unless `pedal` is held, matching the
+    /// existing sustain behavior - voices keep sounding regardless of touch state until the
+    /// pedal itself is released) and stops the shared engine only once every zone has ended.
+    func endGraphTouch(pedal: Bool) {
+        graphTouchCount = max(0, graphTouchCount - 1)
+        activeTouchCount = max(0, activeTouchCount - 1)
+        if !pedal {
+            applyLiveVoiceEnables()
+            if activeTouchCount == 0 { stopEngine() }
         }
     }
 
-    /// Call when a touch zone ends. Stops sound only once every touch has ended (unless `pedal`
-    /// is held, matching the existing sustain-pedal behavior - sound keeps going regardless of
-    /// touch state until the pedal itself is released).
-    func endTouch(pedal: Bool) {
+    /// Z-slider touch begin/end - same as beginGraphTouch/endGraphTouch, for Z instead of X/Y.
+    func beginZTouch(amp: Float) {
+        zSliderTouchCount += 1
+        activeTouchCount += 1
+        applyLiveVoiceEnables()
+        if activeTouchCount == 1 { startEngine(amp: amp) }
+    }
+
+    func endZTouch(pedal: Bool) {
+        zSliderTouchCount = max(0, zSliderTouchCount - 1)
         activeTouchCount = max(0, activeTouchCount - 1)
-        if activeTouchCount == 0 && !pedal {
-            stopSound()
+        if !pedal {
+            applyLiveVoiceEnables()
+            if activeTouchCount == 0 { stopEngine() }
         }
     }
-    
+
+    /// For touch sources that aren't a specific voice zone - currently just the sequencer's
+    /// play/scrub, which manages each voice's amplitude directly (ScorePlayer writes it every
+    /// sample, bypassing the enable-flag mechanism above entirely) and only needs the shared
+    /// engine gated, not applyLiveVoiceEnables.
+    func beginTouch(amp: Float) {
+        activeTouchCount += 1
+        if activeTouchCount == 1 { startEngine(amp: amp) }
+    }
+
+    func endTouch(pedal: Bool) {
+        activeTouchCount = max(0, activeTouchCount - 1)
+        if activeTouchCount == 0 && !pedal { stopEngine() }
+    }
+
     func setRootPitch(frequency: Double){
         audio.triad.setTriadRootPitch (frequency: frequency)
         midi.setMidiReferencePitch(frequency: frequency)

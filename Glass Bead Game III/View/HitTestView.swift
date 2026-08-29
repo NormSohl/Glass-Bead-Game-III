@@ -110,7 +110,7 @@ struct HitTestView: View {
                 isDrag = true
                 isShift = true
                 if isSound == false{
-                    sound.beginTouch(amp: 1)
+                    sound.beginGraphTouch(amp: 1)
                     isSound = true
                 }
             }
@@ -118,7 +118,7 @@ struct HitTestView: View {
                 //hoverLocation = .zero  // don't think this is needed.
                 isDrag = false
                 isShift = false
-                sound.endTouch(pedal: settings.pedal)
+                sound.endGraphTouch(pedal: settings.pedal)
                 if !settings.pedal {
                     isSound = false
                 }
@@ -141,7 +141,7 @@ struct HitTestView: View {
                         else {isShift = true}
                     }
                     if isSound == false{
-                        sound.beginTouch(amp: 1)
+                        sound.beginGraphTouch(amp: 1)
                         isSound = true
                     }
                     if hitTestTrace {print("HitTestView: DragGesture .onChanged called. isDrag = \(isDrag), isShift = \(isShift), isSound = \(isSound)")}
@@ -151,7 +151,7 @@ struct HitTestView: View {
                     isDrag = false
                     isShift = false
                     // if pedal is true, sound keeps going until the pedal itself is released
-                    sound.endTouch(pedal: settings.pedal)
+                    sound.endGraphTouch(pedal: settings.pedal)
                     if !settings.pedal {
                         isSound = false
                     }
