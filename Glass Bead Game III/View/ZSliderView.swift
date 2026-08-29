@@ -21,6 +21,12 @@ var zSliderHeight = 0.0
 struct ZSliderView: View {
     let scale: Scale
     @ObservedObject var settings: AppSettings
+    // The graph's own full square size (ContentView's graphSquareHeight) - used, alongside
+    // settings.border, to size this view's diamonds by the exact same formula DiamondView/
+    // TetradView use for theirs, rather than a formula rescaled to this view's own much
+    // narrower canvas width. Norm: the diamonds should match the rest of the graph, in size as
+    // well as color.
+    let graphSquareSize: CGFloat
 
     @State private var hoverLocation: CGPoint = .zero
     @State private var isSound = false
@@ -74,14 +80,24 @@ struct ZSliderView: View {
 
                     var sizeNormalized = Double(max(interval.numerator, interval.denominator)) / Double(scale.limit)
                     sizeNormalized = 1 - sizeNormalized
-                    var diamondSize = (Double(size.width) / 2 - 1) * sizeNormalized
-                    if diamondSize < 2 { diamondSize = 2 }
 
+                    // DiamondView's exact size formula, based on the graph's own content width
+                    // (graphSquareSize minus its two 40pt borders) rather than this view's own
+                    // much narrower canvas width - a scale degree's diamond is the same size
+                    // here as it is on the graph itself.
+                    let graphContentSize = Double(graphSquareSize) - 2 * settings.border
+                    var diamondSize = (graphContentSize / 35) * sizeNormalized * 0.85
+                    if diamondSize < 4 { diamondSize = 4 }
+
+                    // DiamondView's exact color formula too - yellow gradient by size, red for
+                    // the root (matching TetradView.unisonColor, same as this slider's own
+                    // cursor) instead of DiamondView's gray, since red is what marks unison
+                    // everywhere else in the tetrad view this slider actually drives.
                     var shade = sizeNormalized
                     if shade > 0.6 { shade = 1.0 }
                     if shade <= 0.6 { shade = shade * 1.5 }
                     let color: Color = interval.dissonance == 1.0
-                        ? Color(red: 0.75, green: 0.75, blue: 0.78) // 1/1 - the drone's own pitch
+                        ? TetradView.unisonColor
                         : Color(red: shade, green: shade, blue: 0.0)
 
                     let x = Double(size.width) / 2

@@ -91,7 +91,7 @@ struct ContentView: View {
                     // rendered height (see graphSquareHeight above) rather than left to fill
                     // whatever the row's full height happens to be.
                     if settings.showTetrads {
-                        ZSliderView(scale: scale, settings: settings)
+                        ZSliderView(scale: scale, settings: settings, graphSquareSize: graphSquareHeight)
                             .frame(width: 70, height: graphSquareHeight > 0 ? graphSquareHeight : nil)
                     }
                 }
