@@ -80,10 +80,11 @@ struct ControlView: View {
                     .tint(tintcolor)
                     .foregroundStyle(.white)
 
-                Toggle("Snapping", isOn: $settings.snap)
-                    .tint(tintcolor)
-                    .foregroundStyle(.white)
-                
+                // Snapping now lives as its own toolbar button (the waveform.path icon in
+                // ContentView's title bar, labeled "Portamento" there) - important enough to
+                // reach without opening this popover, per Norm. Removed from here rather than
+                // duplicated, since both would drive the exact same settings.snap.
+
                 Toggle("pedal", isOn: $settings.pedal)
                     .tint(tintcolor)
                     .foregroundStyle(.white)
