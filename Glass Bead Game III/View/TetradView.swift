@@ -87,9 +87,18 @@ struct TetradView: View {
                         screenSize: size.width)
 
                     let tetradSize = entry.size
-                    let color = TetradView.color(
-                        forMovingToneUnisonCount: tetrad.movingToneUnisonCount,
-                        sizeNormalized: tetrad.sizeNormalized)
+                    // The center point (X = Y = root) always reads red, regardless of where Z
+                    // currently sits - same fixed reference convention ZSliderView's own root
+                    // marker already uses (always red there too, not tied to the current touch).
+                    // Norm: without this, the one fixed landmark on the graph disappears the
+                    // moment Z leaves unison, losing the visual "where's home" anchor - sized
+                    // normally like any other diamond at the current Z layer, only the color is
+                    // pinned.
+                    let color: Color = (tetrad.xElement.value == 1.0 && tetrad.yElement.value == 1.0)
+                        ? TetradView.unisonColor
+                        : TetradView.color(
+                            forMovingToneUnisonCount: tetrad.movingToneUnisonCount,
+                            sizeNormalized: tetrad.sizeNormalized)
 
                     let tetradPath = Path { path in
                         path.move(to: CGPoint(x: xLocationInScreenUnits - tetradSize, y: yLocationInScreenUnits))
