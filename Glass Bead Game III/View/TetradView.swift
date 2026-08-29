@@ -112,7 +112,15 @@ struct TetradView: View {
     private static func color(forMovingToneUnisonCount movingToneUnisonCount: Int, sizeNormalized: Double) -> Color {
         switch movingToneUnisonCount {
         case 3: return unisonColor // X = Y = Z, drone excluded
-        case 1: return Color(red: 1.0, green: 1.0, blue: 1.0) // exactly two of the three coincide
+        // Black, not white - Norm: white read as too loud for a tier that isn't the map's most
+        // important point (that's red, above). Matches DiamondView's original scheme before an
+        // earlier fix changed ITS analogous tier from black to light gray specifically because
+        // black blended into the Dissonance Field's own zero-roughness black - the same risk
+        // applies here if the field is ever on at the same time as the 3rd moving tone (rare:
+        // Diamonds/DissonanceField and 3rd-moving-tone-off is the field's usual pairing), but the
+        // stroke below stays gray regardless of fill, so the diamond's outline still reads even
+        // against a black field.
+        case 1: return Color(red: 0.0, green: 0.0, blue: 0.0) // exactly two of the three coincide
         default: // 0: none of the three coincide - DiamondView's exact yellow-gradient-by-size formula
             var shade = sizeNormalized
             if shade > 0.6 { shade = 1.0 }
