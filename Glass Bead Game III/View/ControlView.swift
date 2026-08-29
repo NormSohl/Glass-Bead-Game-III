@@ -52,6 +52,15 @@ struct ControlView: View {
                     }
                 }
 
+                Toggle(isOn: $settings.filterGraphLines, label:{
+                    Text("Filter Grid to Z")
+                })
+                .tint(tintcolor)
+                .foregroundStyle(.white)
+                // Meaningless without the 3rd moving tone active - there's no Z-layer to filter
+                // the grid down to otherwise.
+                .disabled(!settings.showTetrads)
+
                 // No onChange sync needed here (or for Note X/Y/Z below) - Sound.enableDrone
                 // reads settings.playDrone straight through sound.settings, so the toggle's own
                 // @Published state already is the state Sound sees, live.

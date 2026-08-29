@@ -35,7 +35,7 @@ struct GraphView: View {
                     // dissonance field, drawn first so it sits behind the grid/diamonds
                     DissonanceView(scale: scale, settings: settings, showDissonance: settings.showDissonance)
                     // graph
-                    Graph(scale: scale)
+                    Graph(scale: scale, settings: settings)
                     // Tetrad Layers is the generalization Diamonds reduces to at Z=unison, not
                     // an independent thing to compare against it - so it takes over entirely
                     // (Diamonds doesn't draw at all) rather than the two overlapping, which
@@ -85,13 +85,26 @@ struct Corner: View {
 
 struct Graph: View {
     var scale: Scale
-    
+    @ObservedObject var settings: AppSettings
+
     var body: some View {
         Canvas(){context, size in
+            // With the 3rd moving tone on, filter the grid down to just the scale degrees that
+            // actually pair with the current Z (Tetrads.elementsPairing) instead of showing every
+            // scale degree regardless of Z - matches the diamonds themselves thinning out at
+            // off-root Z layers. At Z=unison this is always the full scale unfiltered (see
+            // elementsPairing's own doc comment), so the default view is untouched either way.
+            let intervals: [ScaleElement]
+            if settings.showTetrads && settings.filterGraphLines {
+                let zValueNormalized = Tetrads.rounded(log2(settings.zFrequency / settings.rootFrequency))
+                intervals = Tetrads.elementsPairing(withNormalizedValue: zValueNormalized, in: scale)
+            } else {
+                intervals = scale.scale
+            }
             context.stroke(
                 Path { path in
-                    for interval in scale.scale {
-                        
+                    for interval in intervals {
+
                         // Horizontal lines
                         var yIntervalInScreenUnits = scale.convertScaleValueToScreenUnits(
                             normalizedValue: interval.valueNormalized,

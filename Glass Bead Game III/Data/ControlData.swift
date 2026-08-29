@@ -24,6 +24,12 @@ class AppSettings: ObservableObject{
     // own toggle if turned back on after switching this off (see DiamondView's showDiamonds &&
     // !showTetrads gating).
     @Published var showTetrads: Bool = true
+    // Default when the 3rd moving tone is on: the background grid only shows the scale degrees
+    // that actually pair with the current Z (see Tetrads.elementsPairing) instead of every scale
+    // degree regardless of Z - the grid was staying dense/uniform even as the diamonds themselves
+    // thinned out at off-root Z layers, which read as clutter rather than structure. Toggle stays
+    // available to revert to the full unfiltered grid.
+    @Published var filterGraphLines: Bool = true
     @Published var selectedLimit: Limit = Limit.eleven
     // Norm: with the 3rd moving tone on by default, Z sits at unison (= the drone's own pitch)
     // until touched, so playing the drone too just doubles a tone already sounding - off by

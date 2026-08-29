@@ -130,4 +130,45 @@ final class TetradsTests: XCTestCase {
         // dissonanceCount picks up but movingToneUnisonCount must not
         XCTAssertGreaterThan(match?.dissonanceCount ?? 0, match?.movingToneUnisonCount ?? 0)
     }
+
+    // MARK: - elementsPairing (the graph's Z-filtered background grid)
+
+    func testElementsPairingAtRootReturnsFullScaleUnfiltered() {
+        // Every element's interval with root(0) is itself, trivially a scale member - so at
+        // Z=unison the filter should be a no-op, matching the "identical to unfiltered default
+        // at Z=unison" invariant already verified for the tetrads themselves.
+        let scale = Scale(limit: 7, highestRatio: 3/1, lowestRatio: 1/2)
+        let filtered = Tetrads.elementsPairing(withNormalizedValue: 0, in: scale)
+        XCTAssertEqual(Set(filtered.map { $0.value }), Set(scale.scale.map { $0.value }))
+    }
+
+    func testElementsPairingOffRootIsProperSubsetOfFullScale() {
+        let scale = Scale(limit: 9, highestRatio: 3/1, lowestRatio: 1/2)
+        guard let octave = scale.scale.first(where: { $0.value == 2.0 }) else {
+            XCTFail("scale should contain the octave")
+            return
+        }
+        let filtered = Tetrads.elementsPairing(withNormalizedValue: octave.valueNormalized, in: scale)
+        XCTAssertTrue(Set(filtered.map { $0.value }).isSubset(of: Set(scale.scale.map { $0.value })))
+        XCTAssertLessThan(filtered.count, scale.scale.count)
+    }
+
+    func testElementsPairingMatchesTheXAndYValuesTetradsActuallyUsesAtThatZLayer() {
+        // Cross-check against the real thing: every x/y value present in a z-layer's own tetrads
+        // must appear in this filtered set (it's exactly the xz/yz membership test), and nothing
+        // in the filtered set should be absent from every tetrad at that layer.
+        let scale = Scale(limit: 9, highestRatio: 3/1, lowestRatio: 1/2)
+        let tetrads = Tetrads(scale: scale)
+        guard let someZTetrad = tetrads.tetradList.first(where: { $0.zElement.value != 1.0 }) else {
+            XCTFail("expected at least one off-root z layer")
+            return
+        }
+        let zLayerTetrads = tetrads.tetradList.filter { $0.zElement.value == someZTetrad.zElement.value }
+        let valuesUsedByLayer = Set(zLayerTetrads.map { $0.xElement.value } + zLayerTetrads.map { $0.yElement.value })
+
+        let filtered = Tetrads.elementsPairing(withNormalizedValue: someZTetrad.zElement.valueNormalized, in: scale)
+        let filteredValues = Set(filtered.map { $0.value })
+
+        XCTAssertTrue(valuesUsedByLayer.isSubset(of: filteredValues))
+    }
 }

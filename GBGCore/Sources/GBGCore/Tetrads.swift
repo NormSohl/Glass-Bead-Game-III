@@ -129,4 +129,23 @@ struct Tetrads {
     static func rounded(_ value: Double) -> Double {
         round(value * 100000) / 100000
     }
+
+    /// The subset of `scale` whose interval with `zValueNormalized` is itself a scale member -
+    /// exactly the xz/yz membership test every TetradElement is already built from above, exposed
+    /// standalone so the graph's background grid can be filtered down to just the degrees that
+    /// could actually participate in a tetrad at this Z, instead of showing every scale degree
+    /// regardless of Z. At zValueNormalized == 0 (root/unison) this always returns the full
+    /// scale unfiltered - every element's interval with root is itself, trivially a scale member -
+    /// matching the "identical to the unfiltered default at Z=unison" invariant TetradsTests
+    /// already verifies for the tetrads themselves.
+    static func elementsPairing(withNormalizedValue zValueNormalized: Double, in scale: Scale) -> [ScaleElement] {
+        var scaleElementByRoundedValue: [Double: ScaleElement] = [:]
+        for element in scale.scale {
+            scaleElementByRoundedValue[rounded(element.valueNormalized)] = element
+        }
+        return scale.scale.filter { element in
+            let diff = abs(element.valueNormalized - zValueNormalized)
+            return scaleElementByRoundedValue[rounded(diff)] != nil
+        }
+    }
 }
