@@ -137,18 +137,16 @@ struct ContentView: View {
             }
             ToolbarItem(placement: .primaryAction) {
                 // Portamento toggle - direct toolbar access to the same settings.snap the
-                // "Snapping" checkbox in ControlView already controls (both stay in sync, since
-                // they bind to the same @Published property). Norm: important enough to reach
-                // without opening the settings popover first. Colored when portamento (unsnapped)
-                // is active, since - unlike the sequencer panel - there's no obviously visible
-                // change elsewhere to signal the button's own state. Button's own .tint(_:) turned
-                // out not to visibly affect this toolbar icon style on macOS, regardless of
-                // state - coloring the Image directly via .foregroundStyle does.
+                // "Snapping" checkbox in ControlView used to control (removed once this existed;
+                // both drove the same property). Norm: important enough to reach without opening
+                // the settings popover first. Deliberately no custom active-state color - Norm
+                // preferred this match the plain gray-idle/white-on-press look the piano-keys and
+                // gear buttons already have, rather than standing out with its own persistent
+                // color.
                 Button {
                     settings.snap.toggle()
                 } label: {
                     Image(systemName: "waveform.path")
-                        .foregroundStyle(settings.snap ? Color.primary : Color(red: 0.2, green: 0.4, blue: 0.8))
                 }
                 .help("Portamento - drag continuously between pitches instead of snapping to scale degrees")
             }
