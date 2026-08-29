@@ -17,7 +17,7 @@ struct HitTestView: View {
     let hitTestTrace = false
     
     let scale: Scale
-    let settings: AppSettings
+    @ObservedObject var settings: AppSettings
     
     @State private var hoverLocation: CGPoint = .zero
     //@State private var isHovering = false
@@ -29,24 +29,41 @@ struct HitTestView: View {
         Canvas(){context, size in
             var crosshairPoint:CGPoint = .zero
             height = size.height
-            
+
             if hitTestTrace {print("HitTestView: isHovering")}
-            let rootFrequency = sound.audio.triad.getTriadRootPitch()
+            let rootFrequency = settings.rootFrequency
             let snapped = !isShift
 
-            // hit test x
-            let xHit = pitchHitTest(scale: scale, screenLocation: hoverLocation.x, graphSize: size.width, rootFrequency: rootFrequency, snapped: snapped)
-            sound.setXPitch(frequency: xHit.frequency)
-            settings.xFrequency = xHit.frequency
-            crosshairPoint.x = xHit.crosshair
+            // x: touch-driven, unless the sequencer is currently driving this axis (playback,
+            // scrub, or a piano-roll handle drag on an X note) - see AppSettings.
+            // sequencerDrivenVoices. When driven, the crosshair is drawn from whatever the
+            // sequencer already wrote into settings.xFrequency instead of from hoverLocation,
+            // and touching the graph has no effect on it (the DragGesture below skips the write
+            // too) - the sequencer owns this axis's output until it's done with it.
+            if settings.sequencerDrivenVoices.contains(.x) {
+                let xNormalized = log2(settings.xFrequency / rootFrequency)
+                crosshairPoint.x = scale.convertScaleValueToScreenUnits(normalizedValue: xNormalized, screenSize: size.width)
+            } else {
+                let xHit = pitchHitTest(scale: scale, screenLocation: hoverLocation.x, graphSize: size.width, rootFrequency: rootFrequency, snapped: snapped)
+                sound.setXPitch(frequency: xHit.frequency)
+                settings.xFrequency = xHit.frequency
+                crosshairPoint.x = xHit.crosshair
+            }
 
-            // hit test y
-            let yHit = pitchHitTest(scale: scale, screenLocation: hoverLocation.y, graphSize: size.height, rootFrequency: rootFrequency, snapped: snapped)
-            sound.setYPitch(frequency: yHit.frequency)
-            settings.yFrequency = yHit.frequency
-            
+            // y: same pattern as x, above.
+            let yCrosshair: Double
+            if settings.sequencerDrivenVoices.contains(.y) {
+                let yNormalized = log2(settings.yFrequency / rootFrequency)
+                yCrosshair = scale.convertScaleValueToScreenUnits(normalizedValue: yNormalized, screenSize: size.height)
+            } else {
+                let yHit = pitchHitTest(scale: scale, screenLocation: hoverLocation.y, graphSize: size.height, rootFrequency: rootFrequency, snapped: snapped)
+                sound.setYPitch(frequency: yHit.frequency)
+                settings.yFrequency = yHit.frequency
+                yCrosshair = yHit.crosshair
+            }
+
             // crosshair
-            crosshairPoint.y = yHit.crosshair
+            crosshairPoint.y = yCrosshair
             crosshairPoint.y = height - crosshairPoint.y
             
             // draw crosshair on graph

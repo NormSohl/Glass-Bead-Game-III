@@ -20,7 +20,7 @@ var zSliderHeight = 0.0
 
 struct ZSliderView: View {
     let scale: Scale
-    let settings: AppSettings
+    @ObservedObject var settings: AppSettings
 
     @State private var hoverLocation: CGPoint = .zero
     @State private var isSound = false
@@ -36,17 +36,28 @@ struct ZSliderView: View {
             Canvas { context, size in
                 zSliderHeight = size.height
 
-                let hit = pitchHitTest(
-                    scale: scale,
-                    screenLocation: hoverLocation.y,
-                    graphSize: size.height,
-                    rootFrequency: sound.audio.triad.getTriadRootPitch(),
-                    snapped: settings.snap)
-                settings.zFrequency = hit.frequency
-                sound.setZPitch(frequency: hit.frequency)
+                // Same driven-vs-touch split as HitTestView's x/y - see AppSettings.
+                // sequencerDrivenVoices. When the sequencer owns Z (playback, scrub, or a
+                // piano-roll handle drag on a Z note), the marker is drawn from whatever it
+                // already wrote into settings.zFrequency instead of from touch.
+                let markerY: Double
+                if settings.sequencerDrivenVoices.contains(.z) {
+                    let zNormalized = log2(settings.zFrequency / settings.rootFrequency)
+                    let crosshair = scale.convertScaleValueToScreenUnits(normalizedValue: zNormalized, screenSize: size.height)
+                    markerY = size.height - crosshair
+                } else {
+                    let hit = pitchHitTest(
+                        scale: scale,
+                        screenLocation: hoverLocation.y,
+                        graphSize: size.height,
+                        rootFrequency: settings.rootFrequency,
+                        snapped: settings.snap)
+                    settings.zFrequency = hit.frequency
+                    sound.setZPitch(frequency: hit.frequency)
+                    // hit.crosshair is in the same bottom-up convention as X/Y; flip back to draw
+                    markerY = size.height - hit.crosshair
+                }
 
-                // hit.crosshair is in the same bottom-up convention as X/Y; flip back to draw
-                let markerY = size.height - hit.crosshair
                 context.fill(
                     Path(CGRect(x: 0, y: markerY - 2, width: size.width, height: 4)),
                     with: .color(.white)

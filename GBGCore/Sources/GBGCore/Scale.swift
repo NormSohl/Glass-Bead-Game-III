@@ -136,4 +136,15 @@ struct Scale {
         let locationInScreenUnits = screenSize * location
         return locationInScreenUnits
     }
+
+    // Algebraic inverse of convertScaleValueToScreenUnits above - same formula PitchHitTest.swift
+    // already has inlined for touch hit-testing; a real method now that a second caller
+    // (the piano-roll editor's pitch-handle dragging) needs the same reverse mapping.
+    func convertScreenUnitsToScaleValue(
+        screenLocation: Double,
+        screenSize: Double
+    )->Double{
+        let location = screenLocation / screenSize
+        return (location * self.rangeNormalized) - abs(self.lowestRatioNormalized)
+    }
 }

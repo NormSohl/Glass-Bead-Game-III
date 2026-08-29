@@ -53,4 +53,24 @@ final class ScaleTests: XCTestCase {
             XCTAssertEqual(scale.scale[i - 1].upperBounds, scale.scale[i].lowerBounds, accuracy: 0.0001)
         }
     }
+
+    func testConvertScreenUnitsToScaleValueIsTheInverseOfConvertScaleValueToScreenUnits() {
+        let scale = Scale(limit: 5, highestRatio: 3.0, lowestRatio: 0.25)
+
+        for normalizedValue in stride(from: scale.lowestRatioNormalized, through: scale.highestRatioNormalized, by: 0.37) {
+            let screenLocation = scale.convertScaleValueToScreenUnits(normalizedValue: normalizedValue, screenSize: 800)
+            let roundTripped = scale.convertScreenUnitsToScaleValue(screenLocation: screenLocation, screenSize: 800)
+            XCTAssertEqual(roundTripped, normalizedValue, accuracy: 0.0001)
+        }
+    }
+
+    func testConvertScreenUnitsToScaleValueMapsScreenEdgesToRangeEdges() {
+        let scale = Scale(limit: 3, highestRatio: 2.0, lowestRatio: 0.5)
+
+        let lowEdge = scale.convertScreenUnitsToScaleValue(screenLocation: 0, screenSize: 1000)
+        XCTAssertEqual(lowEdge, scale.lowestRatioNormalized, accuracy: 0.0001)
+
+        let highEdge = scale.convertScreenUnitsToScaleValue(screenLocation: 1000, screenSize: 1000)
+        XCTAssertEqual(highEdge, scale.highestRatioNormalized, accuracy: 0.0001)
+    }
 }

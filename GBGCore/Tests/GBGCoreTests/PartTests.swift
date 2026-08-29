@@ -182,4 +182,117 @@ final class PartTests: XCTestCase {
 
         XCTAssertNil(part.getNextNote())
     }
+
+    // MARK: - moveNoteBoundary
+
+    func testMoveNoteBoundaryStartGrowsPreviousNeighborShrinksNote() {
+        let part = Part(name: "test")
+        part.insertNote(startTime: 0, endTime: 100, startFrequency: 220, endFrequency: 220, amplitude: 1)
+        let note = part.insertNote(startTime: 100, endTime: 200, startFrequency: 440, endFrequency: 440, amplitude: 1)
+
+        let moved = part.moveNoteBoundary(of: note, edge: .start, to: 130, minimumNoteLength: 10)
+
+        XCTAssertTrue(moved)
+        XCTAssertEqual(part.notes[0].endTime, 130) // previous grew
+        XCTAssertEqual(part.notes[1].startTime, 130) // note shrank
+        XCTAssertEqual(part.notes[1].endTime, 200) // note's own other edge untouched
+    }
+
+    func testMoveNoteBoundaryEndShrinksNoteGrowsNextNeighbor() {
+        let part = Part(name: "test")
+        let note = part.insertNote(startTime: 0, endTime: 100, startFrequency: 220, endFrequency: 220, amplitude: 1)
+        part.insertNote(startTime: 100, endTime: 200, startFrequency: 440, endFrequency: 440, amplitude: 1)
+
+        let moved = part.moveNoteBoundary(of: note, edge: .end, to: 70, minimumNoteLength: 10)
+
+        XCTAssertTrue(moved)
+        XCTAssertEqual(part.notes[0].startTime, 0) // note's own other edge untouched
+        XCTAssertEqual(part.notes[0].endTime, 70) // note shrank
+        XCTAssertEqual(part.notes[1].startTime, 70) // next grew
+    }
+
+    func testMoveNoteBoundaryClampsAtNeighborMinimumRatherThanConsumingIt() {
+        let part = Part(name: "test")
+        part.insertNote(startTime: 0, endTime: 100, startFrequency: 220, endFrequency: 220, amplitude: 1)
+        let note = part.insertNote(startTime: 100, endTime: 200, startFrequency: 440, endFrequency: 440, amplitude: 1)
+
+        // Dragging far past the previous neighbor's start should stop at the 10-sample floor,
+        // never push the previous neighbor down to (or past) zero length.
+        let moved = part.moveNoteBoundary(of: note, edge: .start, to: -500, minimumNoteLength: 10)
+
+        XCTAssertTrue(moved)
+        XCTAssertEqual(part.notes[0].endTime, 10) // clamped, not consumed/inverted
+        XCTAssertEqual(part.notes[1].startTime, 10)
+    }
+
+    func testMoveNoteBoundaryClampsAtOwnMinimumWhenGrowingIntoNext() {
+        let part = Part(name: "test")
+        let note = part.insertNote(startTime: 0, endTime: 100, startFrequency: 220, endFrequency: 220, amplitude: 1)
+        part.insertNote(startTime: 100, endTime: 200, startFrequency: 440, endFrequency: 440, amplitude: 1)
+
+        // Dragging far past the next neighbor's end should stop 10 samples short of it, never
+        // consume the next neighbor entirely.
+        let moved = part.moveNoteBoundary(of: note, edge: .end, to: 500, minimumNoteLength: 10)
+
+        XCTAssertTrue(moved)
+        XCTAssertEqual(part.notes[0].endTime, 190)
+        XCTAssertEqual(part.notes[1].startTime, 190)
+        XCTAssertEqual(part.notes[1].endTime, 200) // next neighbor's own far edge untouched
+    }
+
+    func testMoveNoteBoundaryIsNoOpWhenClampedPositionMatchesCurrent() {
+        let part = Part(name: "test")
+        part.insertNote(startTime: 0, endTime: 100, startFrequency: 220, endFrequency: 220, amplitude: 1)
+        let note = part.insertNote(startTime: 100, endTime: 200, startFrequency: 440, endFrequency: 440, amplitude: 1)
+
+        let moved = part.moveNoteBoundary(of: note, edge: .start, to: 100, minimumNoteLength: 10)
+
+        XCTAssertFalse(moved)
+        XCTAssertEqual(part.notes[0].endTime, 100)
+        XCTAssertEqual(part.notes[1].startTime, 100)
+    }
+
+    func testMoveNoteBoundaryIsNoOpWhenNoRoomToSatisfyBothMinimums() {
+        let part = Part(name: "test")
+        // Deliberately construct a neighbor already thinner than minimumNoteLength (10), so
+        // there is no valid clamped position - this exercises the lowerBound > upperBound guard.
+        part.insertNote(startTime: 0, endTime: 10, startFrequency: 220, endFrequency: 220, amplitude: 1)
+        let note = part.insertNote(startTime: 10, endTime: 15, startFrequency: 440, endFrequency: 440, amplitude: 1)
+
+        let moved = part.moveNoteBoundary(of: note, edge: .start, to: 12, minimumNoteLength: 10)
+
+        XCTAssertFalse(moved)
+        XCTAssertEqual(part.notes[0].endTime, 10) // untouched
+        XCTAssertEqual(part.notes[1].startTime, 10) // untouched
+    }
+
+    func testMoveNoteBoundaryStartWithNoPreviousNeighborClampsToOwnMinimum() {
+        let part = Part(name: "test")
+        let note = part.insertNote(startTime: 100, endTime: 200, startFrequency: 220, endFrequency: 220, amplitude: 1)
+
+        let moved = part.moveNoteBoundary(of: note, edge: .start, to: -1000, minimumNoteLength: 10)
+
+        XCTAssertTrue(moved)
+        XCTAssertEqual(note.startTime, 10) // clamped at 0 + minimumNoteLength, never negative
+    }
+
+    func testMoveNoteBoundaryEndWithNoNextNeighborGrowsFreely() {
+        let part = Part(name: "test")
+        let note = part.insertNote(startTime: 0, endTime: 100, startFrequency: 220, endFrequency: 220, amplitude: 1)
+
+        let moved = part.moveNoteBoundary(of: note, edge: .end, to: 5000, minimumNoteLength: 10)
+
+        XCTAssertTrue(moved)
+        XCTAssertEqual(note.endTime, 5000) // no next neighbor to bound it
+    }
+
+    func testMoveNoteBoundaryReturnsFalseForANoteNotInThisPart() {
+        let part = Part(name: "test")
+        part.insertNote(startTime: 0, endTime: 100, startFrequency: 220, endFrequency: 220, amplitude: 1)
+        let foreignNote = Note(startTime: 0, endTime: 50, startFrequency: 110, endFrequency: 110, amplitude: 1)
+
+        let moved = part.moveNoteBoundary(of: foreignNote, edge: .start, to: 20, minimumNoteLength: 10)
+
+        XCTAssertFalse(moved)
+    }
 }

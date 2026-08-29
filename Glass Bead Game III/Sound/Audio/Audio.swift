@@ -21,7 +21,14 @@ class Audio {
     let echo = AVAudioUnitDelay()
     
     var triad = Triad()
-    
+
+    // Set once the sequencer exists (SequencerState.init) - advanced one sample at a time from
+    // inside the render callback below, ahead of reading triad.getTriadValue(), so score
+    // playback pushes its own pitch/amplitude into the same triad live touch already drives.
+    // nil (the default, before any sequencer exists, and always true when the sequencer panel
+    // has never been opened) makes the callback behave exactly as it always has.
+    var scorePlayer: ScorePlayer?
+
     // variables for synthesis of signal
     var sampleRate: Double
     
@@ -46,7 +53,9 @@ class Audio {
         let srcNode = AVAudioSourceNode {_, _, frameCount, audioBufferList -> OSStatus in
             let ablPointer = UnsafeMutableAudioBufferListPointer(audioBufferList)
             for frame in 0..<Int(frameCount) {
-                
+
+                self.scorePlayer?.advance()
+
                 let value = self.triad.getTriadValue()
                 
                 // Advance the phase for the next frame.

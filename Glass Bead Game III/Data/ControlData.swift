@@ -8,6 +8,13 @@
 
 import SwiftUI
 
+// The graph's X/Y/Z axes - not the drone, which has no crosshair on the main graph. Used to
+// track which axes are currently being driven by the sequencer (playback/scrub/handle-editing)
+// rather than by touch - see AppSettings.sequencerDrivenVoices and the sequencer memory notes.
+enum SequencerVoice: Hashable {
+    case x, y, z
+}
+
 class AppSettings: ObservableObject{
     @Published var showDiamonds: Bool = true
     @Published var showSettings: Bool = false // settings panel is a popover now, freeing the right edge for the Z slider
@@ -27,6 +34,15 @@ class AppSettings: ObservableObject{
     @Published var tuneMidi: Bool = false
     @Published var test: Bool = false
     @Published var selectedGraphShape: GraphShape = .square
+
+    // Sequencer panel visibility, and which X/Y/Z axes it's currently driving instead of touch
+    // (playback/scrub drive all three at once; dragging a single note's handle in the piano roll
+    // drives just that note's own voice). Empty whenever the panel is hidden or idle, which is
+    // what makes the main graph behave completely unmodified in both those states - see the
+    // sequencer focus-model design notes. Written by SequencerState, read by HitTestView/
+    // ZSliderView.
+    @Published var showSequencer: Bool = false
+    @Published var sequencerDrivenVoices: Set<SequencerVoice> = []
     
     // root pitch
     @Published var rootFrequency: Double = 261.6255653005986 // middle c  // no UI yet if ever. MIDI note number 60

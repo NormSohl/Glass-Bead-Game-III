@@ -7,6 +7,11 @@
 
 import Foundation
 
+enum NoteEdge {
+    case start
+    case end
+}
+
 // Parts hold melodic lines of Notes. Each Part is monophonic - its notes always tile the
 // timeline contiguously with no gaps (silence is a zero-amplitude Note, never an absence), so
 // playback and editing never have to reason about "no note here" as a separate case.
@@ -153,6 +158,52 @@ class Part: HasLength {
             if existing.startTime < from { existing.endTime = from; return false }   // straddles left edge - trim, keep
             if existing.endTime > to { existing.startTime = to; return false }       // straddles right edge - trim, keep
             return true // fully inside - remove
+        }
+    }
+
+    /// Moves the shared time boundary between `note` and its immediate neighbor on `edge` to
+    /// `newTime`: one grows, the other shrinks by the same amount, keeping every note tiling the
+    /// timeline with no gap. This is deliberately not built on `insertNote` - that always carves
+    /// a brand-new span and discards/replaces whatever occupied it, which would lose the
+    /// neighbor's own pitch/transition/envelope; here the neighbor must survive untouched with
+    /// just a new time extent.
+    ///
+    /// Clamped so neither `note` nor its neighbor is ever pushed below `minimumNoteLength`
+    /// samples - a boundary drag can shrink a neighbor down to that floor but can never fully
+    /// consume/delete it. (Deleting a note is still done the existing way: insertNote with
+    /// amplitude 0 over its span.)
+    ///
+    /// No-op (returns false) if `note` isn't in this Part, if there's no room to satisfy both
+    /// minimums, or if the clamped position doesn't actually move anything. If there's no
+    /// neighbor on that edge (`note` is first/last in the Part), only `note`'s own boundary
+    /// moves, clamped against its own opposite edge, `minimumNoteLength`, and (for `.start` with
+    /// no neighbor) 0.
+    @discardableResult
+    func moveNoteBoundary(of note: Note, edge: NoteEdge, to newTime: Int, minimumNoteLength: Int = 1) -> Bool {
+        guard let index = notes.firstIndex(where: { $0 === note }) else { return false }
+
+        switch edge {
+        case .start:
+            let previous = index > 0 ? notes[index - 1] : nil
+            let lowerBound = (previous?.startTime ?? 0) + minimumNoteLength
+            let upperBound = note.endTime - minimumNoteLength
+            guard lowerBound <= upperBound else { return false }
+            let clamped = min(max(newTime, lowerBound), upperBound)
+            guard clamped != note.startTime else { return false }
+            previous?.endTime = clamped
+            note.startTime = clamped
+            return true
+
+        case .end:
+            let next = index < notes.count - 1 ? notes[index + 1] : nil
+            let upperBound = (next?.endTime ?? Int.max) - minimumNoteLength
+            let lowerBound = note.startTime + minimumNoteLength
+            guard lowerBound <= upperBound else { return false }
+            let clamped = min(max(newTime, lowerBound), upperBound)
+            guard clamped != note.endTime else { return false }
+            next?.startTime = clamped
+            note.endTime = clamped
+            return true
         }
     }
 }

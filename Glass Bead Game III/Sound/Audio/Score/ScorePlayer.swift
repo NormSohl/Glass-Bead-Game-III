@@ -48,6 +48,16 @@ class ScorePlayer {
     private var currentYNote: Note?
     private var currentZNote: Note?
 
+    // The frequency actually pushed into `triad` for each voice this sample, mirrored here so a
+    // UI (the sequencer's graph-driving during playback) can read what's currently sounding
+    // without duplicating the note-lookup/percentComplete math - nil when that voice has no
+    // current note. Set alongside the existing triad.setTriad*Pitch calls below; not a new
+    // computation, just also stashing a value already being computed.
+    private(set) var currentDroneFrequency: Double?
+    private(set) var currentXFrequency: Double?
+    private(set) var currentYFrequency: Double?
+    private(set) var currentZFrequency: Double?
+
     // The amplitude actually sent to Triad last sample, per voice - chases each note's own
     // envelope value (or 0, once a voice runs out of notes) rather than jumping straight to it.
     private var appliedDroneAmplitude: Double = 0
@@ -77,6 +87,10 @@ class ScorePlayer {
         appliedXAmplitude = 0
         appliedYAmplitude = 0
         appliedZAmplitude = 0
+        currentDroneFrequency = nil
+        currentXFrequency = nil
+        currentYFrequency = nil
+        currentZFrequency = nil
         isPlaying = true
     }
 
@@ -100,9 +114,12 @@ class ScorePlayer {
             let targetAmplitude: Double
             if let current = currentDroneNote {
                 let percentComplete = current.percentComplete(at: currentSample)
-                triad.setTriadRootPitch(frequency: current.getCurrentFrequency(percentComplete: percentComplete))
+                let frequency = current.getCurrentFrequency(percentComplete: percentComplete)
+                triad.setTriadRootPitch(frequency: frequency)
+                currentDroneFrequency = frequency
                 targetAmplitude = current.getCurrentAmplitude(percentComplete: percentComplete)
             } else {
+                currentDroneFrequency = nil
                 targetAmplitude = 0
             }
             appliedDroneAmplitude += (targetAmplitude - appliedDroneAmplitude) * amplitudeSmoothing
@@ -116,9 +133,12 @@ class ScorePlayer {
             let targetAmplitude: Double
             if let current = currentXNote {
                 let percentComplete = current.percentComplete(at: currentSample)
-                triad.setTriadXPitch(frequency: current.getCurrentFrequency(percentComplete: percentComplete))
+                let frequency = current.getCurrentFrequency(percentComplete: percentComplete)
+                triad.setTriadXPitch(frequency: frequency)
+                currentXFrequency = frequency
                 targetAmplitude = current.getCurrentAmplitude(percentComplete: percentComplete)
             } else {
+                currentXFrequency = nil
                 targetAmplitude = 0
             }
             appliedXAmplitude += (targetAmplitude - appliedXAmplitude) * amplitudeSmoothing
@@ -132,9 +152,12 @@ class ScorePlayer {
             let targetAmplitude: Double
             if let current = currentYNote {
                 let percentComplete = current.percentComplete(at: currentSample)
-                triad.setTriadYPitch(frequency: current.getCurrentFrequency(percentComplete: percentComplete))
+                let frequency = current.getCurrentFrequency(percentComplete: percentComplete)
+                triad.setTriadYPitch(frequency: frequency)
+                currentYFrequency = frequency
                 targetAmplitude = current.getCurrentAmplitude(percentComplete: percentComplete)
             } else {
+                currentYFrequency = nil
                 targetAmplitude = 0
             }
             appliedYAmplitude += (targetAmplitude - appliedYAmplitude) * amplitudeSmoothing
@@ -148,9 +171,12 @@ class ScorePlayer {
             let targetAmplitude: Double
             if let current = currentZNote {
                 let percentComplete = current.percentComplete(at: currentSample)
-                triad.setTriadZPitch(frequency: current.getCurrentFrequency(percentComplete: percentComplete))
+                let frequency = current.getCurrentFrequency(percentComplete: percentComplete)
+                triad.setTriadZPitch(frequency: frequency)
+                currentZFrequency = frequency
                 targetAmplitude = current.getCurrentAmplitude(percentComplete: percentComplete)
             } else {
+                currentZFrequency = nil
                 targetAmplitude = 0
             }
             appliedZAmplitude += (targetAmplitude - appliedZAmplitude) * amplitudeSmoothing

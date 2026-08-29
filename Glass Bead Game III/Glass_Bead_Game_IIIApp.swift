@@ -21,6 +21,39 @@ struct GlassBeadGameIIIApp: App {
         WindowGroup {
             ContentView()
         }
+        .windowResizability(.contentSize)
+        // Window width should exactly match its content (graph + Z-slider, no dead space) - a
+        // plain generous defaultSize left a gap, since windowResizability only bounds later
+        // manual resizes, it doesn't shrink an oversized initial size down to fit. So this
+        // computes the actual content size ContentView's own layout would produce at the
+        // screen's available height (square graph + ZSliderView's fixed 70pt + RootIndicatorView's
+        // fixed 12pt), rather than guessing a width. Launch always starts with the sequencer
+        // panel hidden (AppSettings.showSequencer's own default), so this uses that ratio - see
+        // ContentView's WindowAspectLockView for the version that also accounts for the panel.
+        .defaultSize(idealWindowSize(sequencerShown: false))
     }
 }
+
+#if os(macOS)
+import AppKit
+
+// Shared by both the launch-time defaultSize above and ContentView's live aspect-ratio lock, so
+// the two can never drift apart into two different "correct" sizes.
+func idealWindowSize(sequencerShown: Bool) -> CGSize {
+    let titleBarAllowance: CGFloat = 28
+    let rootIndicatorHeight: CGFloat = 12
+    let zSliderWidth: CGFloat = 70
+    let sequencerHeight: CGFloat = sequencerShown ? 300 : 0
+
+    let screenHeight = NSScreen.main?.visibleFrame.height ?? 1000
+    let graphHeight = screenHeight - titleBarAllowance - sequencerHeight - rootIndicatorHeight
+    let width = graphHeight + zSliderWidth
+    let height = graphHeight + rootIndicatorHeight + sequencerHeight
+    return CGSize(width: width, height: height)
+}
+#else
+func idealWindowSize(sequencerShown: Bool) -> CGSize {
+    CGSize(width: 800, height: sequencerShown ? 852 : 552)
+}
+#endif
 
