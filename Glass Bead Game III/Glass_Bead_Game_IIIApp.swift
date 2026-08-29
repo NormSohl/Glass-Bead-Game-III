@@ -28,10 +28,10 @@ struct GlassBeadGameIIIApp: App {
         // computes the actual content size ContentView's own layout would produce at the
         // screen's available height (square graph + ZSliderView's fixed 70pt, when shown +
         // RootIndicatorView's fixed 12pt), rather than guessing a width. Launch always starts
-        // with the sequencer panel hidden and the 3rd moving tone off (AppSettings' own
+        // with the sequencer panel hidden but the 3rd moving tone ON (AppSettings' own
         // defaults), so this uses that ratio - see ContentView's WindowAspectLockView for the
         // version that also accounts for both toggles live.
-        .defaultSize(idealWindowSize(sequencerShown: false, thirdToneShown: false))
+        .defaultSize(idealWindowSize(sequencerShown: false, thirdToneShown: true))
     }
 }
 

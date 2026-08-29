@@ -19,9 +19,19 @@ class AppSettings: ObservableObject{
     @Published var showDiamonds: Bool = true
     @Published var showSettings: Bool = false // settings panel is a popover now, freeing the right edge for the Z slider
     @Published var showDissonance: Bool = false // opt-in: true per-pixel resolution, recomputes (cached) on toggle/limit/resize
-    @Published var showTetrads: Bool = false // opt-in: the Z-aware depth-slider layer view, alongside (not replacing) showDiamonds
+    // Default view, not opt-in: at Z=unison (its own default) this looks identical to the old
+    // 2D Diamonds default, so this is a pure superset - Diamonds itself stays available via its
+    // own toggle if turned back on after switching this off (see DiamondView's showDiamonds &&
+    // !showTetrads gating).
+    @Published var showTetrads: Bool = true
     @Published var selectedLimit: Limit = Limit.eleven
-    @Published var playDrone: Bool = true
+    // Norm: with the 3rd moving tone on by default, Z sits at unison (= the drone's own pitch)
+    // until touched, so playing the drone too just doubles a tone already sounding - off by
+    // default now that Z covers it; still available via its own toggle. Sound.enableDrone's own
+    // default is kept in sync with this (see Sound.swift) since nothing pushes this value to it
+    // except the toggle's onChange - a mismatched pair of defaults would leave the drone audibly
+    // playing despite the unchecked toggle.
+    @Published var playDrone: Bool = false
     @Published var playNoteX: Bool = true
     @Published var playNoteY: Bool = true
     @Published var playNoteZ: Bool = true

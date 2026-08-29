@@ -17,7 +17,11 @@ class Sound {
     var outputToMidi = true
 
 
-    var enableDrone = true
+    // enableDrone's default is kept in sync with AppSettings.playDrone's own default (false) -
+    // this field is only ever written by ControlView's onChange(of: settings.playDrone), which
+    // fires on toggle changes, never at launch, so a mismatched pair of defaults here would
+    // leave the drone audibly playing despite the Drone toggle showing unchecked.
+    var enableDrone = false
     var enableX = true
     var enableY = true
     var enableZ = true
