@@ -133,6 +133,24 @@ struct ContentView: View {
                 } label: {
                     Image(systemName: "pianokeys")
                 }
+                .help("Sequencer - show or hide the piano-roll editor and transport controls")
+            }
+            ToolbarItem(placement: .primaryAction) {
+                // Portamento toggle - direct toolbar access to the same settings.snap the
+                // "Snapping" checkbox in ControlView already controls (both stay in sync, since
+                // they bind to the same @Published property). Norm: important enough to reach
+                // without opening the settings popover first. Colored when portamento (unsnapped)
+                // is active, since - unlike the sequencer panel - there's no obviously visible
+                // change elsewhere to signal the button's own state. Button's own .tint(_:) turned
+                // out not to visibly affect this toolbar icon style on macOS, regardless of
+                // state - coloring the Image directly via .foregroundStyle does.
+                Button {
+                    settings.snap.toggle()
+                } label: {
+                    Image(systemName: "waveform.path")
+                        .foregroundStyle(settings.snap ? Color.primary : Color(red: 0.2, green: 0.4, blue: 0.8))
+                }
+                .help("Portamento - drag continuously between pitches instead of snapping to scale degrees")
             }
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -140,6 +158,7 @@ struct ContentView: View {
                 } label: {
                     Image(systemName: "gearshape.fill")
                 }
+                .help("Settings - scale, tuning, MIDI, and view options")
                 .popover(isPresented: $settings.showSettings) {
                     ControlView(settings: settings)
                         .frame(minWidth: 340, idealWidth: 380, minHeight: 480, idealHeight: 650)
