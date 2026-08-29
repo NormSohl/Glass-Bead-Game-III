@@ -18,9 +18,8 @@ enum SequencerVoice: Hashable {
 class AppSettings: ObservableObject{
     @Published var showDiamonds: Bool = true
     @Published var showSettings: Bool = false // settings panel is a popover now, freeing the right edge for the Z slider
-    @Published var showDissonance: Bool = false // opt-in: unverified visually, and recomputes a full grid on toggle/limit/resize
+    @Published var showDissonance: Bool = false // opt-in: true per-pixel resolution, recomputes (cached) on toggle/limit/resize
     @Published var showTetrads: Bool = false // opt-in: the Z-aware depth-slider layer view, alongside (not replacing) showDiamonds
-    @Published var useLinearHarmonicWeighting: Bool = true // linear vs. 1/n falloff for the dissonance field's harmonic weighting; linear is the default
     @Published var selectedLimit: Limit = Limit.eleven
     @Published var playDrone: Bool = true
     @Published var playNoteX: Bool = true

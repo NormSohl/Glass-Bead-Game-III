@@ -53,7 +53,6 @@ struct DissonanceView: View {
     private struct CacheKey: Equatable {
         let rootFrequency: Double
         let limit: Int
-        let useLinearWeighting: Bool
         let highestRatio: Double
         let lowestRatio: Double
         let resolution: Int
@@ -69,7 +68,6 @@ struct DissonanceView: View {
                 let key = CacheKey(
                     rootFrequency: settings.rootFrequency,
                     limit: limit,
-                    useLinearWeighting: settings.useLinearHarmonicWeighting,
                     highestRatio: scale.highestRatio,
                     lowestRatio: scale.lowestRatio,
                     resolution: resolution
@@ -79,16 +77,16 @@ struct DissonanceView: View {
                 if cache.key == key, let cachedImage = cache.image {
                     image = cachedImage
                 } else {
-                    let weighting: Dissonance.HarmonicWeighting = settings.useLinearHarmonicWeighting
-                        ? { Dissonance.linearHarmonicWeight($0, limit: limit) }
-                        : Dissonance.harmonicWeight
-
+                    // Always linear falloff (1.0 at the fundamental down to 1/limit at the
+                    // highest included harmonic) - was a user-facing toggle against the 1/n
+                    // alternative, but linear reveals visibly more structure and was always the
+                    // default; Norm decided it's not worth the UI real estate as a choice.
                     let grid = Dissonance.roughnessGrid(
                         scale: scale,
                         rootFrequency: settings.rootFrequency,
                         limit: limit,
                         resolution: resolution,
-                        weighting: weighting
+                        weighting: { Dissonance.linearHarmonicWeight($0, limit: limit) }
                     )
                     guard let maxRoughness = grid.flatMap({ $0 }).max(), maxRoughness > 0,
                           let built = makeRoughnessImage(grid: grid, maxRoughness: maxRoughness, resolution: resolution)
