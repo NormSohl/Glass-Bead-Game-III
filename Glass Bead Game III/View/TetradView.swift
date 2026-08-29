@@ -27,41 +27,74 @@ struct TetradView: View {
         if showTetrads {
             Canvas { context, size in
                 let zRatio = settings.zFrequency / settings.rootFrequency
-                let zValueNormalized = log2(zRatio)
+                // Rounded to the same precision TetradLayers groups its Z keys at
+                // (Tetrads.rounded, 5 decimal places) - without this, an exactly-snapped Z
+                // still lands a hair off from its true bracketing key after the
+                // multiply/divide/log2 round-trip through settings.zFrequency, so
+                // bracketingLayers would return two layers with weights like
+                // 0.999999999999/0.000000000001 instead of a true 1.0/0.0 - technically
+                // already invisible at that magnitude, but rounding first makes "snapped ->
+                // exactly one layer" and "fade reaches exactly zero at the boundary" both
+                // literally true instead of "true up to float noise."
+                let zValueNormalized = Tetrads.rounded(log2(zRatio))
 
-                for layer in tetradLayers.bracketingLayers(atZNormalized: zValueNormalized) {
+                // Snapped: exactly one layer, no blend - the Z-slider snaps to the full scale
+                // (same grid X/Y use), but a tetrad only exists at the sparser subset of that
+                // grid where all three cross-ratios also happen to be scale members, so a
+                // snapped position is almost never itself a real Z layer. bracketingLayers'
+                // continuous blend would then show two layers *permanently*, not just during a
+                // transition - nearestLayer picks whichever real layer the snap is closest to
+                // instead, matching "a snapped position shows exactly one layer." Unsnapped
+                // (live, continuous motion) keeps the real two-layer crossfade - Norm: two
+                // layers should only ever be visible *during* a fade, never at rest.
+                let activeLayers: [(tetrads: [TetradElement], weight: Double)] = settings.snap
+                    ? [tetradLayers.nearestLayer(atZNormalized: zValueNormalized)]
+                    : tetradLayers.bracketingLayers(atZNormalized: zValueNormalized)
+
+                // Collected across both bracketing layers and drawn smallest-last (on top),
+                // not layer-order - Norm: "the smaller overprints the larger." Layer order
+                // alone (below-Z first, above-Z second) doesn't guarantee that; size does.
+                var toDraw: [(tetrad: TetradElement, weight: Double, size: Double)] = []
+                for layer in activeLayers {
                     for tetrad in layer.tetrads {
-                        // get screen location for Y
-                        var yLocationInScreenUnits = scale.convertScaleValueToScreenUnits(
-                            normalizedValue: tetrad.yElement.valueNormalized,
-                            screenSize: size.height)
-                        // invert because y screen values are upside down
-                        yLocationInScreenUnits = size.height - yLocationInScreenUnits
-
-                        // get screen location for X
-                        let xLocationInScreenUnits = scale.convertScaleValueToScreenUnits(
-                            normalizedValue: tetrad.xElement.valueNormalized,
-                            screenSize: size.width)
-
-                        // same base sizing as DiamondView, then faded by this layer's crossfade
-                        // weight - applied after the floor so a fading-out layer still shrinks
-                        // all the way to nothing rather than getting stuck at the floor size
+                        // same base sizing as DiamondView, then faded by this layer's
+                        // crossfade weight - applied after the floor so a fading-out layer
+                        // still shrinks all the way to nothing rather than getting stuck at
+                        // the floor size
                         var tetradSize = (size.width / 35) * tetrad.sizeNormalized * 0.85
                         if tetradSize < 4 { tetradSize = 4 }
                         tetradSize *= layer.weight
-
-                        let color = TetradView.color(forDissonanceCount: tetrad.dissonanceCount)
-
-                        let tetradPath = Path { path in
-                            path.move(to: CGPoint(x: xLocationInScreenUnits - tetradSize, y: yLocationInScreenUnits))
-                            path.addLine(to: CGPoint(x: xLocationInScreenUnits, y: yLocationInScreenUnits + tetradSize))
-                            path.addLine(to: CGPoint(x: xLocationInScreenUnits + tetradSize, y: yLocationInScreenUnits))
-                            path.addLine(to: CGPoint(x: xLocationInScreenUnits, y: yLocationInScreenUnits - tetradSize))
-                            path.closeSubpath()
-                        }
-                        context.fill(tetradPath, with: .color(color.opacity(layer.weight)))
-                        context.stroke(tetradPath, with: .color(.gray.opacity(layer.weight)))
+                        toDraw.append((tetrad, layer.weight, tetradSize))
                     }
+                }
+                toDraw.sort { $0.size > $1.size }
+
+                for entry in toDraw {
+                    let tetrad = entry.tetrad
+                    // get screen location for Y
+                    var yLocationInScreenUnits = scale.convertScaleValueToScreenUnits(
+                        normalizedValue: tetrad.yElement.valueNormalized,
+                        screenSize: size.height)
+                    // invert because y screen values are upside down
+                    yLocationInScreenUnits = size.height - yLocationInScreenUnits
+
+                    // get screen location for X
+                    let xLocationInScreenUnits = scale.convertScaleValueToScreenUnits(
+                        normalizedValue: tetrad.xElement.valueNormalized,
+                        screenSize: size.width)
+
+                    let tetradSize = entry.size
+                    let color = TetradView.color(forDissonanceCount: tetrad.dissonanceCount)
+
+                    let tetradPath = Path { path in
+                        path.move(to: CGPoint(x: xLocationInScreenUnits - tetradSize, y: yLocationInScreenUnits))
+                        path.addLine(to: CGPoint(x: xLocationInScreenUnits, y: yLocationInScreenUnits + tetradSize))
+                        path.addLine(to: CGPoint(x: xLocationInScreenUnits + tetradSize, y: yLocationInScreenUnits))
+                        path.addLine(to: CGPoint(x: xLocationInScreenUnits, y: yLocationInScreenUnits - tetradSize))
+                        path.closeSubpath()
+                    }
+                    context.fill(tetradPath, with: .color(color.opacity(entry.weight)))
+                    context.stroke(tetradPath, with: .color(.gray.opacity(entry.weight)))
                 }
             }
         }

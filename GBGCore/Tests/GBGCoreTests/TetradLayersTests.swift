@@ -73,4 +73,52 @@ final class TetradLayersTests: XCTestCase {
         XCTAssertEqual(result.count, 1)
         XCTAssertEqual(result[0].weight, 1.0)
     }
+
+    // MARK: - nearestLayer (snapped Z - no blend)
+
+    func testNearestLayerAtExactKeyReturnsThatLayerAtFullWeight() {
+        let scale = Scale(limit: 5, highestRatio: 2.0, lowestRatio: 0.5)
+        let layers = TetradLayers(scale: scale)
+        let midKey = layers.sortedZValues[layers.sortedZValues.count / 2]
+
+        let result = layers.nearestLayer(atZNormalized: midKey)
+
+        XCTAssertEqual(result.weight, 1.0)
+        XCTAssertFalse(result.tetrads.isEmpty)
+        for tetrad in result.tetrads {
+            XCTAssertEqual(Tetrads.rounded(tetrad.zElement.valueNormalized), midKey)
+        }
+    }
+
+    func testNearestLayerBetweenTwoValuesPicksTheCloserOneAtFullWeight() {
+        let scale = Scale(limit: 5, highestRatio: 2.0, lowestRatio: 0.5)
+        let layers = TetradLayers(scale: scale)
+        let below = layers.sortedZValues[0]
+        let above = layers.sortedZValues[1]
+        // 90% of the way from below to above - nearest should be "above", not a blend
+        let nearAbove = below + (above - below) * 0.9
+
+        let result = layers.nearestLayer(atZNormalized: nearAbove)
+
+        XCTAssertEqual(result.weight, 1.0) // always full weight - never a blend
+        for tetrad in result.tetrads {
+            XCTAssertEqual(Tetrads.rounded(tetrad.zElement.valueNormalized), above)
+        }
+    }
+
+    func testNearestLayerAtExactMidpointPicksOneSideNotABlend() {
+        let scale = Scale(limit: 5, highestRatio: 2.0, lowestRatio: 0.5)
+        let layers = TetradLayers(scale: scale)
+        let below = layers.sortedZValues[0]
+        let above = layers.sortedZValues[1]
+        let midpoint = (below + above) / 2
+
+        let result = layers.nearestLayer(atZNormalized: midpoint)
+
+        // exactly one real layer's worth of tetrads, always at full weight - unlike
+        // bracketingLayers, there is no valid "both sides" answer here
+        XCTAssertEqual(result.weight, 1.0)
+        let zValues = Set(result.tetrads.map { Tetrads.rounded($0.zElement.valueNormalized) })
+        XCTAssertEqual(zValues.count, 1)
+    }
 }

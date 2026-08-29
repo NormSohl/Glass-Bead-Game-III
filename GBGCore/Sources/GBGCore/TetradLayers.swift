@@ -68,4 +68,21 @@ struct TetradLayers {
         if aboveWeight > 0 { layers.append((tetradsByZ[aboveKey] ?? [], aboveWeight)) }
         return layers
     }
+
+    /// The single nearest layer to `zValueNormalized`, always at full weight - no blend. For a
+    /// snapped Z position: the Z-slider snaps to the full scale (the same grid X/Y snap to), but
+    /// a tetrad only exists at the sparser subset of that grid where all three cross-ratios
+    /// happen to also be scale members, so "snapped" and "sits exactly on a Z layer" are not the
+    /// same thing - most snapped positions land *between* two real layers under
+    /// bracketingLayers, which would show a permanent, never-resolving two-layer blend even
+    /// though nothing is moving. This picks the layer the snap is nearest to instead, so a
+    /// settled/snapped position always reads as exactly one layer, the way a snap implies it
+    /// should. bracketingLayers' continuous blend is for unsnapped motion, where showing two
+    /// layers mid-transition is exactly the point.
+    func nearestLayer(atZNormalized zValueNormalized: Double) -> (tetrads: [TetradElement], weight: Double) {
+        guard let nearest = sortedZValues.min(by: { abs($0 - zValueNormalized) < abs($1 - zValueNormalized) }) else {
+            return ([], 0)
+        }
+        return (tetradsByZ[nearest] ?? [], 1.0)
+    }
 }
