@@ -12,6 +12,7 @@
 //
 
 import Foundation
+import GBGCore
 
 enum ScoreCapture {
     /// Captures the graph's current live selection as one chord: one Note per enabled voice

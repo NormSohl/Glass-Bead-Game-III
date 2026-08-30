@@ -13,13 +13,13 @@ import Foundation
 // not a node, no children only parents.
 // protocol for envelopes, transitions.
 
-class Transition {
+public class Transition {
     func interpolate (percentComplete:Double)->Double{
         return 0
     }
 }
 
-class Envelope {
+public class Envelope {
     func interpolate (percentComplete:Double)->Double{
         return 0
     }

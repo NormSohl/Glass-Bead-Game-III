@@ -21,6 +21,7 @@
 //
 
 import Foundation
+import GBGCore
 
 class ScorePlayer {
     private let triad: Triad

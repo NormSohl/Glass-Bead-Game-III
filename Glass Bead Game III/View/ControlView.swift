@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import GBGCore
 
 struct ControlView: View {
     @ObservedObject var settings: AppSettings

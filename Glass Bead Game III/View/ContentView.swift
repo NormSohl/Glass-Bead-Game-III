@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import GBGCore
 
 struct ContentView: View {
     @StateObject private var settings = AppSettings()

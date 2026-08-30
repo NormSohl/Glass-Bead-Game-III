@@ -9,6 +9,7 @@
 //
 
 import Foundation
+import GBGCore
 
 func pitchHitTest(
     scale: Scale,

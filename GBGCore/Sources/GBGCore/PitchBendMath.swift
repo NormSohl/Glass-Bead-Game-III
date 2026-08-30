@@ -7,9 +7,9 @@
 
 import Foundation
 
-enum PitchBendMath {
+public enum PitchBendMath {
     // Converts a frequency, relative to a reference frequency, into a 14-bit MIDI pitch bend value (0...16383, centered at 8192)
-    static func freqToPB(frequency: Double, referenceFrequency: Double, pitchBendRange: Int) -> Int {
+    public static func freqToPB(frequency: Double, referenceFrequency: Double, pitchBendRange: Int) -> Int {
         let cents = 1200 * log2(frequency / referenceFrequency)
         return centsToPitchBend(pitchBendRange: pitchBendRange, cents: cents)
     }

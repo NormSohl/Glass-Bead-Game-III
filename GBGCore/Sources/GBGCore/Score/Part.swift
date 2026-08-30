@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum NoteEdge {
+public enum NoteEdge {
     case start
     case end
 }
@@ -15,24 +15,24 @@ enum NoteEdge {
 // Parts hold melodic lines of Notes. Each Part is monophonic - its notes always tile the
 // timeline contiguously with no gaps (silence is a zero-amplitude Note, never an absence), so
 // playback and editing never have to reason about "no note here" as a separate case.
-class Part: HasLength {
-    var notes: [Note] = []
+public class Part: HasLength {
+    public var notes: [Note] = []
 
     // support for audio rendering
     var currentNoteIndex:Int = 0
 
     var name: String?
 
-    init (name:String){
+    public init (name:String){
         self.name = name
     }
 
-    func getLengthInSamples()->Int{
+    public func getLengthInSamples()->Int{
         return notes.last?.endTime ?? 0
     }
 
     // find the note that contains timeSlice. This is a brute force search that should only be called to start.
-    func getCurrentNote (timeSlice:Int)->Note?{
+    public func getCurrentNote (timeSlice:Int)->Note?{
         for index:Int in 0..<notes.count{
             let note = notes[index]
             if timeSlice >= note.startTime && timeSlice <= note.endTime {
@@ -45,7 +45,7 @@ class Part: HasLength {
     }
 
     // this needs to be fast as it is called from the audio render loop. Can it be optimized?
-    func getNextNote()->Note?{
+    public func getNextNote()->Note?{
         currentNoteIndex += 1
         if currentNoteIndex < notes.count{
             return notes[currentNoteIndex]
@@ -63,7 +63,7 @@ class Part: HasLength {
     /// note (leaving a block of silence, its neighbors' own boundaries untouched) is this same
     /// operation with amplitude 0 - nothing else about it is special-cased.
     @discardableResult
-    func insertNote(
+    public func insertNote(
         startTime: Int, endTime: Int,
         startFrequency: Double, endFrequency: Double,
         amplitude: Double,
@@ -179,7 +179,7 @@ class Part: HasLength {
     /// moves, clamped against its own opposite edge, `minimumNoteLength`, and (for `.start` with
     /// no neighbor) 0.
     @discardableResult
-    func moveNoteBoundary(of note: Note, edge: NoteEdge, to newTime: Int, minimumNoteLength: Int = 1) -> Bool {
+    public func moveNoteBoundary(of note: Note, edge: NoteEdge, to newTime: Int, minimumNoteLength: Int = 1) -> Bool {
         guard let index = notes.firstIndex(where: { $0 === note }) else { return false }
 
         switch edge {

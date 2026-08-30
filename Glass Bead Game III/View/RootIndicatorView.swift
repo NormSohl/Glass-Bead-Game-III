@@ -16,6 +16,7 @@
 //
 
 import SwiftUI
+import GBGCore
 
 struct RootIndicatorView: View {
     let scale: Scale

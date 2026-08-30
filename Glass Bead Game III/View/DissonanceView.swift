@@ -39,6 +39,7 @@
 //  a raw unflipped CGBitmapContext where row 0 lands at the top instead of the bottom.
 
 import SwiftUI
+import GBGCore
 import CoreGraphics
 
 struct DissonanceView: View {

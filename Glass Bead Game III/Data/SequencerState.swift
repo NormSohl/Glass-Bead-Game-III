@@ -14,6 +14,7 @@
 //
 
 import Foundation
+import GBGCore
 
 // All four of the sequencer's Parts - unlike AppSettings.SequencerVoice (x/y/z only, the axes
 // with a crosshair on the main graph), this covers drone too, since every voice's notes need

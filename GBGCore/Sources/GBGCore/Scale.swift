@@ -8,19 +8,19 @@
 import Foundation
 
 //object to contain the ratios that make up the scale
-struct ScaleElement{
-    var numerator = 0
-    var denominator = 0
-    var value = 0.0  //Numerator divided by denomonator for decimal ratio, log
-    var valueNormalized = 0.00 // linear value
-    var valueNormalizedCents = 0.0 // limear value converted to cents
-    
+public struct ScaleElement{
+    public var numerator = 0
+    public var denominator = 0
+    public var value = 0.0  //Numerator divided by denomonator for decimal ratio, log
+    public var valueNormalized = 0.00 // linear value
+    public var valueNormalizedCents = 0.0 // limear value converted to cents
+
     // range for hit test - what is the middle point between this scale element and the one above and below?
-    var upperBounds = 0.0
-    var lowerBounds = 0.0
-    var dissonance = 0.0
-    
-    init(numerator:Int, denominator:Int, highestRatio: Double){
+    public var upperBounds = 0.0
+    public var lowerBounds = 0.0
+    public var dissonance = 0.0
+
+    public init(numerator:Int, denominator:Int, highestRatio: Double){
         // ratio
         self.numerator = numerator
         self.denominator = denominator
@@ -36,23 +36,23 @@ struct ScaleElement{
     }
 }
 
-struct Scale {
+public struct Scale {
     //empty object to contain calculated scale
-    var scale: [ ScaleElement ] = []
-    var limit = 0
-    
+    public var scale: [ ScaleElement ] = []
+    public var limit = 0
+
     // highest element in scale
-    var highestRatio: Double = 0.0
-    var highestRatioNormalized:Double = 0.0  // positive value
-    
+    public var highestRatio: Double = 0.0
+    public var highestRatioNormalized:Double = 0.0  // positive value
+
     // lowest element in scale
-    var lowestRatio: Double = 0.0
-    var lowestRatioNormalized: Double = 0.0  // negative value
-    
+    public var lowestRatio: Double = 0.0
+    public var lowestRatioNormalized: Double = 0.0  // negative value
+
     // total range of scale between highest and lowest elements. Needed to properly scale the graph to the view size
-    var rangeNormalized: Double = 0.0  // positive value
-    
-    init (limit:Int, highestRatio: Double, lowestRatio:Double) {
+    public var rangeNormalized: Double = 0.0  // positive value
+
+    public init (limit:Int, highestRatio: Double, lowestRatio:Double) {
         
         // positive
         self.highestRatio = highestRatio
@@ -123,7 +123,7 @@ struct Scale {
         scale[scale.count-1].upperBounds = scale[scale.count-1].valueNormalized
     }
     
-    func convertScaleValueToScreenUnits(
+    public func convertScaleValueToScreenUnits(
         normalizedValue: Double,
         screenSize: Double
     )->Double{
@@ -140,7 +140,7 @@ struct Scale {
     // Algebraic inverse of convertScaleValueToScreenUnits above - same formula PitchHitTest.swift
     // already has inlined for touch hit-testing; a real method now that a second caller
     // (the piano-roll editor's pitch-handle dragging) needs the same reverse mapping.
-    func convertScreenUnitsToScaleValue(
+    public func convertScreenUnitsToScaleValue(
         screenLocation: Double,
         screenSize: Double
     )->Double{

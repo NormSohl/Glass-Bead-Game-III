@@ -7,6 +7,7 @@
 //  This struct contains published data that is shared between the UI and the drawing code
 
 import SwiftUI
+import GBGCore
 
 // The graph's X/Y/Z axes - not the drone, which has no crosshair on the main graph. Used to
 // track which axes are currently being driven by the sequencer (playback/scrub/handle-editing)

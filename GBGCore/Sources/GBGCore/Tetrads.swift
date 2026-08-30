@@ -32,21 +32,21 @@
 import Foundation
 import CoreGraphics
 
-struct TetradElement {
-    let xElement: ScaleElement
-    let yElement: ScaleElement
-    let zElement: ScaleElement
-    let locationNormalized: CGPoint
-    let sizeNormalized: Double
-    let dissonanceCount: Int // 0...6: how many of the six pairs among {root,X,Y,Z} coincide
+public struct TetradElement {
+    public let xElement: ScaleElement
+    public let yElement: ScaleElement
+    public let zElement: ScaleElement
+    public let locationNormalized: CGPoint
+    public let sizeNormalized: Double
+    public let dissonanceCount: Int // 0...6: how many of the six pairs among {root,X,Y,Z} coincide
     // 0, 1, or 3: how many of the three pairs among just {X:Y, X:Z, Y:Z} coincide - excludes
     // every root-involving pair (root:X, root:Y, root:Z). Norm's coloring rule for the 3-tone
     // view deliberately drops the drone from consideration: 2 is not achievable (equality among
     // three elements is transitive - X=Y and X=Z forces Y=Z, so it's always 0, 1, or 3, same
     // structural reasoning as dissonanceCount's own 4/5 gap).
-    let movingToneUnisonCount: Int
+    public let movingToneUnisonCount: Int
 
-    init(x: ScaleElement, y: ScaleElement, z: ScaleElement, sizeNormalized: Double, dissonanceCount: Int, movingToneUnisonCount: Int, highestRatioNormalized: Double) {
+    public init(x: ScaleElement, y: ScaleElement, z: ScaleElement, sizeNormalized: Double, dissonanceCount: Int, movingToneUnisonCount: Int, highestRatioNormalized: Double) {
         self.xElement = x
         self.yElement = y
         self.zElement = z
@@ -58,11 +58,11 @@ struct TetradElement {
     }
 }
 
-struct Tetrads {
+public struct Tetrads {
     var tetradList: [TetradElement] = []
     var scale: Scale
 
-    init(scale: Scale) {
+    public init(scale: Scale) {
         self.scale = scale
 
         // Shared by all three interval checks below, rather than three copies of the same
@@ -126,7 +126,7 @@ struct Tetrads {
         }
     }
 
-    static func rounded(_ value: Double) -> Double {
+    public static func rounded(_ value: Double) -> Double {
         round(value * 100000) / 100000
     }
 
@@ -138,7 +138,7 @@ struct Tetrads {
     /// scale unfiltered - every element's interval with root is itself, trivially a scale member -
     /// matching the "identical to the unfiltered default at Z=unison" invariant TetradsTests
     /// already verifies for the tetrads themselves.
-    static func elementsPairing(withNormalizedValue zValueNormalized: Double, in scale: Scale) -> [ScaleElement] {
+    public static func elementsPairing(withNormalizedValue zValueNormalized: Double, in scale: Scale) -> [ScaleElement] {
         var scaleElementByRoundedValue: [Double: ScaleElement] = [:]
         for element in scale.scale {
             scaleElementByRoundedValue[rounded(element.valueNormalized)] = element

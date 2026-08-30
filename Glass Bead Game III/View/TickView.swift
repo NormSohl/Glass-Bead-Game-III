@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import GBGCore
 
 // Named distinctly from SwiftUI's own Alignment type, which this file also uses
 // implicitly via HStack/VStack elsewhere in the app - same name, different type,

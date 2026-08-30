@@ -8,6 +8,7 @@
 // These are very different but both are controlled by a single set of abstracted functions which are defined here.
 
 import Foundation
+import GBGCore
 
 class Sound {
     var midi = Midi()

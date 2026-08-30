@@ -10,6 +10,7 @@
 //
 
 import SwiftUI
+import GBGCore
 
 // Same reasoning as HitTestView's module-scope `height`/ZSliderView's `zSliderHeight`: mutating
 // this from inside the Canvas closure as @State caused inconsistent behavior in those views, so

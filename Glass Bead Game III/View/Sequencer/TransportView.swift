@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import GBGCore
 
 struct TransportView: View {
     @ObservedObject var settings: AppSettings

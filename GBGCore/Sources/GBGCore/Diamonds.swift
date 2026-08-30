@@ -8,15 +8,15 @@
 import Foundation
 import CoreGraphics
 
-struct DiamondElement{
-    let xElement: ScaleElement
-    let yElement: ScaleElement
-    let zElement: ScaleElement
-    let locationNormalized: CGPoint
-    let sizeNormalized: Double
-    var mydissonance = 0.0
-    
-    init (x:ScaleElement, y:ScaleElement, z:ScaleElement, sizeNorm:Double, dissonance:Double, highestRatioNormalized:Double){
+public struct DiamondElement{
+    public let xElement: ScaleElement
+    public let yElement: ScaleElement
+    public let zElement: ScaleElement
+    public let locationNormalized: CGPoint
+    public let sizeNormalized: Double
+    public var mydissonance = 0.0
+
+    public init (x:ScaleElement, y:ScaleElement, z:ScaleElement, sizeNorm:Double, dissonance:Double, highestRatioNormalized:Double){
         self.yElement = y
         self.xElement = x
         self.zElement = z
@@ -26,11 +26,11 @@ struct DiamondElement{
     }
 }
 
-struct Diamonds {
-    var diamondList:[DiamondElement] = []
-    var scale: Scale
-    
-    init (scale:Scale){
+public struct Diamonds {
+    public var diamondList:[DiamondElement] = []
+    public var scale: Scale
+
+    public init (scale:Scale){
         self.scale = scale
         for x in scale.scale {
             for y in scale.scale {

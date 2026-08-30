@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6CD18EB7875F4D6D83FA672A /* GBGCore in Frameworks */ = {isa = PBXBuildFile; productRef = 04B162C5595040048C6852EF /* GBGCore */; };
 		4D9981F43229467D80A3D2BF /* PitchHitTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A8E917E593A42A893FBEA9C /* PitchHitTest.swift */; };
 		A38475822A7D41D583CA3B43 /* ZSliderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 792C3694A73A41E196B16CA2 /* ZSliderView.swift */; };
 		0634BD102B8A8912001E3644 /* TickView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0634BD0F2B8A8912001E3644 /* TickView.swift */; };
@@ -20,33 +21,14 @@
 		06824C012B886963002E9661 /* GraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BFA2B886963002E9661 /* GraphView.swift */; };
 		06824C022B886963002E9661 /* ControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BFB2B886963002E9661 /* ControlView.swift */; };
 		06D0626C2BAA9A9000C68262 /* ControlData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062682BAA9A9000C68262 /* ControlData.swift */; };
-		06D0626E2BAA9A9000C68262 /* Scale.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D0626A2BAA9A9000C68262 /* Scale.swift */; };
 		06D062702BAA9C4E00C68262 /* Sound.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D0626F2BAA9C4E00C68262 /* Sound.swift */; };
 		06D062722BAA9D5500C68262 /* MIDI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062712BAA9D5500C68262 /* MIDI.swift */; };
-		06D062742BAA9DA500C68262 /* NoteList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062732BAA9DA500C68262 /* NoteList.swift */; };
 		06D062762BAA9DDB00C68262 /* Audio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062752BAA9DDB00C68262 /* Audio.swift */; };
 		06D062782BAA9EBA00C68262 /* Triad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062772BAA9EBA00C68262 /* Triad.swift */; };
 		06D0627A2BAA9F0600C68262 /* Tone.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062792BAA9F0600C68262 /* Tone.swift */; };
 		06D0627C2BAA9F3D00C68262 /* Waveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D0627B2BAA9F3D00C68262 /* Waveform.swift */; };
-		06D0627E2BAA9F9A00C68262 /* Diamonds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D0627D2BAA9F9A00C68262 /* Diamonds.swift */; };
-		D13CB79EAD6E1FD12B695C5C /* PitchBendMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4230C9DD5554EA0C553549E0 /* PitchBendMath.swift */; };
-		58102B6FDC925F577824B0D8 /* Dissonance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C9A086F5BDE794A8C87BA1D /* Dissonance.swift */; };
-		1CEE7F232CCE43049B36A9CD /* Score.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B5EEAFEC18240E68222DD2A /* Score.swift */; };
-		85FD6AE3376142C4A4BE5B4C /* Part.swift in Sources */ = {isa = PBXBuildFile; fileRef = B44A9E78ECCB40A7889B50BA /* Part.swift */; };
-		BC79BAD185DC4108ACE79514 /* Note.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32B6E6FC16324783ADF4A0DC /* Note.swift */; };
-		CC37DD5838374BC5BCB6F342 /* Node.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7745DFA8EAC44FE99E4BA906 /* Node.swift */; };
-		1CF95C0BFB2646A59527456A /* CanInterpolate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A64780C745840FFA558ED24 /* CanInterpolate.swift */; };
-		B226878ECF1E429FA36A5EE0 /* TransFlat.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAD3C3850B46463EA9A8B8F1 /* TransFlat.swift */; };
-		26AFEA8D715C4DC68C2B23A4 /* TransLinear.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90A86A6108F843E6A6998886 /* TransLinear.swift */; };
-		8A7C9E55DD6E4450BBC8F754 /* TransEaseIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD416230ADC34629BEACE774 /* TransEaseIn.swift */; };
-		EBB8E4F6E4174D3EAF3BCC8B /* TransEaseOut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86D35CD180DF467FA1E8C526 /* TransEaseOut.swift */; };
-		CDEACC9D141444D1B8009415 /* TransEaseInEaseOut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A52075AE67A446B9494A7EA /* TransEaseInEaseOut.swift */; };
-		E46334BD03EE4B8BB04A0CFB /* EnvFlat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ADD26ED3FE6445B9B45E463 /* EnvFlat.swift */; };
-		49B3D845B54741948633F175 /* EnvHump.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F8E0AEAAE564748A3F90F67 /* EnvHump.swift */; };
 		EE645A5026D54B47871B55B4 /* ScoreCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290A597C9AA1404D82BB59FA /* ScoreCapture.swift */; };
 		F361DB7B65D04809AFF4A4EC /* ScorePlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59AED3FE64FB46FAA5A9A25F /* ScorePlayer.swift */; };
-		27666EFEDFAE47B9B5BEFA03 /* Tetrads.swift in Sources */ = {isa = PBXBuildFile; fileRef = 969B21853F07434ABDC656B9 /* Tetrads.swift */; };
-		7D3C1B6AEB034D858BEA5666 /* TetradLayers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A067C57A9A74BFC83299838 /* TetradLayers.swift */; };
 		8CFA26E61CFF41F3AE63BE38 /* TetradView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6DF75EF1C024FBCA782C7AE /* TetradView.swift */; };
 		3CA7A56CF9D14019BD27A538 /* SequencerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61F25530CB8543C38246A5E0 /* SequencerState.swift */; };
 		77FF969EFCF34B57B50DAE47 /* SequencerCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F52D7FAD54F4E1C89615DE3 /* SequencerCapture.swift */; };
@@ -82,32 +64,13 @@
 		3D7D6090EA174517A79BC947 /* TransportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransportView.swift; sourceTree = "<group>"; };
 		067D6370D71F4AAB81C7FCAB /* SequencerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequencerView.swift; sourceTree = "<group>"; };
 		0C57554EBB6D407B81C07AAF /* RootIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootIndicatorView.swift; sourceTree = "<group>"; };
-		3B5EEAFEC18240E68222DD2A /* Score.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Score.swift; path = "GBGCore/Sources/GBGCore/Score/Score.swift"; sourceTree = SOURCE_ROOT; };
-		B44A9E78ECCB40A7889B50BA /* Part.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Part.swift; path = "GBGCore/Sources/GBGCore/Score/Part.swift"; sourceTree = SOURCE_ROOT; };
-		32B6E6FC16324783ADF4A0DC /* Note.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Note.swift; path = "GBGCore/Sources/GBGCore/Score/Note.swift"; sourceTree = SOURCE_ROOT; };
-		7745DFA8EAC44FE99E4BA906 /* Node.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Node.swift; path = "GBGCore/Sources/GBGCore/Score/Node.swift"; sourceTree = SOURCE_ROOT; };
-		6A64780C745840FFA558ED24 /* CanInterpolate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CanInterpolate.swift; path = "GBGCore/Sources/GBGCore/Score/CanInterpolate.swift"; sourceTree = SOURCE_ROOT; };
-		EAD3C3850B46463EA9A8B8F1 /* TransFlat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TransFlat.swift; path = "GBGCore/Sources/GBGCore/Score/Transitions/TransFlat.swift"; sourceTree = SOURCE_ROOT; };
-		90A86A6108F843E6A6998886 /* TransLinear.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TransLinear.swift; path = "GBGCore/Sources/GBGCore/Score/Transitions/TransLinear.swift"; sourceTree = SOURCE_ROOT; };
-		AD416230ADC34629BEACE774 /* TransEaseIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TransEaseIn.swift; path = "GBGCore/Sources/GBGCore/Score/Transitions/TransEaseIn.swift"; sourceTree = SOURCE_ROOT; };
-		86D35CD180DF467FA1E8C526 /* TransEaseOut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TransEaseOut.swift; path = "GBGCore/Sources/GBGCore/Score/Transitions/TransEaseOut.swift"; sourceTree = SOURCE_ROOT; };
-		5A52075AE67A446B9494A7EA /* TransEaseInEaseOut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TransEaseInEaseOut.swift; path = "GBGCore/Sources/GBGCore/Score/Transitions/TransEaseInEaseOut.swift"; sourceTree = SOURCE_ROOT; };
-		1ADD26ED3FE6445B9B45E463 /* EnvFlat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EnvFlat.swift; path = "GBGCore/Sources/GBGCore/Score/Envelopes/EnvFlat.swift"; sourceTree = SOURCE_ROOT; };
-		9F8E0AEAAE564748A3F90F67 /* EnvHump.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = EnvHump.swift; path = "GBGCore/Sources/GBGCore/Score/Envelopes/EnvHump.swift"; sourceTree = SOURCE_ROOT; };
 		06D062682BAA9A9000C68262 /* ControlData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControlData.swift; sourceTree = "<group>"; };
-		06D0626A2BAA9A9000C68262 /* Scale.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "GBGCore/Sources/GBGCore/Scale.swift"; sourceTree = SOURCE_ROOT; };
 		06D0626F2BAA9C4E00C68262 /* Sound.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sound.swift; sourceTree = "<group>"; };
 		06D062712BAA9D5500C68262 /* MIDI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MIDI.swift; sourceTree = "<group>"; };
-		06D062732BAA9DA500C68262 /* NoteList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GBGCore/Sources/GBGCore/NoteList.swift"; sourceTree = SOURCE_ROOT; };
 		06D062752BAA9DDB00C68262 /* Audio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Audio.swift; sourceTree = "<group>"; };
 		06D062772BAA9EBA00C68262 /* Triad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Triad.swift; sourceTree = "<group>"; };
 		06D062792BAA9F0600C68262 /* Tone.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tone.swift; sourceTree = "<group>"; };
 		06D0627B2BAA9F3D00C68262 /* Waveform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Waveform.swift; sourceTree = "<group>"; };
-		06D0627D2BAA9F9A00C68262 /* Diamonds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GBGCore/Sources/GBGCore/Diamonds.swift"; sourceTree = SOURCE_ROOT; };
-		4230C9DD5554EA0C553549E0 /* PitchBendMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PitchBendMath.swift; path = "GBGCore/Sources/GBGCore/PitchBendMath.swift"; sourceTree = SOURCE_ROOT; };
-		2C9A086F5BDE794A8C87BA1D /* Dissonance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Dissonance.swift; path = "GBGCore/Sources/GBGCore/Dissonance.swift"; sourceTree = SOURCE_ROOT; };
-		969B21853F07434ABDC656B9 /* Tetrads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Tetrads.swift; path = "GBGCore/Sources/GBGCore/Tetrads.swift"; sourceTree = SOURCE_ROOT; };
-		7A067C57A9A74BFC83299838 /* TetradLayers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TetradLayers.swift; path = "GBGCore/Sources/GBGCore/TetradLayers.swift"; sourceTree = SOURCE_ROOT; };
 		D6DF75EF1C024FBCA782C7AE /* TetradView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TetradView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -116,6 +79,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6CD18EB7875F4D6D83FA672A /* GBGCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -230,7 +194,6 @@
 			isa = PBXGroup;
 			children = (
 				06D062712BAA9D5500C68262 /* MIDI.swift */,
-				4230C9DD5554EA0C553549E0 /* PitchBendMath.swift */,
 			);
 			name = MIDI;
 			path = "Glass Bead Game III/Sound/MIDI";
@@ -240,30 +203,26 @@
 			isa = PBXGroup;
 			children = (
 				06D062682BAA9A9000C68262 /* ControlData.swift */,
-				06D0626A2BAA9A9000C68262 /* Scale.swift */,
-				06D062732BAA9DA500C68262 /* NoteList.swift */,
-				06D0627D2BAA9F9A00C68262 /* Diamonds.swift */,
-				2C9A086F5BDE794A8C87BA1D /* Dissonance.swift */,
-				969B21853F07434ABDC656B9 /* Tetrads.swift */,
-				7A067C57A9A74BFC83299838 /* TetradLayers.swift */,
-				3B5EEAFEC18240E68222DD2A /* Score.swift */,
-				B44A9E78ECCB40A7889B50BA /* Part.swift */,
-				32B6E6FC16324783ADF4A0DC /* Note.swift */,
-				7745DFA8EAC44FE99E4BA906 /* Node.swift */,
-				6A64780C745840FFA558ED24 /* CanInterpolate.swift */,
-				EAD3C3850B46463EA9A8B8F1 /* TransFlat.swift */,
-				90A86A6108F843E6A6998886 /* TransLinear.swift */,
-				AD416230ADC34629BEACE774 /* TransEaseIn.swift */,
-				86D35CD180DF467FA1E8C526 /* TransEaseOut.swift */,
-				5A52075AE67A446B9494A7EA /* TransEaseInEaseOut.swift */,
-				1ADD26ED3FE6445B9B45E463 /* EnvFlat.swift */,
-				9F8E0AEAAE564748A3F90F67 /* EnvHump.swift */,
 				61F25530CB8543C38246A5E0 /* SequencerState.swift */,
 			);
 			path = Data;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		10D44CB7B2FC4126835AF8A6 /* XCLocalSwiftPackageReference "GBGCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = GBGCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		04B162C5595040048C6852EF /* GBGCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = GBGCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin PBXNativeTarget section */
 		06824BD92B881E3C002E9661 /* Glass Bead Game III */ = {
@@ -279,6 +238,9 @@
 			dependencies = (
 			);
 			name = "Glass Bead Game III";
+			packageProductDependencies = (
+				04B162C5595040048C6852EF /* GBGCore */,
+			);
 			productName = "Glass Bead Game III";
 			productReference = 06824BDA2B881E3C002E9661 /* Glass Bead Game III.app */;
 			productType = "com.apple.product-type.application";
@@ -307,6 +269,9 @@
 				Base,
 			);
 			mainGroup = 06824BD12B881E3C002E9661;
+			packageReferences = (
+				10D44CB7B2FC4126835AF8A6 /* XCLocalSwiftPackageReference "GBGCore" */,
+			);
 			productRefGroup = 06824BDB2B881E3C002E9661 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -341,35 +306,16 @@
 				06D062702BAA9C4E00C68262 /* Sound.swift in Sources */,
 				06824BFC2B886963002E9661 /* DissonanceView.swift in Sources */,
 				06D0627A2BAA9F0600C68262 /* Tone.swift in Sources */,
-				06D0626E2BAA9A9000C68262 /* Scale.swift in Sources */,
 				06824C022B886963002E9661 /* ControlView.swift in Sources */,
 				06D062782BAA9EBA00C68262 /* Triad.swift in Sources */,
 				06824C012B886963002E9661 /* GraphView.swift in Sources */,
-				06D0627E2BAA9F9A00C68262 /* Diamonds.swift in Sources */,
-				06D062742BAA9DA500C68262 /* NoteList.swift in Sources */,
 				06D0627C2BAA9F3D00C68262 /* Waveform.swift in Sources */,
 				0634BD102B8A8912001E3644 /* TickView.swift in Sources */,
 				4D9981F43229467D80A3D2BF /* PitchHitTest.swift in Sources */,
 				A38475822A7D41D583CA3B43 /* ZSliderView.swift in Sources */,
 				06D062722BAA9D5500C68262 /* MIDI.swift in Sources */,
 				06D062762BAA9DDB00C68262 /* Audio.swift in Sources */,
-				D13CB79EAD6E1FD12B695C5C /* PitchBendMath.swift in Sources */,
-				58102B6FDC925F577824B0D8 /* Dissonance.swift in Sources */,
-				27666EFEDFAE47B9B5BEFA03 /* Tetrads.swift in Sources */,
-				7D3C1B6AEB034D858BEA5666 /* TetradLayers.swift in Sources */,
 				8CFA26E61CFF41F3AE63BE38 /* TetradView.swift in Sources */,
-				1CEE7F232CCE43049B36A9CD /* Score.swift in Sources */,
-				85FD6AE3376142C4A4BE5B4C /* Part.swift in Sources */,
-				BC79BAD185DC4108ACE79514 /* Note.swift in Sources */,
-				CC37DD5838374BC5BCB6F342 /* Node.swift in Sources */,
-				1CF95C0BFB2646A59527456A /* CanInterpolate.swift in Sources */,
-				B226878ECF1E429FA36A5EE0 /* TransFlat.swift in Sources */,
-				26AFEA8D715C4DC68C2B23A4 /* TransLinear.swift in Sources */,
-				8A7C9E55DD6E4450BBC8F754 /* TransEaseIn.swift in Sources */,
-				EBB8E4F6E4174D3EAF3BCC8B /* TransEaseOut.swift in Sources */,
-				CDEACC9D141444D1B8009415 /* TransEaseInEaseOut.swift in Sources */,
-				E46334BD03EE4B8BB04A0CFB /* EnvFlat.swift in Sources */,
-				49B3D845B54741948633F175 /* EnvHump.swift in Sources */,
 				EE645A5026D54B47871B55B4 /* ScoreCapture.swift in Sources */,
 				F361DB7B65D04809AFF4A4EC /* ScorePlayer.swift in Sources */,
 				3CA7A56CF9D14019BD27A538 /* SequencerState.swift in Sources */,

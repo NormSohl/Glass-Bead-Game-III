@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import GBGCore
 
 struct GraphView: View {
     let scale: Scale

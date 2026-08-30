@@ -22,6 +22,7 @@
 //  are never shown at once - Tetrad Layers fully replaces Diamonds when the 3rd moving tone is on.
 
 import SwiftUI
+import GBGCore
 
 struct TetradView: View {
     let tetradLayers: TetradLayers

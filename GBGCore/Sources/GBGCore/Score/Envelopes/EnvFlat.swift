@@ -11,8 +11,9 @@ import Foundation
 // Envelopes start and end at the same value (0) and max at 1 somewhere in the middle
 // An envelope that builds on the sin function used in EaseIn
 // shape = 1---1
-class EnvFlat:Envelope {
-        
+public class EnvFlat:Envelope {
+    public override init() {}
+
     override func interpolate(percentComplete:Double) -> Double {
         // no scaling applied
         return 1

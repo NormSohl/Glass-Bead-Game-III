@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import GBGCore
 
 func pianoRollSampleToScreenX(sample: Int, offsetSamples: Int, pixelsPerSecond: Double, sampleRate: Double) -> Double {
     Double(sample - offsetSamples) / sampleRate * pixelsPerSecond

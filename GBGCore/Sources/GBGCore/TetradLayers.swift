@@ -21,12 +21,12 @@
 
 import Foundation
 
-struct TetradLayers {
-    let scale: Scale
+public struct TetradLayers {
+    public let scale: Scale
     private let tetradsByZ: [Double: [TetradElement]]
-    let sortedZValues: [Double] // rounded valueNormalized keys, ascending
+    public let sortedZValues: [Double] // rounded valueNormalized keys, ascending
 
-    init(scale: Scale) {
+    public init(scale: Scale) {
         self.scale = scale
         let tetrads = Tetrads(scale: scale)
         var grouped: [Double: [TetradElement]] = [:]
@@ -41,7 +41,7 @@ struct TetradLayers {
     /// The layer(s) bracketing `zValueNormalized`: one layer at full weight if it lands exactly
     /// on a Z value (or beyond the lowest/highest Z the scale has), or two layers with linear
     /// crossfade weights (summing to 1.0) if it falls between two adjacent Z values.
-    func bracketingLayers(atZNormalized zValueNormalized: Double) -> [(tetrads: [TetradElement], weight: Double)] {
+    public func bracketingLayers(atZNormalized zValueNormalized: Double) -> [(tetrads: [TetradElement], weight: Double)] {
         bracketingKeys(around: zValueNormalized).map { (tetradsByZ[$0.key] ?? [], $0.weight) }
     }
 
@@ -50,7 +50,7 @@ struct TetradLayers {
     /// look something else up per key (which scale degrees pair with that Z) rather than the
     /// tetrads directly, and so would otherwise have to unpack the key back out of
     /// `tetrads.first?.zElement.valueNormalized` themselves.
-    func bracketingZKeys(around zValueNormalized: Double) -> [(key: Double, weight: Double)] {
+    public func bracketingZKeys(around zValueNormalized: Double) -> [(key: Double, weight: Double)] {
         bracketingKeys(around: zValueNormalized)
     }
 
@@ -92,7 +92,7 @@ struct TetradLayers {
     /// settled/snapped position always reads as exactly one layer, the way a snap implies it
     /// should. bracketingLayers' continuous blend is for unsnapped motion, where showing two
     /// layers mid-transition is exactly the point.
-    func nearestLayer(atZNormalized zValueNormalized: Double) -> (tetrads: [TetradElement], weight: Double) {
+    public func nearestLayer(atZNormalized zValueNormalized: Double) -> (tetrads: [TetradElement], weight: Double) {
         guard let nearest = nearestZKey(to: zValueNormalized) else {
             return ([], 0)
         }
@@ -102,7 +102,7 @@ struct TetradLayers {
     /// The single nearest Z key to `zValueNormalized`, with no blend - same "closer, not
     /// averaged" semantics as `nearestLayer`, exposed as just the key for the same reason
     /// `bracketingZKeys` exists alongside `bracketingLayers`.
-    func nearestZKey(to zValueNormalized: Double) -> Double? {
+    public func nearestZKey(to zValueNormalized: Double) -> Double? {
         sortedZValues.min(by: { abs($0 - zValueNormalized) < abs($1 - zValueNormalized) })
     }
 }

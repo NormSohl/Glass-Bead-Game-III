@@ -9,6 +9,7 @@
 //
 
 import Foundation
+import GBGCore
 
 enum SequencerCapture {
     /// Captures the graph's current chord (per sound.enableDrone/enableX/enableY/enableZ and

@@ -7,17 +7,17 @@
 
 import Foundation
 
-class Note:HasLength{
-    
-    var startTime:Int = 0  // in samples, like timeSlice
-    var endTime:Int = 0  // in samples, like timeSlice
-    var startFrequency: Double
-    var endFrequency: Double
-    var amplitude: Double
-    
+public class Note:HasLength{
+
+    public var startTime:Int = 0  // in samples, like timeSlice
+    public var endTime:Int = 0  // in samples, like timeSlice
+    public var startFrequency: Double
+    public var endFrequency: Double
+    public var amplitude: Double
+
     var envelope: Envelope = EnvFlat()
     var transition: Transition = TransFlat()
-    
+
     init (startTime:Int, endTime:Int, startFrequency:Double, endFrequency:Double, amplitude:Double){
         self.startTime = startTime // in samples from start of piece
         self.endTime = endTime  // in samples from start of piece
@@ -33,7 +33,7 @@ class Note:HasLength{
     // 0 to 1 position of an absolute sample time within this note - the inverse of startTime/
     // endTime, for callers (Part's insert/split logic) that need to evaluate this note's own
     // pitch/amplitude curves at a specific cut point rather than at "now."
-    func percentComplete(at time: Int) -> Double {
+    public func percentComplete(at time: Int) -> Double {
         Double(time - startTime) / Double(endTime - startTime)
     }
     
@@ -45,7 +45,7 @@ class Note:HasLength{
     
     // percentComplete is a 0 to 1 value indicating chronological position in current note. 0 is start, 1 is finished
     // 0 to 1 value giving place in note.
-    func getCurrentFrequency (percentComplete:Double)->Double{
+    public func getCurrentFrequency (percentComplete:Double)->Double{
         //let location:Double = Double(endTime) / Double(startTime)
         let freqRange = endFrequency - startFrequency
         return startFrequency + (freqRange * self.transition.interpolate(percentComplete:percentComplete))
@@ -53,7 +53,7 @@ class Note:HasLength{
 
     // percentComplete is a 0 to 1 value indicating chronological position in current note. 0 is start, 1 is finished
     // 0 to 1 value giving place in note.
-    func getCurrentAmplitude (percentComplete:Double)->Double{
+    public func getCurrentAmplitude (percentComplete:Double)->Double{
         //let percentComplete:Double = Double(endTime) / Double(startTime)
         return  self.amplitude * self.envelope.interpolate(percentComplete:percentComplete)
     }

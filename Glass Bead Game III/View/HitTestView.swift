@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import GBGCore
 
 // Deliberately module-scope rather than @State on HitTestView: an earlier attempt to
 // keep this as view state caused inconsistent behavior. Left as-is until that can be

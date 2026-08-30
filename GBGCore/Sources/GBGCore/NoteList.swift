@@ -18,13 +18,13 @@ struct NoteEntry{
 // m is midi number
 // fm is frequency for that midi number
 
-class NoteList{
+public class NoteList{
 
     var list:[NoteEntry] = []
     let noteNames = ["C","C#","D","Eb","E","F","F#","G","Ab","A", "A","Bb","B","C"]
     let octaves = [0,1,2,3,4,5,6,7,8]
 
-    init(){
+    public init(){
         var noteNameIndex = 0
         var octaveIndex = 0
         

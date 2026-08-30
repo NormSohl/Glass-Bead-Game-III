@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import GBGCore
 
 struct SequencerView: View {
     @ObservedObject var settings: AppSettings

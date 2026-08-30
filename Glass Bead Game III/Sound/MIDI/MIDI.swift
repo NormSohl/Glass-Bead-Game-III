@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import GBGCore
 import CoreMIDI
 import AudioToolbox
 

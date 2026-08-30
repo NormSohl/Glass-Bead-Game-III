@@ -34,9 +34,9 @@
 import Foundation
 import Dispatch
 
-enum Dissonance {
+public enum Dissonance {
     /// A harmonic weighting scheme: given a 1-indexed harmonic number, returns its amplitude weight.
-    typealias HarmonicWeighting = (Int) -> Double
+    public typealias HarmonicWeighting = (Int) -> Double
 
     /// Amplitude weight of the nth harmonic (1-indexed) of an idealized tone: the standard
     /// 1/n falloff from this literature. Available as an alternative to the default below.
@@ -49,7 +49,7 @@ enum Dissonance {
     /// over 1/n because middle harmonics stay comparatively louder here, so more
     /// harmonic-pair combinations contribute meaningfully to the field - visibly reveals
     /// more structure between the octaves.
-    static func linearHarmonicWeight(_ harmonicNumber: Int, limit: Int) -> Double {
+    public static func linearHarmonicWeight(_ harmonicNumber: Int, limit: Int) -> Double {
         Double(limit - harmonicNumber + 1) / Double(limit)
     }
 
@@ -184,7 +184,7 @@ enum Dissonance {
     /// happens, rather than finishing the whole grid and only discarding the result
     /// afterward. A cancelled call returns `[]`, the same empty-grid signal invalid inputs
     /// already use, so callers already checking for that don't need a second code path.
-    static func roughnessGrid(scale: Scale, rootFrequency: Double, zFrequency: Double? = nil, limit: Int, resolution: Int, weighting: HarmonicWeighting? = nil, isCancelled: (() -> Bool)? = nil) -> [[Double]] {
+    public static func roughnessGrid(scale: Scale, rootFrequency: Double, zFrequency: Double? = nil, limit: Int, resolution: Int, weighting: HarmonicWeighting? = nil, isCancelled: (() -> Bool)? = nil) -> [[Double]] {
         guard resolution > 0, limit > 0 else { return [] }
         let weighting = weighting ?? { linearHarmonicWeight($0, limit: limit) }
 

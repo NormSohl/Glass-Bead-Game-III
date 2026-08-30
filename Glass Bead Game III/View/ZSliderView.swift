@@ -13,6 +13,7 @@
 //  same scale, not a new mechanism.
 
 import SwiftUI
+import GBGCore
 
 // Same reasoning as HitTestView's module-scope `height`: mutating this from inside the Canvas
 // closure as @State caused inconsistent behavior there, so this follows the same workaround.
