@@ -129,18 +129,17 @@ struct ContentView: View {
         // than floating buttons drawn over the content.
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                // Sequencer panel toggle - a panel-slider-style show/hide. Its state gates
-                // AppSettings.sequencerDrivenVoices everywhere else: hidden means no sequencer
-                // code ever touches the graph. Tape-reel icon, chosen over pianokeys (the
-                // original) and a few other candidates compared directly in the toolbar - reads
-                // as playback/recording rather than "an instrument," which fits a piano-roll
-                // sequencer better than a literal keyboard glyph.
+                // Drone - the last of the settings-popover controls Norm wanted promoted to the
+                // toolbar. Norm floated a bee for this one ("drone" is also a male bee) - SF
+                // Symbols has no literal bee glyph (confirmed by trying "bee"/"bee.fill" directly,
+                // both render as nothing), so this is a honeycomb instead: keeps the bee/hive
+                // association without an actual insect. Moved to first position per Norm.
                 Button {
-                    withAnimation(.easeInOut) { settings.showSequencer.toggle() }
+                    settings.playDrone.toggle()
                 } label: {
-                    Image(systemName: "recordingtape")
+                    Image(systemName: "circle.hexagongrid.fill")
                 }
-                .help("Sequencer - show or hide the piano-roll editor and transport controls")
+                .help("Drone (D or K) - the sustained reference tone")
             }
             ToolbarItem(placement: .primaryAction) {
                 // Portamento toggle - direct toolbar access to the same settings.snap the
@@ -174,17 +173,19 @@ struct ContentView: View {
                 .help("Pedal (Space, held) - sustain: keep the current notes sounding after you release them")
             }
             ToolbarItem(placement: .primaryAction) {
-                // Drone - the last of the settings-popover controls Norm wanted promoted to the
-                // toolbar. Norm floated a bee for this one ("drone" is also a male bee) - SF
-                // Symbols has no literal bee glyph (confirmed by trying "bee"/"bee.fill" directly,
-                // both render as nothing), so this is a honeycomb instead: keeps the bee/hive
-                // association without an actual insect.
+                // Sequencer panel toggle - a panel-slider-style show/hide. Its state gates
+                // AppSettings.sequencerDrivenVoices everywhere else: hidden means no sequencer
+                // code ever touches the graph. Tape-reel icon, chosen over pianokeys (the
+                // original) and a few other candidates compared directly in the toolbar - reads
+                // as playback/recording rather than "an instrument," which fits a piano-roll
+                // sequencer better than a literal keyboard glyph. Moved here (was first) per
+                // Norm - now sits between Drone and Settings.
                 Button {
-                    settings.playDrone.toggle()
+                    withAnimation(.easeInOut) { settings.showSequencer.toggle() }
                 } label: {
-                    Image(systemName: "circle.hexagongrid.fill")
+                    Image(systemName: "recordingtape")
                 }
-                .help("Drone (D or K) - the sustained reference tone")
+                .help("Sequencer - show or hide the piano-roll editor and transport controls")
             }
             ToolbarItem(placement: .primaryAction) {
                 Button {
