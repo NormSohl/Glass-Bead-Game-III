@@ -36,6 +36,12 @@ public class Note:HasLength{
     public func percentComplete(at time: Int) -> Double {
         Double(time - startTime) / Double(endTime - startTime)
     }
+
+    // The only public window onto transition/envelope for callers outside this module (e.g.
+    // the persistence DTO layer in SeqDocument.swift) - exposes just the classification, not
+    // the instances themselves, so TransLinear/TransEaseIn/etc never need to become public.
+    public var transitionKind: TransitionKind { TransitionKind.kind(of: transition) }
+    public var envelopeKind: EnvelopeKind { EnvelopeKind.kind(of: envelope) }
     
     // TODO: Returns the length of the note based on its start time and end time
     func getLengthInSamples()->Int{

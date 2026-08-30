@@ -11,11 +11,19 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
+import GBGCore
 
 struct TransportView: View {
     @ObservedObject var sequencer: SequencerState
 
     private let tintColor = Color(red: 0.2, green: 0.4, blue: 0.8)
+
+    // Save/load (Step 5) - exportFile is populated right before isExporting is set true,
+    // since .fileExporter needs a real (non-nil) document at the moment it's asked to present.
+    @State private var isExporting = false
+    @State private var isImporting = false
+    @State private var exportFile: SeqDocumentFile?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -63,6 +71,20 @@ struct TransportView: View {
                     step: 0.05
                 )
                 .frame(width: 220)
+
+                Button {
+                    exportFile = SeqDocumentFile(document: sequencer.exportDocument())
+                    isExporting = true
+                } label: {
+                    Label("Save", systemImage: "square.and.arrow.down")
+                }
+                .disabled(!sequencer.hasAnyNotes)
+
+                Button {
+                    isImporting = true
+                } label: {
+                    Label("Open", systemImage: "square.and.arrow.up")
+                }
 
                 Spacer()
             }
@@ -131,6 +153,19 @@ struct TransportView: View {
         .foregroundStyle(.white)
         .padding(12)
         .background(Color.black)
+        .fileExporter(isPresented: $isExporting, document: exportFile, contentType: .json, defaultFilename: "Untitled Piece") { _ in
+            // Nothing else to do either way - the document was already captured at the moment
+            // Save was pressed, so a cancelled/failed export just leaves Seq's own state as-is.
+        }
+        .fileImporter(isPresented: $isImporting, allowedContentTypes: [.json]) { result in
+            guard case .success(let url) = result else { return }
+            let accessed = url.startAccessingSecurityScopedResource()
+            defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+            guard let data = try? Data(contentsOf: url),
+                  let document = try? JSONDecoder().decode(SeqDocument.self, from: data)
+            else { return }
+            sequencer.loadDocument(document)
+        }
     }
 
     /// One voice's channel-number stepper for the external synth connection - a compact
@@ -141,5 +176,30 @@ struct TransportView: View {
             Text("\(label): \(value.wrappedValue)").foregroundStyle(color)
         }
         .frame(width: 90)
+    }
+}
+
+/// Thin FileDocument wrapper around SeqDocument for .fileExporter - SeqDocument itself is
+/// plain Codable (it lives in GBGCore, which has no reason to know about SwiftUI's FileDocument
+/// protocol), so this adapter is Seq's own, not GBGCore's.
+struct SeqDocumentFile: FileDocument {
+    static var readableContentTypes: [UTType] { [.json] }
+
+    var document: SeqDocument
+
+    init(document: SeqDocument) {
+        self.document = document
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        guard let data = configuration.file.regularFileContents else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        document = try JSONDecoder().decode(SeqDocument.self, from: data)
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        let data = try JSONEncoder().encode(document)
+        return FileWrapper(regularFileWithContents: data)
     }
 }

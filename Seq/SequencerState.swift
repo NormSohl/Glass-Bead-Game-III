@@ -421,6 +421,26 @@ final class SequencerState: ObservableObject {
     func endDraggingHandle() {
         draggingHandle = nil
     }
+
+    // MARK: - Save/load (Step 5)
+
+    func exportDocument() -> SeqDocument {
+        SeqDocument(dronePart: dronePart, xPart: xPart, yPart: yPart, zPart: zPart)
+    }
+
+    /// Replaces the current piece's contents in place - SequencerState's own dronePart/xPart/
+    /// yPart/zPart stay the same objects (ScorePlayer and the UI already hold references to
+    /// them), only their notes change. Stops any active playback/scrub first, same guard
+    /// beginDraggingHandle already uses, since a load mutating Part.notes out from under
+    /// ScorePlayer.advance() mid-playback would be exactly the unsynchronized-mutation risk
+    /// that guard exists to avoid.
+    func loadDocument(_ document: SeqDocument) {
+        if isPlaying { stop() }
+        if isScrubbing { endScrub() }
+        document.apply(toDronePart: dronePart, xPart: xPart, yPart: yPart, zPart: zPart)
+        scoreRevision += 1
+        playheadSample = 0
+    }
 }
 
 struct DraggingHandle: Equatable {
