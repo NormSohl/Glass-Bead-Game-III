@@ -131,11 +131,14 @@ struct ContentView: View {
             ToolbarItem(placement: .primaryAction) {
                 // Sequencer panel toggle - a panel-slider-style show/hide. Its state gates
                 // AppSettings.sequencerDrivenVoices everywhere else: hidden means no sequencer
-                // code ever touches the graph.
+                // code ever touches the graph. Tape-reel icon, chosen over pianokeys (the
+                // original) and a few other candidates compared directly in the toolbar - reads
+                // as playback/recording rather than "an instrument," which fits a piano-roll
+                // sequencer better than a literal keyboard glyph.
                 Button {
                     withAnimation(.easeInOut) { settings.showSequencer.toggle() }
                 } label: {
-                    Image(systemName: "pianokeys")
+                    Image(systemName: "recordingtape")
                 }
                 .help("Sequencer - show or hide the piano-roll editor and transport controls")
             }
@@ -157,11 +160,14 @@ struct ContentView: View {
             ToolbarItem(placement: .primaryAction) {
                 // Pedal - a live-performance control, per Norm, so worth reaching without
                 // opening the settings popover first, same reasoning as Portamento above. Same
-                // plain styling (no active-state color) as the other three buttons.
+                // plain styling (no active-state color) as the other three buttons. Infinity
+                // icon, chosen over shoeprints.fill (the original) and a couple other candidates
+                // compared directly in the toolbar - abstractly represents "keeps sounding
+                // indefinitely," which is exactly what sustain does.
                 Button {
                     settings.pedal.toggle()
                 } label: {
-                    Image(systemName: "shoeprints.fill")
+                    Image(systemName: "infinity")
                 }
                 .help("Pedal (Space, held) - sustain: keep the current notes sounding after you release them")
             }
