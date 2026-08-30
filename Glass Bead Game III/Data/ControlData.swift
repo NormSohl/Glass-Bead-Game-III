@@ -81,8 +81,8 @@ class AppSettings: ObservableObject{
     @Published var zFrequency: Double = 261.6255653005986 // starts at unison with the root
 
     // True for exactly the span of a Z-slider touch-drag (ZSliderView's DragGesture,
-    // onChanged...onEnded) - not tied to audio/pedal like Sound's own zSliderTouchCount is.
-    // DissonanceView reads this to decide between its own two render qualities: a cheap
+    // onChanged...onEnded) - not tied to audio/pedal/MIDI at all, unlike Sound's own touch
+    // counts. DissonanceView reads this to decide between its own two render qualities: a cheap
     // resolution kept live while this is true, versus progressively refining upward once it
     // goes false (see DissonanceView's header comment).
     @Published var zDragActive: Bool = false
@@ -135,6 +135,19 @@ class AppSettings: ObservableObject{
         sound.setRootNote(midiNote: self.rootMidiNote)
         sound.setPitchBendRange(pitchBendRange: self.pitchBendRange)
         sound.setPitchBendRangeMPE(pitchBendRange: self.pitchBendRangeMPE)
+        // X/Y/Z's underlying Midi/Audio pitch state otherwise stays at Midi's own raw 0.0
+        // default (garbage - a 0Hz-derived pitch bend clamps to the minimum) until each one's
+        // own view actually publishes a real value. X/Y happen to get seeded as a side effect
+        // of HitTestView's Canvas rendering once on mount even before any touch, but
+        // ZSliderView deliberately skips that for Z until the Z-slider's own first touch (the
+        // hasTouched guard, there to stop the marker jumping to a wrong position on mount) -
+        // and Z can now sound from a plain graph touch alone (see Sound.applyZVoiceEnables),
+        // so without this it would send that garbage pitch the first time that happens in a
+        // session. Pushing all three explicitly here removes the accidental dependency on
+        // HitTestView's side effect too, not just fixing Z.
+        sound.setXPitch(frequency: self.xFrequency)
+        sound.setYPitch(frequency: self.yFrequency)
+        sound.setZPitch(frequency: self.zFrequency)
         // Lets Sound's enableDrone/enableX/enableY/enableZ read playDrone/playNoteX/Y/Z straight
         // through this instance instead of keeping their own separately-defaulted copies.
         sound.settings = self
