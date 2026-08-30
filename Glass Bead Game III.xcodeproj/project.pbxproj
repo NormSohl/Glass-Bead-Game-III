@@ -32,6 +32,11 @@
 		4C38606FAD834867A31E53B1 /* TransportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D7D6090EA174517A79BC947 /* TransportView.swift */; };
 		6758A0F1AE2A43FE863D9772 /* SequencerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 067D6370D71F4AAB81C7FCAB /* SequencerView.swift */; };
 		6488C93050F1451C827BF475 /* RootIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C57554EBB6D407B81C07AAF /* RootIndicatorView.swift */; };
+		F4CDD0102BD145C7BD92A70B /* SeqApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F35D5C9D9E84298AE75468E /* SeqApp.swift */; };
+		15FCF57288EE48B9A8087725 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBE90E7B4BC244A38A40DC8D /* ContentView.swift */; };
+		FE88F8752F854C75871D6C00 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F71E89B896DE4710A56E4B62 /* Assets.xcassets */; };
+		647B50C93934404799447CE2 /* GBGCore in Frameworks */ = {isa = PBXBuildFile; productRef = 04B162C5595040048C6852EF /* GBGCore */; };
+		E434633F43BE43C28F278AE5 /* GBGSound in Frameworks */ = {isa = PBXBuildFile; productRef = B2C3D4E5F60718293A4B5C6D /* GBGSound */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -61,6 +66,11 @@
 		06D062682BAA9A9000C68262 /* ControlData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControlData.swift; sourceTree = "<group>"; };
 		06D0626F2BAA9C4E00C68262 /* Sound.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sound.swift; sourceTree = "<group>"; };
 		D6DF75EF1C024FBCA782C7AE /* TetradView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TetradView.swift; sourceTree = "<group>"; };
+		969C76870C734BBD95B79A2E /* Seq.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Seq.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9F35D5C9D9E84298AE75468E /* SeqApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeqApp.swift; sourceTree = "<group>"; };
+		DBE90E7B4BC244A38A40DC8D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		2C54886396D84BE08EF97D59 /* Seq.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Seq.entitlements; sourceTree = "<group>"; };
+		F71E89B896DE4710A56E4B62 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,6 +83,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		08E7BFC07D3E4119A3FCDF0D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				647B50C93934404799447CE2 /* GBGCore in Frameworks */,
+				E434633F43BE43C28F278AE5 /* GBGSound in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -80,6 +99,7 @@
 			isa = PBXGroup;
 			children = (
 				06824BDC2B881E3C002E9661 /* Glass Bead Game III */,
+				78F7DB73E76342149400A5AC /* Seq */,
 				06824BDB2B881E3C002E9661 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -88,9 +108,21 @@
 			isa = PBXGroup;
 			children = (
 				06824BDA2B881E3C002E9661 /* Glass Bead Game III.app */,
+				969C76870C734BBD95B79A2E /* Seq.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
+		};
+		78F7DB73E76342149400A5AC /* Seq */ = {
+			isa = PBXGroup;
+			children = (
+				9F35D5C9D9E84298AE75468E /* SeqApp.swift */,
+				DBE90E7B4BC244A38A40DC8D /* ContentView.swift */,
+				F71E89B896DE4710A56E4B62 /* Assets.xcassets */,
+				2C54886396D84BE08EF97D59 /* Seq.entitlements */,
+			);
+			path = Seq;
+			sourceTree = SOURCE_ROOT;
 		};
 		06824BDC2B881E3C002E9661 /* Glass Bead Game III */ = {
 			isa = PBXGroup;
@@ -229,6 +261,27 @@
 			productReference = 06824BDA2B881E3C002E9661 /* Glass Bead Game III.app */;
 			productType = "com.apple.product-type.application";
 		};
+		779CA22BE116420E8D6B73F8 /* Seq */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3E727B7645A84FC7B76ED28E /* Build configuration list for PBXNativeTarget "Seq" */;
+			buildPhases = (
+				4B172142A7AA44E69B13F4B7 /* Sources */,
+				08E7BFC07D3E4119A3FCDF0D /* Frameworks */,
+				56186585152D480DAEC8FF14 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Seq;
+			packageProductDependencies = (
+				04B162C5595040048C6852EF /* GBGCore */,
+				B2C3D4E5F60718293A4B5C6D /* GBGSound */,
+			);
+			productName = Seq;
+			productReference = 969C76870C734BBD95B79A2E /* Seq.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -240,6 +293,9 @@
 				LastUpgradeCheck = 1530;
 				TargetAttributes = {
 					06824BD92B881E3C002E9661 = {
+						CreatedOnToolsVersion = 15.2;
+					};
+					779CA22BE116420E8D6B73F8 = {
 						CreatedOnToolsVersion = 15.2;
 					};
 				};
@@ -262,6 +318,7 @@
 			projectRoot = "";
 			targets = (
 				06824BD92B881E3C002E9661 /* Glass Bead Game III */,
+				779CA22BE116420E8D6B73F8 /* Seq */,
 			);
 		};
 /* End PBXProject section */
@@ -273,6 +330,14 @@
 			files = (
 				06824BE62B881E3D002E9661 /* Preview Assets.xcassets in Resources */,
 				06824BE22B881E3D002E9661 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		56186585152D480DAEC8FF14 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FE88F8752F854C75871D6C00 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -304,6 +369,15 @@
 				4C38606FAD834867A31E53B1 /* TransportView.swift in Sources */,
 				6758A0F1AE2A43FE863D9772 /* SequencerView.swift in Sources */,
 				6488C93050F1451C827BF475 /* RootIndicatorView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4B172142A7AA44E69B13F4B7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F4CDD0102BD145C7BD92A70B /* SeqApp.swift in Sources */,
+				15FCF57288EE48B9A8087725 /* ContentView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -514,6 +588,88 @@
 			};
 			name = Release;
 		};
+		C9D2BE0AEF67497F918BB825 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "Seq/Seq.entitlements";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 342G7AUKSH;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.sohl.norm.Glass-Bead-Game-III-Seq";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		04D4CBC7CA1B4858B1C1D881 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "Seq/Seq.entitlements";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 342G7AUKSH;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.sohl.norm.Glass-Bead-Game-III-Seq";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -531,6 +687,15 @@
 			buildConfigurations = (
 				06824BEA2B881E3D002E9661 /* Debug */,
 				06824BEB2B881E3D002E9661 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3E727B7645A84FC7B76ED28E /* Build configuration list for PBXNativeTarget "Seq" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9D2BE0AEF67497F918BB825 /* Debug */,
+				04D4CBC7CA1B4858B1C1D881 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
