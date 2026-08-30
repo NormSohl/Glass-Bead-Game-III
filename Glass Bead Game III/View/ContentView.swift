@@ -166,6 +166,18 @@ struct ContentView: View {
                 .help("Pedal - sustain: keep the current notes sounding after you release them")
             }
             ToolbarItem(placement: .primaryAction) {
+                // Drone - the last of the settings-popover controls Norm wanted promoted to the
+                // toolbar. Placeholder icon (dot.radiowaves.left.and.right, a generic continuous-
+                // signal glyph) pending a proper icon pass - Norm floated a bee for this one
+                // ("drone" is also a male bee), to revisit together.
+                Button {
+                    settings.playDrone.toggle()
+                } label: {
+                    Image(systemName: "dot.radiowaves.left.and.right")
+                }
+                .help("Drone - the sustained reference tone")
+            }
+            ToolbarItem(placement: .primaryAction) {
                 Button {
                     settings.showSettings = true
                 } label: {
@@ -186,9 +198,9 @@ import AppKit
 
 // Bridges a raw NSEvent local key monitor into SwiftUI, the same zero-size-NSView-in-the-
 // background trick WindowAspectLockView below uses. SwiftUI's own .keyboardShortcut only gives a
-// single discrete "activated" callback (like a click) - fine for Portamento (a plain toggle,
-// not physically a pedal), but wrong for Pedal: a real damper pedal, and any third-party USB
-// pedal configured to emulate this same key, is *held* - down while sustaining, released when
+// single discrete "activated" callback (like a click) - fine for Portamento and Drone (plain
+// toggles, not physically a pedal), but wrong for Pedal: a real damper pedal, and any third-party
+// USB pedal configured to emulate this same key, is *held* - down while sustaining, released when
 // not - which needs separate keyDown/keyUp tracking, not one press-to-flip event. Space is
 // unused elsewhere in the app; many inexpensive USB foot pedals default to sending Space without
 // any reconfiguration at all.
@@ -234,6 +246,12 @@ private struct KeyCommandMonitor: NSViewRepresentable {
                     // toggle many times a second instead of once per press.
                     if event.charactersIgnoringModifiers?.lowercased() == "g" && !event.isARepeat {
                         self.settings.snap.toggle()
+                        return nil
+                    }
+                    // "D" - Drone, same discrete-toggle treatment as Portamento above (not
+                    // physically a pedal either).
+                    if event.charactersIgnoringModifiers?.lowercased() == "d" && !event.isARepeat {
+                        self.settings.playDrone.toggle()
                         return nil
                     }
                 case .keyUp:

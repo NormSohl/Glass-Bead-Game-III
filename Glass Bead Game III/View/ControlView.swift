@@ -61,12 +61,10 @@ struct ControlView: View {
                 // the grid down to otherwise.
                 .disabled(!settings.showTetrads)
 
-                // No onChange sync needed here (or for Note X/Y/Z below) - Sound.enableDrone
-                // reads settings.playDrone straight through sound.settings, so the toggle's own
-                // @Published state already is the state Sound sees, live.
-                Toggle("Drone", isOn: $settings.playDrone)
-                    .tint(tintcolor)
-                    .foregroundStyle(.white)
+                // Drone now lives as its own toolbar button and a "D" key command
+                // (ContentView), per Norm - removed from here rather than duplicated, same as
+                // Portamento/Pedal above. Sound.enableDrone still reads settings.playDrone
+                // straight through sound.settings regardless of which UI changed it.
 
                 Toggle("Note X", isOn: $settings.playNoteX)
                     .tint(tintcolor)
@@ -88,10 +86,8 @@ struct ControlView: View {
                 // Pedal now also lives as its own toolbar button and a Space-bar key command
                 // (ContentView) - release-on-off (sound.releasePedal()) is wired as a didSet on
                 // AppSettings.pedal itself now, not here, since this Toggle's onChange only ever
-                // fired while this popover happened to be open.
-                Toggle("pedal", isOn: $settings.pedal)
-                    .tint(tintcolor)
-                    .foregroundStyle(.white)
+                // fired while this popover happened to be open. Removed from here rather than
+                // duplicated, same as Drone/Portamento above.
 
                 Divider()
 #if os(iOS)
