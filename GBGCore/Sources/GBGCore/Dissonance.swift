@@ -124,7 +124,16 @@ enum Dissonance {
     /// Indexed [row][col]: row 0 is the lowest pitch (bottom of the graph), col 0 is the
     /// lowest pitch (left of the graph) - same orientation as the rest of the graph's
     /// coordinate space. Each cell is evaluated at its center point along that axis.
-    static func roughnessGrid(scale: Scale, rootFrequency: Double, zFrequency: Double? = nil, limit: Int, resolution: Int, weighting: HarmonicWeighting? = nil) -> [[Double]] {
+    ///
+    /// `isCancelled`, when given, is polled once per outer row (cheap relative to a row's own
+    /// O(resolution) inner cost, but fine-grained enough that a cancellation mid-grid wastes at
+    /// most one row's worth of work) - lets a caller running this off the main thread (see
+    /// DissonanceView's background refinement passes) actually stop computing the moment a
+    /// caller-side cancellation happens, rather than finishing the whole grid and only
+    /// discarding the result afterward. A cancelled call returns `[]`, the same empty-grid
+    /// signal invalid inputs already use, so callers already checking for that don't need a
+    /// second code path.
+    static func roughnessGrid(scale: Scale, rootFrequency: Double, zFrequency: Double? = nil, limit: Int, resolution: Int, weighting: HarmonicWeighting? = nil, isCancelled: (() -> Bool)? = nil) -> [[Double]] {
         guard resolution > 0, limit > 0 else { return [] }
         let weighting = weighting ?? { linearHarmonicWeight($0, limit: limit) }
 
@@ -161,6 +170,7 @@ enum Dissonance {
         // diagonal and one triangle need computing; the other triangle is a mirror, cutting
         // the cost roughly in half.
         for row in 0..<resolution {
+            if let isCancelled, isCancelled() { return [] }
             let yFrequency = frequencyAt[row]
             let rootY = rootTermAt[row]
             for col in row..<resolution {

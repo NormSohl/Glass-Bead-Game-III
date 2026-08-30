@@ -172,7 +172,11 @@ struct DissonanceView: View {
     // Three passes climbing from the live (half-resolution) quality back up to the original
     // true-per-pixel resolution, each computed off the main thread and swapped into `cache`
     // as it finishes so the field visibly sharpens in steps rather than jumping once at the
-    // end. Cancelled (via cache.refinementTask) the instant a new drag starts.
+    // end. cache.refinementTask.cancel() (called the instant a new drag starts, see the Canvas
+    // closure above) doesn't just skip *applying* a pass already computing - the isCancelled
+    // closure passed to renderRoughnessImage below is polled from inside its own grid loop, so
+    // a cancellation actually stops that loop within a row or two, not once it happens to
+    // finish computing a result that would only get thrown away.
     private func scheduleRefinement(scale: Scale, rootFrequency: Double, zFrequency: Double?, limit: Int, canvasWidth: Int, startKey: CacheKey) {
         let steps = [0.7, 0.85, 1.0]
             .map { max(1, Int((Double(canvasWidth) * $0).rounded())) }
@@ -188,7 +192,7 @@ struct DissonanceView: View {
                 if Task.isCancelled { return }
                 guard let built = Self.renderRoughnessImage(
                     scale: scale, rootFrequency: rootFrequency, zFrequency: zFrequency,
-                    limit: limit, resolution: resolution
+                    limit: limit, resolution: resolution, isCancelled: { Task.isCancelled }
                 ) else { return }
                 if Task.isCancelled { return }
                 await MainActor.run {
@@ -238,7 +242,12 @@ struct DissonanceView: View {
     // refinement pass (scheduleRefinement, off the main thread) go through, so the two can
     // never drift into computing the field differently. Static and free of View state
     // (everything it needs comes in as a parameter) so it's safe to call from Task.detached.
-    private static func renderRoughnessImage(scale: Scale, rootFrequency: Double, zFrequency: Double?, limit: Int, resolution: Int) -> CGImage? {
+    // `isCancelled` is forwarded straight to Dissonance.roughnessGrid's own polling (nil for
+    // the live coarse path, which is never cancelled) - Norm: "interrupt the redraw the
+    // moment the drag message comes in, don't wait" - so a resumed drag stops a mid-flight
+    // refinement pass's own O(resolution^2) loop directly, not just its result once it happens
+    // to finish.
+    private static func renderRoughnessImage(scale: Scale, rootFrequency: Double, zFrequency: Double?, limit: Int, resolution: Int, isCancelled: (() -> Bool)? = nil) -> CGImage? {
         // Always linear falloff (1.0 at the fundamental down to 1/limit at the highest
         // included harmonic) - was a user-facing toggle against the 1/n alternative, but
         // linear reveals visibly more structure and was always the default; Norm decided it's
@@ -249,7 +258,8 @@ struct DissonanceView: View {
             zFrequency: zFrequency,
             limit: limit,
             resolution: resolution,
-            weighting: { Dissonance.linearHarmonicWeight($0, limit: limit) }
+            weighting: { Dissonance.linearHarmonicWeight($0, limit: limit) },
+            isCancelled: isCancelled
         )
         guard let maxRoughness = grid.flatMap({ $0 }).max(), maxRoughness > 0 else { return nil }
         return makeRoughnessImage(grid: grid, maxRoughness: maxRoughness, resolution: resolution)
