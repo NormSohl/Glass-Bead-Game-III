@@ -167,13 +167,14 @@ struct ContentView: View {
             }
             ToolbarItem(placement: .primaryAction) {
                 // Drone - the last of the settings-popover controls Norm wanted promoted to the
-                // toolbar. Placeholder icon (dot.radiowaves.left.and.right, a generic continuous-
-                // signal glyph) pending a proper icon pass - Norm floated a bee for this one
-                // ("drone" is also a male bee), to revisit together.
+                // toolbar. Norm floated a bee for this one ("drone" is also a male bee) - SF
+                // Symbols has no literal bee glyph (confirmed by trying "bee"/"bee.fill" directly,
+                // both render as nothing), so this is a honeycomb instead: keeps the bee/hive
+                // association without an actual insect.
                 Button {
                     settings.playDrone.toggle()
                 } label: {
-                    Image(systemName: "dot.radiowaves.left.and.right")
+                    Image(systemName: "circle.hexagongrid.fill")
                 }
                 .help("Drone - the sustained reference tone")
             }
