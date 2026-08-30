@@ -18,52 +18,86 @@ struct TransportView: View {
     private let tintColor = Color(red: 0.2, green: 0.4, blue: 0.8)
 
     var body: some View {
-        HStack(spacing: 16) {
-            Button {
-                if sequencer.isPlaying { sequencer.stop() } else { sequencer.play() }
-            } label: {
-                Image(systemName: sequencer.isPlaying ? "stop.fill" : "play.fill")
-                    .font(.title2)
-            }
-            .disabled(!sequencer.hasAnyNotes && !sequencer.isPlaying)
-
-            Slider(
-                value: Binding(
-                    get: { Double(sequencer.playheadSample) },
-                    set: { sequencer.scrub(to: Int($0)) }
-                ),
-                in: 0...Double(max(sequencer.scoreLengthSamples, 1)),
-                onEditingChanged: { editing in
-                    if editing { sequencer.beginScrub() } else { sequencer.endScrub() }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 16) {
+                Button {
+                    if sequencer.isPlaying { sequencer.stop() } else { sequencer.play() }
+                } label: {
+                    Image(systemName: sequencer.isPlaying ? "stop.fill" : "play.fill")
+                        .font(.title2)
                 }
-            )
-            .disabled(sequencer.isPlaying)
+                .disabled(!sequencer.hasAnyNotes && !sequencer.isPlaying)
 
-            Picker("Voice", selection: $sequencer.selectedVoice) {
-                Text("Drone").tag(PartVoice.drone).foregroundStyle(voiceColors[.drone] ?? .white)
-                Text("X").tag(PartVoice.x).foregroundStyle(voiceColors[.x] ?? .white)
-                Text("Y").tag(PartVoice.y).foregroundStyle(voiceColors[.y] ?? .white)
-                Text("Z").tag(PartVoice.z).foregroundStyle(voiceColors[.z] ?? .white)
+                Slider(
+                    value: Binding(
+                        get: { Double(sequencer.playheadSample) },
+                        set: { sequencer.scrub(to: Int($0)) }
+                    ),
+                    in: 0...Double(max(sequencer.scoreLengthSamples, 1)),
+                    onEditingChanged: { editing in
+                        if editing { sequencer.beginScrub() } else { sequencer.endScrub() }
+                    }
+                )
+                .disabled(sequencer.isPlaying)
+
+                Picker("Voice", selection: $sequencer.selectedVoice) {
+                    Text("Drone").tag(PartVoice.drone).foregroundStyle(voiceColors[.drone] ?? .white)
+                    Text("X").tag(PartVoice.x).foregroundStyle(voiceColors[.x] ?? .white)
+                    Text("Y").tag(PartVoice.y).foregroundStyle(voiceColors[.y] ?? .white)
+                    Text("Z").tag(PartVoice.z).foregroundStyle(voiceColors[.z] ?? .white)
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 200)
+
+                Button {
+                    sequencer.isPlacingNote.toggle()
+                } label: {
+                    Label("Add Note", systemImage: "plus.circle.fill")
+                }
+                .tint(sequencer.isPlacingNote ? .green : tintColor)
+
+                Stepper(
+                    "Duration: \(String(format: "%.2f", sequencer.noteDurationSeconds))s",
+                    value: $sequencer.noteDurationSeconds,
+                    in: 0.05...4.0,
+                    step: 0.05
+                )
+                .frame(width: 220)
+
+                Spacer()
             }
-            .pickerStyle(.segmented)
-            .frame(width: 200)
 
-            Button {
-                sequencer.isPlacingNote.toggle()
-            } label: {
-                Label("Add Note", systemImage: "plus.circle.fill")
+            // Graph MIDI-out connection - a second, independent output alongside the internal
+            // synth above (both can be on at once, matching Graph's own "internal synth" +
+            // "MIDI" checkbox precedent). See SequencerState's Graph MIDI-out section.
+            HStack(spacing: 12) {
+                Toggle(isOn: $sequencer.graphOutputEnabled) {
+                    Text("Graph Out")
+                }
+                .disabled(sequencer.graphMidiDestinations.isEmpty)
+
+                Picker("Destination", selection: $sequencer.graphDestinationIndex) {
+                    ForEach(sequencer.graphMidiDestinations.indices, id: \.self) { index in
+                        Text(sequencer.graphMidiDestinations[index].name).tag(index)
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(width: 220)
+                .disabled(sequencer.graphMidiDestinations.isEmpty)
+
+                if let detected = sequencer.detectedGraphDestinationIndex,
+                   detected != sequencer.graphDestinationIndex || !sequencer.graphOutputEnabled {
+                    Button {
+                        sequencer.connectDetectedGraph()
+                    } label: {
+                        Label("Graph detected - Connect", systemImage: "link")
+                    }
+                    .tint(.green)
+                }
+
+                Spacer()
             }
-            .tint(sequencer.isPlacingNote ? .green : tintColor)
-
-            Stepper(
-                "Duration: \(String(format: "%.2f", sequencer.noteDurationSeconds))s",
-                value: $sequencer.noteDurationSeconds,
-                in: 0.05...4.0,
-                step: 0.05
-            )
-            .frame(width: 220)
-
-            Spacer()
+            .font(.callout)
         }
         .tint(tintColor)
         .foregroundStyle(.white)

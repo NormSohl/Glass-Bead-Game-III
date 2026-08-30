@@ -49,6 +49,13 @@ public class Midi{
     private var midiClient: MIDIClientRef = 0;
     private var outPort:MIDIPortRef = 0;
     private var inPort: MIDIPortRef = 0;
+    // Named virtual destination another app (Seq) can target directly from its own MIDI
+    // Destination picker - see initMidi(). Distinct from inPort above, which only receives by
+    // connecting out to someone else's source (setMidiSource); this is the reverse direction -
+    // Graph as the addressable target. Both feed the same handleIncomingPacketList/onEvent
+    // pipeline, so every existing consumer works identically regardless of which path bytes
+    // arrived through.
+    private var virtualDestination: MIDIEndpointRef = 0;
 
     // midi sources
     public var midiSources:[midiEndpoint] = []
@@ -136,10 +143,22 @@ public class Midi{
         MIDIClientCreate("Glass Bead Game" as CFString, nil, nil, &midiClient);
         MIDIOutputPortCreate(midiClient, "Glass Bead Game" as CFString, &outPort);
         initMidiInput()
+        initVirtualDestination()
         initMidiSources()
         initMidiDestinations()
         if useMPE {
             enableMPE()
+        }
+    }
+
+    // Creates a named virtual destination ("Glass Bead Game III") so another app can send to
+    // Graph directly by picking it from a MIDI Destination picker, rather than Graph always
+    // having to be the one connecting out to a source. Decoded through the exact same
+    // handleIncomingPacketList used by initMidiInput()'s connected-source path below - see the
+    // standalone-sequencer plan's phase 2, step 3b.
+    private func initVirtualDestination(){
+        MIDIDestinationCreateWithBlock(midiClient, "Glass Bead Game III" as CFString, &virtualDestination) { [weak self] packetListPointer, _ in
+            self?.handleIncomingPacketList(packetListPointer)
         }
     }
 

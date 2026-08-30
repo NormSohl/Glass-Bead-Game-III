@@ -51,8 +51,20 @@ class Sound {
 
     func initSound(){
         midi.initMidi()
+        // Midi.onEvent already dispatches to the main queue from CoreMIDI's own receive
+        // thread, but that alone isn't enough to avoid SwiftUI's "publishing changes from
+        // within view updates" undefined behavior - confirmed via a real crash/warning log
+        // while live-testing external MIDI drive (Console showed this firing on every single
+        // incoming event). A second async hop here pushes the actual @Published mutations
+        // (in handleIncomingMidi and everything it calls) to a genuinely fresh run-loop turn,
+        // decoupled from whatever SwiftUI happens to be doing on the main queue at the moment
+        // CoreMIDI's own dispatch lands - same "don't mutate published state synchronously
+        // inside another callback" precedent this app already established elsewhere (see the
+        // dissonance field's RefinementTrigger/ImageCache split).
         midi.onEvent = { [weak self] event in
-            self?.handleIncomingMidi(channel: event.channel, kind: event.kind)
+            DispatchQueue.main.async {
+                self?.handleIncomingMidi(channel: event.channel, kind: event.kind)
+            }
         }
     }
 
