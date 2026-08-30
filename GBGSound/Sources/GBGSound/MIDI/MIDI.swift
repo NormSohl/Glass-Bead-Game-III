@@ -335,8 +335,27 @@ public class Midi{
         if midiTrace { print("Midi: SetMidiReferencePitch: frequency = \(referenceFrequency)")}
     }
 
-    func setMidiRootPitch(frequency: Double){
+    // Public as of the standalone-sequencer plan's drone-receive extension (Sound.swift's
+    // beginExternalDroneDrive/etc.) - moves the drone's own played frequency without touching
+    // referenceFrequency, unlike setMidiReferencePitch. Previously internal, called only from
+    // tuning/verify-range flows within this file - those always follow up with a full
+    // startMidi() (note-on + pitch-bend together), so this never needed its own "already
+    // playing, push a live update" branch. External drone drive breaks that assumption (a
+    // pitch-bend-only message can arrive on an already-sounding drone note), so this now
+    // mirrors setMidiXPitch/etc.'s live-update branch - confirmed missing via a real CoreMIDI
+    // monitor: a live pitch-bend update produced no outgoing bytes before this fix.
+    public func setMidiRootPitch(frequency: Double){
         rootMidiFrequency = frequency
+        if rootMidiIsPlaying{
+            if useMPE{
+                rootMidiPitchBend = PitchBendMath.freqToPB(frequency: rootMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
+                sendMidiPitchBend(channel: rootMidiMPEChannel, value: rootMidiPitchBend)
+            }
+            else{
+                rootMidiPitchBend = PitchBendMath.freqToPB(frequency: rootMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRange)
+                sendMidiPitchBend(channel: rootMidiChannel, value: rootMidiPitchBend)
+            }
+        }
         if midiTrace { print("Midi: SetRootPitch: frequency = \(rootMidiFrequency)")}
     }
 

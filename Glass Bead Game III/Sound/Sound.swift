@@ -245,10 +245,9 @@ class Sound {
         case xChannel: return .x
         case yChannel: return .y
         case zChannel: return .z
-        default: return nil // includes the drone/root channel - external drive doesn't cover
-                             // drone in this step, since drone has no crosshair of its own to
-                             // drive and no SequencerVoice case represents it (see ControlData's
-                             // SequencerVoice enum).
+        default: return nil // the root/drone channel is handled separately, before this is ever
+                             // called - see handleIncomingMidi's isRootChannel check and the
+                             // drone external-drive section below.
         }
     }
 
@@ -263,6 +262,10 @@ class Sound {
     /// (in the app target), not in GBGSound's Midi class, which reports events generically -
     /// see the standalone-sequencer plan's step 3 notes on keeping that layer low-level.
     func handleIncomingMidi(channel: Int, kind: Midi.MidiInputEvent.Kind) {
+        if isRootChannel(channel) {
+            handleIncomingDroneMidi(kind: kind)
+            return
+        }
         guard let voice = voiceForChannel(channel) else { return }
         switch kind {
         case .noteOn(let note, _):
@@ -330,6 +333,65 @@ class Sound {
             zExternallyDriven = false
         }
         settings?.externallyDrivenVoices.remove(voice)
+        activeTouchCount = max(0, activeTouchCount - 1)
+        applyGraphVoiceEnables()
+        applyZVoiceEnables()
+        applyDroneVoiceEnable()
+        if activeTouchCount == 0 { stopEngine() }
+    }
+
+    // MARK: - External MIDI drive: drone (phase 2 of the standalone-sequencer plan)
+    //
+    // A separate, parallel path from X/Y/Z's above rather than folded into SequencerVoice -
+    // drone has no crosshair on the graph, so SequencerVoice (which exists specifically to mark
+    // "something other than touch owns this crosshair") has no case for it and shouldn't gain
+    // one just for this. Drives audio.triad.setTriadRootPitch + midi.setMidiRootPitch directly,
+    // never setRootPitch/midi.setMidiReferencePitch - the latter would move the reference
+    // frequency every other voice's pitch-bend is encoded against, as a side effect of just
+    // wanting drone to sound. SequencerState.scrub's own drone case set this same precedent for
+    // exactly this reason.
+    private var droneExternallyDriven = false
+    private var lastIncomingDroneNote: Int?
+
+    private func isRootChannel(_ channel: Int) -> Bool {
+        let mpe = settings?.useMIDI_MPE ?? false
+        return channel == (mpe ? midi.rootMidiMPEChannel : midi.rootMidiChannel)
+    }
+
+    private func handleIncomingDroneMidi(kind: Midi.MidiInputEvent.Kind) {
+        switch kind {
+        case .noteOn(let note, _):
+            lastIncomingDroneNote = note
+            beginExternalDroneDrive(frequency: frequencyForIncoming(note: note, pitchBend: 8192))
+        case .noteOff:
+            lastIncomingDroneNote = nil
+            endExternalDroneDrive()
+        case .pitchBend(let value):
+            guard let note = lastIncomingDroneNote else { return }
+            updateExternalDroneDrivePitch(frequency: frequencyForIncoming(note: note, pitchBend: value))
+        }
+    }
+
+    private func beginExternalDroneDrive(frequency: Double) {
+        droneExternallyDriven = true
+        audio.triad.setTriadRootPitch(frequency: frequency)
+        midi.setMidiRootPitch(frequency: frequency)
+        activeTouchCount += 1
+        applyGraphVoiceEnables()
+        applyZVoiceEnables()
+        applyDroneVoiceEnable()
+        if activeTouchCount == 1 { startEngine(amp: 1) }
+    }
+
+    private func updateExternalDroneDrivePitch(frequency: Double) {
+        guard droneExternallyDriven else { return }
+        audio.triad.setTriadRootPitch(frequency: frequency)
+        midi.setMidiRootPitch(frequency: frequency)
+    }
+
+    private func endExternalDroneDrive() {
+        guard droneExternallyDriven else { return }
+        droneExternallyDriven = false
         activeTouchCount = max(0, activeTouchCount - 1)
         applyGraphVoiceEnables()
         applyZVoiceEnables()
