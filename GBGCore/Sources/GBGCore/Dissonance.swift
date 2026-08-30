@@ -97,24 +97,34 @@ enum Dissonance {
         return total
     }
 
-    /// Total roughness field value for a candidate (root, X, Y) triad: the sum of pairwise
-    /// roughness across all three tone pairs (root x X, root x Y, X x Y).
-    static func totalRoughness(rootFrequency: Double, xFrequency: Double, yFrequency: Double, limit: Int, weighting: HarmonicWeighting? = nil) -> Double {
+    /// Total roughness field value for a candidate (root, X, Y) triad, or (root, X, Y, Z)
+    /// tetrad when `zFrequency` is given: the sum of pairwise roughness across every tone
+    /// pair (root x X, root x Y, X x Y, and - with Z - root x Z, X x Z, Y x Z).
+    static func totalRoughness(rootFrequency: Double, xFrequency: Double, yFrequency: Double, zFrequency: Double? = nil, limit: Int, weighting: HarmonicWeighting? = nil) -> Double {
         let weighting = weighting ?? { linearHarmonicWeight($0, limit: limit) }
         let rootX = roughnessBetweenTones(frequencyA: rootFrequency, frequencyB: xFrequency, limit: limit, weighting: weighting)
         let rootY = roughnessBetweenTones(frequencyA: rootFrequency, frequencyB: yFrequency, limit: limit, weighting: weighting)
         let xY = roughnessBetweenTones(frequencyA: xFrequency, frequencyB: yFrequency, limit: limit, weighting: weighting)
-        return rootX + rootY + xY
+        var total = rootX + rootY + xY
+        if let zFrequency {
+            let rootZ = roughnessBetweenTones(frequencyA: rootFrequency, frequencyB: zFrequency, limit: limit, weighting: weighting)
+            let xZ = roughnessBetweenTones(frequencyA: xFrequency, frequencyB: zFrequency, limit: limit, weighting: weighting)
+            let yZ = roughnessBetweenTones(frequencyA: yFrequency, frequencyB: zFrequency, limit: limit, weighting: weighting)
+            total += rootZ + xZ + yZ
+        }
+        return total
     }
 
     /// Builds a `resolution` x `resolution` grid of total roughness values covering the
     /// full X/Y range of `scale` (both axes span the same lowest-to-highest normalized
-    /// range as the graph itself), for a fixed root frequency.
+    /// range as the graph itself), for a fixed root frequency and, when `zFrequency` is
+    /// given, a fixed Z frequency too - the field then reflects the current (root, X, Y, Z)
+    /// tetrad rather than just (root, X, Y), so it changes as Z moves.
     ///
     /// Indexed [row][col]: row 0 is the lowest pitch (bottom of the graph), col 0 is the
     /// lowest pitch (left of the graph) - same orientation as the rest of the graph's
     /// coordinate space. Each cell is evaluated at its center point along that axis.
-    static func roughnessGrid(scale: Scale, rootFrequency: Double, limit: Int, resolution: Int, weighting: HarmonicWeighting? = nil) -> [[Double]] {
+    static func roughnessGrid(scale: Scale, rootFrequency: Double, zFrequency: Double? = nil, limit: Int, resolution: Int, weighting: HarmonicWeighting? = nil) -> [[Double]] {
         guard resolution > 0, limit > 0 else { return [] }
         let weighting = weighting ?? { linearHarmonicWeight($0, limit: limit) }
 
@@ -137,12 +147,19 @@ enum Dissonance {
         // covered by the mirroring below.
         let rootTermAt = frequencyAt.map { roughnessBetweenTones(frequencyA: rootFrequency, frequencyB: $0, limit: limit, weighting: weighting) }
 
+        // Z is fixed for the whole field too (like root), so its X/Y terms are the same kind
+        // of cheap 1D lookup as rootTermAt - the O(resolution^2) loop below only gains two
+        // array reads and an addition per cell, not a second full pairwise computation.
+        let zTermAt = zFrequency.map { z in frequencyAt.map { roughnessBetweenTones(frequencyA: z, frequencyB: $0, limit: limit, weighting: weighting) } }
+        let rootZ = zFrequency.map { roughnessBetweenTones(frequencyA: rootFrequency, frequencyB: $0, limit: limit, weighting: weighting) } ?? 0
+
         var grid = [[Double]](repeating: [Double](repeating: 0, count: resolution), count: resolution)
-        // totalRoughness(root, X, Y) is symmetric under swapping X and Y (rootX + rootY + xY
-        // is invariant, since roughnessBetweenTones is itself symmetric in its two frequency
-        // arguments), and both grid axes share the same fraction mapping above - so
-        // grid[row][col] == grid[col][row] always. Only the diagonal and one triangle need
-        // computing; the other triangle is a mirror, cutting the cost roughly in half.
+        // totalRoughness(root, X, Y[, Z]) is symmetric under swapping X and Y (every term
+        // pairs X and Y with the same fixed frequencies - root and, when present, Z - so
+        // swapping X and Y leaves the sum invariant), and both grid axes share the same
+        // fraction mapping above - so grid[row][col] == grid[col][row] always. Only the
+        // diagonal and one triangle need computing; the other triangle is a mirror, cutting
+        // the cost roughly in half.
         for row in 0..<resolution {
             let yFrequency = frequencyAt[row]
             let rootY = rootTermAt[row]
@@ -150,7 +167,10 @@ enum Dissonance {
                 let xFrequency = frequencyAt[col]
                 let rootX = rootTermAt[col]
                 let xY = roughnessBetweenTones(frequencyA: xFrequency, frequencyB: yFrequency, limit: limit, weighting: weighting)
-                let value = rootX + rootY + xY
+                var value = rootX + rootY + xY
+                if let zTermAt {
+                    value += rootZ + zTermAt[col] + zTermAt[row]
+                }
                 grid[row][col] = value
                 grid[col][row] = value
             }

@@ -160,6 +160,29 @@ final class DissonanceTests: XCTestCase {
         XCTAssertEqual(result, expected, accuracy: 0.0000001)
     }
 
+    func testTotalRoughnessWithZIsTheSumOfAllSixPairwiseTonePairs() {
+        let root = 200.0, x = 260.0, y = 340.0, z = 420.0
+        let limit = 7
+
+        let expected = Dissonance.roughnessBetweenTones(frequencyA: root, frequencyB: x, limit: limit)
+            + Dissonance.roughnessBetweenTones(frequencyA: root, frequencyB: y, limit: limit)
+            + Dissonance.roughnessBetweenTones(frequencyA: x, frequencyB: y, limit: limit)
+            + Dissonance.roughnessBetweenTones(frequencyA: root, frequencyB: z, limit: limit)
+            + Dissonance.roughnessBetweenTones(frequencyA: x, frequencyB: z, limit: limit)
+            + Dissonance.roughnessBetweenTones(frequencyA: y, frequencyB: z, limit: limit)
+
+        let result = Dissonance.totalRoughness(rootFrequency: root, xFrequency: x, yFrequency: y, zFrequency: z, limit: limit)
+        XCTAssertEqual(result, expected, accuracy: 0.0000001)
+    }
+
+    func testTotalRoughnessWithNilZMatchesTriadOnlyResult() {
+        let root = 200.0, x = 260.0, y = 340.0
+        let limit = 7
+        let triadOnly = Dissonance.totalRoughness(rootFrequency: root, xFrequency: x, yFrequency: y, limit: limit)
+        let nilZ = Dissonance.totalRoughness(rootFrequency: root, xFrequency: x, yFrequency: y, zFrequency: nil, limit: limit)
+        XCTAssertEqual(triadOnly, nilZ, accuracy: 0.0000001)
+    }
+
     // MARK: roughnessGrid
 
     func testRoughnessGridHasRequestedDimensions() {
@@ -241,6 +264,46 @@ final class DissonanceTests: XCTestCase {
                 XCTAssertEqual(grid[row][col], expected, accuracy: 0.0000001, "mismatch at (\(row),\(col))")
             }
         }
+    }
+
+    func testRoughnessGridWithZMatchesDirectFrequencyMapping() {
+        // same spot-check as testRoughnessGridCellMatchesDirectFrequencyMapping, with a fixed
+        // Z frequency folded in - grid[row][col] should equal totalRoughness(root, X, Y, Z)
+        // for that cell's mapped X/Y frequencies.
+        let scale = Scale(limit: 5, highestRatio: 2.0, lowestRatio: 0.5)
+        let rootFrequency = 200.0
+        let zFrequency = 250.0
+        let limit = 5
+        let resolution = 8
+        let grid = Dissonance.roughnessGrid(scale: scale, rootFrequency: rootFrequency, zFrequency: zFrequency, limit: limit, resolution: resolution)
+
+        let row = 3, col = 6
+        let yFraction = (Double(row) + 0.5) / Double(resolution)
+        let xFraction = (Double(col) + 0.5) / Double(resolution)
+        let yFrequency = rootFrequency * pow(2, scale.lowestRatioNormalized + scale.rangeNormalized * yFraction)
+        let xFrequency = rootFrequency * pow(2, scale.lowestRatioNormalized + scale.rangeNormalized * xFraction)
+        let expected = Dissonance.totalRoughness(rootFrequency: rootFrequency, xFrequency: xFrequency, yFrequency: yFrequency, zFrequency: zFrequency, limit: limit)
+
+        XCTAssertEqual(grid[row][col], expected, accuracy: 0.0000001)
+    }
+
+    func testRoughnessGridWithZIsStillSymmetricAcrossTheDiagonal() {
+        // Z is fixed for the whole field (like root), so swapping X and Y still leaves every
+        // term - including the new Z ones - invariant.
+        let scale = Scale(limit: 7, highestRatio: 2.0, lowestRatio: 0.5)
+        let grid = Dissonance.roughnessGrid(scale: scale, rootFrequency: 300, zFrequency: 380, limit: 7, resolution: 12)
+        for row in 0..<12 {
+            for col in 0..<12 {
+                XCTAssertEqual(grid[row][col], grid[col][row], accuracy: 0.0000001, "mismatch at (\(row),\(col))")
+            }
+        }
+    }
+
+    func testRoughnessGridWithNilZMatchesTriadOnlyGrid() {
+        let scale = Scale(limit: 5, highestRatio: 2.0, lowestRatio: 0.5)
+        let triadOnly = Dissonance.roughnessGrid(scale: scale, rootFrequency: 261.63, limit: 5, resolution: 6)
+        let nilZ = Dissonance.roughnessGrid(scale: scale, rootFrequency: 261.63, zFrequency: nil, limit: 5, resolution: 6)
+        XCTAssertEqual(triadOnly, nilZ)
     }
 
     func testTotalRoughnessAtUnisonTriadIsLowerThanASpreadOutTriad() {

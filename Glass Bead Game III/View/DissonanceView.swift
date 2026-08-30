@@ -6,17 +6,19 @@
 //
 //  Renders the roughness/dissonance field (see GBGCore's Dissonance.swift for the math)
 //  as a background layer under the grid/diamonds: for every point on the graph, how rough
-//  would the root+X+Y triad sound if you played there? The diamonds mark the exact,
-//  precise consonances; this fills in what's happening in between them.
+//  would the root+X+Y triad - root+X+Y+Z, while the 3rd Moving Tone is on - sound if you
+//  played there? The diamonds mark the exact, precise consonances; this fills in what's
+//  happening in between them.
 //
-//  True per-pixel resolution as of 2026-08-28 (Norm: a fixed grid still showed visible
-//  pixelation once seen at full size) - one roughness value per screen pixel, not a coarse
-//  grid stretched to fit. Measured on this Mac at limit 11, ~900px canvas, Release build:
-//  ~305ms to compute the grid + build the bitmap - a real, noticeable one-time cost, but
-//  cached (see below) so it's paid once per meaningful change, not per frame or per touch.
-//  Measure performance-sensitive code like this in Release, not Debug - the same computation
-//  measured ~17s in an unoptimized Debug build (-Onone vs -O on tight closure-heavy numeric
-//  loops is roughly a 50x difference here), which looks like a hang/regression but isn't one.
+//  Half-pixel resolution as of 2026-08-29 (Norm: "2x pixel to save time") - one roughness
+//  value per 2x2 screen pixel block, upscaled by context.draw's own interpolation, not one
+//  per screen pixel. Backed off from the true per-pixel resolution added 2026-08-28 once Z
+//  joined the cache key below: Z can now change continuously (a Z-slider drag), not just on
+//  the occasional root/limit/scale-shape change, so the grid recomputes far more often and
+//  the O(resolution^2) cost needed to come down to match. Measure performance-sensitive code
+//  like this in Release, not Debug - the same computation measured roughly 50x slower in an
+//  unoptimized Debug build (-Onone vs -O on tight closure-heavy numeric loops), which looks
+//  like a hang/regression but isn't one.
 //
 //  Rendered as a single bitmap image, not one Path fill per cell - at true per-pixel
 //  resolution that's 800000+ individual fills, a completely different (and much worse)
@@ -52,6 +54,7 @@ struct DissonanceView: View {
 
     private struct CacheKey: Equatable {
         let rootFrequency: Double
+        let zFrequency: Double?
         let limit: Int
         let highestRatio: Double
         let lowestRatio: Double
@@ -62,11 +65,22 @@ struct DissonanceView: View {
         if showDissonance {
             Canvas { context, size in
                 guard let limit = limitMap[settings.selectedLimit], limit > 0 else { return }
-                // Square canvas (the graph is always aspectRatio 1:1) - one grid cell per pixel.
-                let resolution = max(1, Int(size.width.rounded()))
+                // Z only actually exists as a live 4th voice while the 3rd Moving Tone is on
+                // (see ZSliderView, only mounted then) - so the field only folds it into the
+                // roughness math in that mode, matching what's really sounding.
+                let zFrequency: Double? = settings.showTetrads ? settings.zFrequency : nil
+
+                // Half the per-axis pixel count (Norm: "2x pixel to save time") rather than one
+                // grid cell per screen pixel - with Z now able to change continuously (a touch-
+                // drag on the Z-slider, not just root/limit/scale-shape), this recomputes far
+                // more often than before, so the O(resolution^2) grid cost needs to come down
+                // to match. context.draw upscales the resulting image to the full canvas size
+                // below, same as any other resolution mismatch.
+                let resolution = max(1, Int((size.width / 2).rounded()))
 
                 let key = CacheKey(
                     rootFrequency: settings.rootFrequency,
+                    zFrequency: zFrequency,
                     limit: limit,
                     highestRatio: scale.highestRatio,
                     lowestRatio: scale.lowestRatio,
@@ -84,6 +98,7 @@ struct DissonanceView: View {
                     let grid = Dissonance.roughnessGrid(
                         scale: scale,
                         rootFrequency: settings.rootFrequency,
+                        zFrequency: zFrequency,
                         limit: limit,
                         resolution: resolution,
                         weighting: { Dissonance.linearHarmonicWeight($0, limit: limit) }
