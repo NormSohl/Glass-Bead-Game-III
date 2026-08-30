@@ -159,6 +159,11 @@ struct ControlView: View {
                     : [sound.midi.xMidiChannel, sound.midi.yMidiChannel, sound.midi.zMidiChannel, sound.midi.rootMidiChannel]
                 ).sorted()
                 let details = "Midi channels \(tuningMidiChannels[0]), \(tuningMidiChannels[1]), \(tuningMidiChannels[2]), and \(tuningMidiChannels[3]) are sending A: 440 hz" // to the \(sound.midi.midiDestinations[settings.destinationIndex].name)"
+
+                Text("For modular/analog gear tuned by hand - MIDI can't retune it automatically.")
+                    .font(.footnote)
+                    .foregroundStyle(.gray)
+
                 Button("Tune Midi"){
                     if settings.tuneMidi == false{
                         sound.midi.tuneStart()
@@ -183,6 +188,46 @@ struct ControlView: View {
                     
                 } message:{ details in
                     Text(details)
+                }
+                .disabled(!settings.useMIDI)
+
+                // Confirms, by ear, that the pitch bend range declared over MIDI (see
+                // Midi.sendPitchBendSensitivity) is actually the range the receiver is using -
+                // real gear often ignores that declaration and needs its own range set by
+                // hand, so this is the only way to actually check. Unison/fifth/octave are
+                // just-intonation ratios (1/1, 3/2, 2/1), matching this app's own tuning
+                // system, not equal-tempered approximations. Any one can be clicked at any
+                // time to jump straight to it - suits going back and forth while adjusting a
+                // knob on the receiving synth, rather than a fixed unison->fifth->octave order.
+                Text("Verify Pitch Bend Range").foregroundStyle(.white)
+                HStack {
+                    Button("Unison") {
+                        sound.midi.verifyRangeSet(ratio: 1.0)
+                        settings.verifyRangeRatio = 1.0
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(settings.verifyRangeRatio == 1.0 ? tintcolor : .gray)
+
+                    Button("Fifth") {
+                        sound.midi.verifyRangeSet(ratio: 3.0 / 2.0)
+                        settings.verifyRangeRatio = 3.0 / 2.0
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(settings.verifyRangeRatio == 3.0 / 2.0 ? tintcolor : .gray)
+
+                    Button("Octave") {
+                        sound.midi.verifyRangeSet(ratio: 2.0)
+                        settings.verifyRangeRatio = 2.0
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(settings.verifyRangeRatio == 2.0 ? tintcolor : .gray)
+
+                    Button("Stop") {
+                        sound.midi.verifyRangeStop()
+                        settings.verifyRangeRatio = nil
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(settings.verifyRangeRatio == nil)
                 }
                 .disabled(!settings.useMIDI)
 

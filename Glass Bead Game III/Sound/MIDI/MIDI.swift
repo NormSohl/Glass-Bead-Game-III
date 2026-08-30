@@ -415,6 +415,60 @@ class Midi{
         setMidiRootPitch(frequency: referenceFrequency)
     }
 
+    // Separate save/restore slots from tuneStart/tuneStop's - this and Tune Midi are two
+    // different modal calibration flows in the UI and shouldn't reasonably run at once, but
+    // keeping them independent avoids any risk of one clobbering the other's saved state.
+    private var preVerifyRootEnable = false
+    private var preVerifyXEnable = false
+    private var preVerifyYEnable = false
+    private var preVerifyZEnable = false
+    private var verifyRangeActive = false
+
+    /// Sounds all four voices together at `ratio` relative to the current root (1.0 =
+    /// unison, 1.5 = a pure 3/2 fifth, 2.0 = an octave - just-intonation ratios, matching
+    /// this app's actual tuning system, not equal-tempered cents) - lets someone confirm the
+    /// pitch bend range this app declares (see sendPitchBendSensitivity) is actually what
+    /// their receiver is using, by ear, against gear that can't be queried or configured over
+    /// MIDI. Callable repeatedly with a different ratio to jump straight to a different
+    /// interval without stopping first - each call is a clean note-off/note-on retrigger
+    /// (simpler and more robust than trying to glide root's pitch live, which nothing else in
+    /// this class currently supports), a small, acceptable click for a calibration tool no one
+    /// is performing with.
+    func verifyRangeSet(ratio: Double){
+        if verifyRangeActive {
+            stopMidi()
+        } else {
+            preVerifyRootEnable = rootMidiEnable
+            preVerifyXEnable = xMidiEnable
+            preVerifyYEnable = yMidiEnable
+            preVerifyZEnable = zMidiEnable
+            rootMidiEnable = true
+            xMidiEnable = true
+            yMidiEnable = true
+            zMidiEnable = true
+            verifyRangeActive = true
+        }
+        let frequency = referenceFrequency * ratio
+        setMidiRootPitch(frequency: frequency)
+        setMidiXPitch(frequency: frequency)
+        setMidiYPitch(frequency: frequency)
+        setMidiZPitch(frequency: frequency)
+        if midiTrace {print("Midi: verifyRangeSet: ratio = \(ratio)")}
+        startMidi()
+    }
+
+    func verifyRangeStop(){
+        guard verifyRangeActive else { return }
+        if midiTrace {print("Midi: verifyRangeStop")}
+        stopMidi()
+        rootMidiEnable = preVerifyRootEnable
+        xMidiEnable = preVerifyXEnable
+        yMidiEnable = preVerifyYEnable
+        zMidiEnable = preVerifyZEnable
+        setMidiRootPitch(frequency: referenceFrequency)
+        verifyRangeActive = false
+    }
+
     private func initMidiSources(){
         let numSources = MIDIGetNumberOfSources()
 

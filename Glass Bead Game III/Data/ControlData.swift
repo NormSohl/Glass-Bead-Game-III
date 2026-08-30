@@ -56,6 +56,11 @@ class AppSettings: ObservableObject{
     @Published var useMIDI: Bool = true
     @Published var useMIDI_MPE: Bool = true
     @Published var tuneMidi: Bool = false
+    // nil = not sounding; 1.0/1.5/2.0 = unison/fifth/octave currently held on all four voices
+    // (Midi.verifyRangeSet/verifyRangeStop) - a plain @Published var here, not @State on
+    // ControlView, so Stop stays reachable and the "currently sounding" label stays accurate
+    // even if the settings popover happens to close and reopen while a tone is still held.
+    @Published var verifyRangeRatio: Double? = nil
     @Published var selectedGraphShape: GraphShape = .square
 
     // Sequencer panel visibility, and which X/Y/Z axes it's currently driving instead of touch
