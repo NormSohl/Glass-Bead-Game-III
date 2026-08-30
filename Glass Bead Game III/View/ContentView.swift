@@ -152,7 +152,7 @@ struct ContentView: View {
                 } label: {
                     Image(systemName: "waveform.path")
                 }
-                .help("Portamento - drag continuously between pitches instead of snapping to scale degrees")
+                .help("Portamento (G or H) - drag continuously between pitches instead of snapping to scale degrees")
             }
             ToolbarItem(placement: .primaryAction) {
                 // Pedal - a live-performance control, per Norm, so worth reaching without
@@ -163,7 +163,7 @@ struct ContentView: View {
                 } label: {
                     Image(systemName: "shoeprints.fill")
                 }
-                .help("Pedal - sustain: keep the current notes sounding after you release them")
+                .help("Pedal (Space, held) - sustain: keep the current notes sounding after you release them")
             }
             ToolbarItem(placement: .primaryAction) {
                 // Drone - the last of the settings-popover controls Norm wanted promoted to the
@@ -176,7 +176,7 @@ struct ContentView: View {
                 } label: {
                     Image(systemName: "circle.hexagongrid.fill")
                 }
-                .help("Drone - the sustained reference tone")
+                .help("Drone (D or K) - the sustained reference tone")
             }
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -241,17 +241,31 @@ private struct KeyCommandMonitor: NSViewRepresentable {
                         self.settings.pedal = true
                         return nil
                     }
-                    // "G" (Glide) - Portamento, a discrete toggle rather than momentary, since
-                    // it isn't physically a pedal. isARepeat filters out the auto-repeat keyDown
-                    // stream macOS sends while a key stays held, which would otherwise flip the
-                    // toggle many times a second instead of once per press.
+                    // "G"/"H" (Glide) - Portamento, a discrete toggle rather than momentary,
+                    // since it isn't physically a pedal. isARepeat filters out the auto-repeat
+                    // keyDown stream macOS sends while a key stays held, which would otherwise
+                    // flip the toggle many times a second instead of once per press. Norm plays
+                    // left-handed - G and D sit under a right-hander's left hand at rest on the
+                    // home row (G is the left index finger's stretch key, D its middle finger's
+                    // home key), so H and K mirror them at the same finger positions under the
+                    // *right* hand instead (A-S-D-F-G | H-J-K-L-; mirrors position-for-position
+                    // around the F/J gap: G<->H, D<->K) - either hand can reach its own pair
+                    // without retraining a specific handedness.
                     if event.charactersIgnoringModifiers?.lowercased() == "g" && !event.isARepeat {
                         self.settings.snap.toggle()
                         return nil
                     }
-                    // "D" - Drone, same discrete-toggle treatment as Portamento above (not
-                    // physically a pedal either).
+                    if event.charactersIgnoringModifiers?.lowercased() == "h" && !event.isARepeat {
+                        self.settings.snap.toggle()
+                        return nil
+                    }
+                    // "D"/"K" - Drone, same discrete-toggle treatment and mirroring as
+                    // Portamento above (not physically a pedal either).
                     if event.charactersIgnoringModifiers?.lowercased() == "d" && !event.isARepeat {
+                        self.settings.playDrone.toggle()
+                        return nil
+                    }
+                    if event.charactersIgnoringModifiers?.lowercased() == "k" && !event.isARepeat {
                         self.settings.playDrone.toggle()
                         return nil
                     }
