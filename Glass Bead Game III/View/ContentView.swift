@@ -116,6 +116,10 @@ struct ContentView: View {
         // with the square graph's own aspect. Recomputed whenever the sequencer panel or the
         // Z-slider (3rd moving tone) show/hide, since either changes the content's natural ratio.
         .background(WindowAspectLockView(aspectSize: idealWindowSize(sequencerShown: settings.showSequencer, thirdToneShown: settings.showTetrads)))
+        // Keyboard access to Portamento/Pedal, per Norm - "third party pedals can be configured
+        // to work with them" (many cheap USB foot pedals emulate a plain keystroke). See
+        // KeyCommandMonitor's own header comment for the toggle-vs-momentary distinction.
+        .background(KeyCommandMonitor(settings: settings))
         #endif
         .onChange(of: settings.selectedLimit) {
             rebuildScaleDependentState()
@@ -151,6 +155,17 @@ struct ContentView: View {
                 .help("Portamento - drag continuously between pitches instead of snapping to scale degrees")
             }
             ToolbarItem(placement: .primaryAction) {
+                // Pedal - a live-performance control, per Norm, so worth reaching without
+                // opening the settings popover first, same reasoning as Portamento above. Same
+                // plain styling (no active-state color) as the other three buttons.
+                Button {
+                    settings.pedal.toggle()
+                } label: {
+                    Image(systemName: "shoeprints.fill")
+                }
+                .help("Pedal - sustain: keep the current notes sounding after you release them")
+            }
+            ToolbarItem(placement: .primaryAction) {
                 Button {
                     settings.showSettings = true
                 } label: {
@@ -168,6 +183,76 @@ struct ContentView: View {
 
 #if os(macOS)
 import AppKit
+
+// Bridges a raw NSEvent local key monitor into SwiftUI, the same zero-size-NSView-in-the-
+// background trick WindowAspectLockView below uses. SwiftUI's own .keyboardShortcut only gives a
+// single discrete "activated" callback (like a click) - fine for Portamento (a plain toggle,
+// not physically a pedal), but wrong for Pedal: a real damper pedal, and any third-party USB
+// pedal configured to emulate this same key, is *held* - down while sustaining, released when
+// not - which needs separate keyDown/keyUp tracking, not one press-to-flip event. Space is
+// unused elsewhere in the app; many inexpensive USB foot pedals default to sending Space without
+// any reconfiguration at all.
+private struct KeyCommandMonitor: NSViewRepresentable {
+    @ObservedObject var settings: AppSettings
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(settings: settings)
+    }
+
+    func makeNSView(context: Context) -> NSView {
+        context.coordinator.install()
+        return NSView()
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        context.coordinator.settings = settings
+    }
+
+    final class Coordinator {
+        var settings: AppSettings
+        private var monitor: Any?
+
+        init(settings: AppSettings) {
+            self.settings = settings
+        }
+
+        func install() {
+            guard monitor == nil else { return }
+            monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { [weak self] event in
+                guard let self else { return event }
+                switch event.type {
+                case .keyDown:
+                    // Space (key code 49) - Pedal, momentary: down while held, matching a real
+                    // damper pedal's own physical behavior.
+                    if event.keyCode == 49 {
+                        self.settings.pedal = true
+                        return nil
+                    }
+                    // "G" (Glide) - Portamento, a discrete toggle rather than momentary, since
+                    // it isn't physically a pedal. isARepeat filters out the auto-repeat keyDown
+                    // stream macOS sends while a key stays held, which would otherwise flip the
+                    // toggle many times a second instead of once per press.
+                    if event.charactersIgnoringModifiers?.lowercased() == "g" && !event.isARepeat {
+                        self.settings.snap.toggle()
+                        return nil
+                    }
+                case .keyUp:
+                    if event.keyCode == 49 {
+                        self.settings.pedal = false
+                        return nil
+                    }
+                default:
+                    break
+                }
+                return event
+            }
+        }
+
+        deinit {
+            if let monitor { NSEvent.removeMonitor(monitor) }
+        }
+    }
+}
 
 // SwiftUI has no direct scene modifier for this, so it's bridged via a zero-size NSView tucked
 // into the background - once it's in the view hierarchy, .window is available.

@@ -41,7 +41,17 @@ class AppSettings: ObservableObject{
     @Published var playNoteY: Bool = true
     @Published var playNoteZ: Bool = true
     @Published var snap: Bool = true
-    @Published var pedal: Bool = false
+    // didSet, not a View's onChange - pedal can now be released from several places (the
+    // settings checkbox, the toolbar button, the Space-bar key command), and only the checkbox
+    // lives inside a view that's actually mounted the whole time (ControlView only exists while
+    // the settings popover is open). A didSet here fires no matter what changed the property, so
+    // sound.releasePedal() can't silently stop firing just because the popover happened to be
+    // closed when the toolbar button or key command flipped this off.
+    @Published var pedal: Bool = false {
+        didSet {
+            if !pedal { sound.releasePedal() }
+        }
+    }
     @Published var useSynth: Bool = true
     @Published var useMIDI: Bool = true
     @Published var useMIDI_MPE: Bool = true

@@ -85,15 +85,13 @@ struct ControlView: View {
                 // reach without opening this popover, per Norm. Removed from here rather than
                 // duplicated, since both would drive the exact same settings.snap.
 
+                // Pedal now also lives as its own toolbar button and a Space-bar key command
+                // (ContentView) - release-on-off (sound.releasePedal()) is wired as a didSet on
+                // AppSettings.pedal itself now, not here, since this Toggle's onChange only ever
+                // fired while this popover happened to be open.
                 Toggle("pedal", isOn: $settings.pedal)
                     .tint(tintcolor)
                     .foregroundStyle(.white)
-                    // Norm: releasing a real damper pedal silences whatever it was sustaining
-                    // right away, not on the next touch - sound.releasePedal() is a no-op if
-                    // something is still actively touched.
-                    .onChange(of: settings.pedal) {
-                        if !settings.pedal { sound.releasePedal() }
-                    }
 
                 Divider()
 #if os(iOS)
