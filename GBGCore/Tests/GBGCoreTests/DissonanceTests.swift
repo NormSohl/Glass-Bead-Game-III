@@ -235,7 +235,12 @@ final class DissonanceTests: XCTestCase {
 
     func testRoughnessGridCellMatchesDirectFrequencyMapping() {
         // spot-check that grid[row][col] corresponds to the frequency you'd get by mapping
-        // that cell's center fraction through the same lowest/range normalization Scale uses
+        // that cell's center fraction through the same lowest/range normalization Scale uses.
+        // Tolerance is 0.001, not 1e-7, because roughnessGrid's inner loop uses roughnessFast
+        // (a lookup-table approximation) while totalRoughness stays exact - see the "Fast
+        // (approximate) roughness" section in Dissonance.swift, and
+        // testRoughnessGridStaysWithinPerceptualToleranceOfExactMath below for the actual
+        // bound this relies on.
         let scale = Scale(limit: 5, highestRatio: 2.0, lowestRatio: 0.5)
         let rootFrequency = 200.0
         let limit = 5
@@ -249,7 +254,7 @@ final class DissonanceTests: XCTestCase {
         let xFrequency = rootFrequency * pow(2, scale.lowestRatioNormalized + scale.rangeNormalized * xFraction)
         let expected = Dissonance.totalRoughness(rootFrequency: rootFrequency, xFrequency: xFrequency, yFrequency: yFrequency, limit: limit)
 
-        XCTAssertEqual(grid[row][col], expected, accuracy: 0.0000001)
+        XCTAssertEqual(grid[row][col], expected, accuracy: 0.001)
     }
 
     func testRoughnessGridIsSymmetricAcrossTheDiagonal() {
@@ -268,7 +273,8 @@ final class DissonanceTests: XCTestCase {
 
     func testRoughnessGridMatchesBruteForcePerCellComputation() {
         // full-grid regression check for the mirroring optimization: every cell must match
-        // what a naive, unmirrored per-cell computation would produce
+        // what a naive, unmirrored per-cell computation would produce. Tolerance 0.001, not
+        // 1e-7 - see testRoughnessGridCellMatchesDirectFrequencyMapping's comment.
         let scale = Scale(limit: 5, highestRatio: 2.0, lowestRatio: 0.5)
         let rootFrequency = 261.63
         let limit = 5
@@ -284,7 +290,7 @@ final class DissonanceTests: XCTestCase {
             for col in 0..<resolution {
                 let xFrequency = frequency(atFraction: (Double(col) + 0.5) / Double(resolution))
                 let expected = Dissonance.totalRoughness(rootFrequency: rootFrequency, xFrequency: xFrequency, yFrequency: yFrequency, limit: limit)
-                XCTAssertEqual(grid[row][col], expected, accuracy: 0.0000001, "mismatch at (\(row),\(col))")
+                XCTAssertEqual(grid[row][col], expected, accuracy: 0.001, "mismatch at (\(row),\(col))")
             }
         }
     }
@@ -292,7 +298,8 @@ final class DissonanceTests: XCTestCase {
     func testRoughnessGridWithZMatchesDirectFrequencyMapping() {
         // same spot-check as testRoughnessGridCellMatchesDirectFrequencyMapping, with a fixed
         // Z frequency folded in - grid[row][col] should equal totalRoughness(root, X, Y, Z)
-        // for that cell's mapped X/Y frequencies.
+        // for that cell's mapped X/Y frequencies. Tolerance 0.001, not 1e-7 - see
+        // testRoughnessGridCellMatchesDirectFrequencyMapping's comment.
         let scale = Scale(limit: 5, highestRatio: 2.0, lowestRatio: 0.5)
         let rootFrequency = 200.0
         let zFrequency = 250.0
@@ -307,7 +314,7 @@ final class DissonanceTests: XCTestCase {
         let xFrequency = rootFrequency * pow(2, scale.lowestRatioNormalized + scale.rangeNormalized * xFraction)
         let expected = Dissonance.totalRoughness(rootFrequency: rootFrequency, xFrequency: xFrequency, yFrequency: yFrequency, zFrequency: zFrequency, limit: limit)
 
-        XCTAssertEqual(grid[row][col], expected, accuracy: 0.0000001)
+        XCTAssertEqual(grid[row][col], expected, accuracy: 0.001)
     }
 
     func testRoughnessGridWithZIsStillSymmetricAcrossTheDiagonal() {
@@ -327,6 +334,37 @@ final class DissonanceTests: XCTestCase {
         let triadOnly = Dissonance.roughnessGrid(scale: scale, rootFrequency: 261.63, limit: 5, resolution: 6)
         let nilZ = Dissonance.roughnessGrid(scale: scale, rootFrequency: 261.63, zFrequency: nil, limit: 5, resolution: 6)
         XCTAssertEqual(triadOnly, nilZ)
+    }
+
+    func testRoughnessGridStaysWithinPerceptualToleranceOfExactMath() {
+        // roughnessGrid's inner loop uses roughnessFast (a lookup-table approximation of the
+        // Gaussian) instead of the exact math the rest of this file holds to 1e-7 - Norm: the
+        // rendered output only ever resolves to ~128-256 distinct 8-bit pixel levels
+        // (DissonanceView's own tone-curve LUT), so error well under roughly 1% of the field's
+        // own dynamic range can never actually change a rendered pixel. This sweeps a
+        // realistic-sized grid (not just the couple of spot-checked cells the other tests use)
+        // and checks that promise actually holds, rather than just asserting it.
+        let scale = Scale(limit: 11, highestRatio: 2.0, lowestRatio: 0.5)
+        let rootFrequency = 261.63
+        let limit = 11
+        let resolution = 40
+        let grid = Dissonance.roughnessGrid(scale: scale, rootFrequency: rootFrequency, limit: limit, resolution: resolution)
+
+        func frequency(atFraction fraction: Double) -> Double {
+            rootFrequency * pow(2, scale.lowestRatioNormalized + scale.rangeNormalized * fraction)
+        }
+
+        let maxGridValue = grid.flatMap { $0 }.max() ?? 0
+        var maxError = 0.0
+        for row in 0..<resolution {
+            let yFrequency = frequency(atFraction: (Double(row) + 0.5) / Double(resolution))
+            for col in 0..<resolution {
+                let xFrequency = frequency(atFraction: (Double(col) + 0.5) / Double(resolution))
+                let expected = Dissonance.totalRoughness(rootFrequency: rootFrequency, xFrequency: xFrequency, yFrequency: yFrequency, limit: limit)
+                maxError = max(maxError, abs(grid[row][col] - expected))
+            }
+        }
+        XCTAssertLessThan(maxError, maxGridValue * 0.01, "worst-case error \(maxError) exceeds 1% of the grid's own max value \(maxGridValue)")
     }
 
     func testTotalRoughnessAtUnisonTriadIsLowerThanASpreadOutTriad() {

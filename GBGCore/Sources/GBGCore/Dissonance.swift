@@ -79,6 +79,44 @@ enum Dissonance {
         return roughness(beatRate: beatRate) * weightA * weightB
     }
 
+    // MARK: - Fast (approximate) roughness, for roughnessGrid's rendering hot loop only
+
+    // roughnessGrid below calls exp() tens of millions of times per full-resolution render -
+    // measured (temporary XCTest `measure`, Release) at roughly 40% of that function's total
+    // time. A lookup table trades a small, bounded amount of numerical precision for speed.
+    // Deliberately NOT used by roughness/pairwiseRoughness/roughnessBetweenTones/totalRoughness
+    // above, which stay exact - those have their own tests asserting 1e-7 precision, and are
+    // the reference this fast path is verified against (see
+    // testRoughnessFastStaysWithinPerceptualToleranceOfExact in DissonanceTests). The
+    // justification for approximating at all: DissonanceView's own output collapses every
+    // pixel to 256 (arguably ~128 perceptually distinct, per Norm) 8-bit levels via its tone
+    // curve, so any error here well under that - this LUT's worst measured error is
+    // orders of magnitude smaller - can never change a single rendered pixel.
+    private static let roughnessLUTStep = 0.1
+    // ~5.7 sigma past the peak - exp() there is already down around 1e-7, indistinguishable
+    // from the 0 this returns beyond it.
+    private static let roughnessLUTCutoff = 90.0
+    private static let roughnessLUT: [Double] = {
+        let count = Int((roughnessLUTCutoff / roughnessLUTStep).rounded(.up)) + 1
+        return (0..<count).map { roughness(beatRate: Double($0) * roughnessLUTStep) }
+    }()
+
+    /// Linearly-interpolated lookup table stand-in for `roughness(beatRate:)`, used only by
+    /// roughnessGrid's inner loop - see the section comment above for why this is safe.
+    private static func roughnessFast(beatRate: Double) -> Double {
+        guard beatRate < roughnessLUTCutoff else { return 0 }
+        let position = beatRate / roughnessLUTStep
+        let lowerIndex = Int(position)
+        let fraction = position - Double(lowerIndex)
+        let lower = roughnessLUT[lowerIndex]
+        let upper = roughnessLUT[lowerIndex + 1]
+        return lower + (upper - lower) * fraction
+    }
+
+    private static func pairwiseRoughnessFast(freqA: Double, weightA: Double, freqB: Double, weightB: Double) -> Double {
+        roughnessFast(beatRate: abs(freqA - freqB)) * weightA * weightB
+    }
+
     /// Total roughness between two tones' full harmonic series (`limit` harmonics each),
     /// summed over every harmonic-of-A x harmonic-of-B pair. Defaults to linear weighting
     /// (nil means "use linearHarmonicWeight for this limit"); a default parameter can't
@@ -134,6 +172,12 @@ enum Dissonance {
     /// lowest pitch (left of the graph) - same orientation as the rest of the graph's
     /// coordinate space. Each cell is evaluated at its center point along that axis.
     ///
+    /// Uses the LUT-backed roughnessFast, not the exact roughness/roughnessBetweenTones this
+    /// file's own tests hold to 1e-7 - see the "Fast (approximate) roughness" section above
+    /// for why that's safe for a value that only ever ends up as one of 256 rendered pixel
+    /// levels. testRoughnessGridStaysWithinPerceptualToleranceOfExactMath (DissonanceTests)
+    /// is what actually guarantees the error stays small enough for that to hold.
+    ///
     /// `isCancelled`, when given, is polled once per row-batch (see `rowBatchSize` below) -
     /// lets a caller running this off the main thread (see DissonanceView's background
     /// refinement passes) actually stop computing shortly after a caller-side cancellation
@@ -170,17 +214,19 @@ enum Dissonance {
         let rootHarmonics = harmonicFrequencies(fundamental: rootFrequency)
         let zHarmonics = zFrequency.map { harmonicFrequencies(fundamental: $0) }
 
-        // Sum of pairwiseRoughness across every harmonic-of-seriesA x harmonic-of-seriesB pair -
-        // the shared core both the root/Z 1D tables and the main X-Y grid loop reduce to, once
-        // their harmonic series are already sitting in an array rather than needing deriving.
-        // Reads only `weightAt` (immutable, computed above) and its own by-value arguments, so
-        // it's safe to call from multiple rows in parallel below.
+        // Sum of pairwiseRoughnessFast across every harmonic-of-seriesA x harmonic-of-seriesB
+        // pair - the shared core both the root/Z 1D tables and the main X-Y grid loop reduce
+        // to, once their harmonic series are already sitting in an array rather than needing
+        // deriving. Uses the LUT-backed fast path (see the section above), not the exact
+        // pairwiseRoughness - this is the rendering hot loop the LUT exists for. Reads only
+        // `weightAt` (immutable, computed above) and its own by-value arguments, so it's safe
+        // to call from multiple rows in parallel below.
         func pairwiseSum(_ seriesA: [Double], _ seriesB: [Double]) -> Double {
             var total = 0.0
             for i in 0..<limit {
                 let a = seriesA[i], weightA = weightAt[i]
                 for j in 0..<limit {
-                    total += pairwiseRoughness(freqA: a, weightA: weightA, freqB: seriesB[j], weightB: weightAt[j])
+                    total += pairwiseRoughnessFast(freqA: a, weightA: weightA, freqB: seriesB[j], weightB: weightAt[j])
                 }
             }
             return total
