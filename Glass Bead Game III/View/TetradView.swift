@@ -4,8 +4,9 @@
 //
 //  Renders the depth-slider feature's tetrad layers: the (at most two) Z layers bracketing the
 //  current Z slider position, cross-faded by the weight from TetradLayers.bracketingLayers.
-//  Opt-in via its own toggle, independent of the existing 2D Diamonds view, so the two can be
-//  compared directly while this is still new/untested on device.
+//  Opt-in via the 3rd Moving Tone toggle, and also gated by the Diamonds toggle (GraphView ANDs
+//  the two together into this view's showTetrads param) - Diamonds means "all diamonds, on any
+//  plane," not just the flat 2D view it started out as.
 //
 //  Color scheme, per Norm (2026-08-28, revised after adding the third moving tone): with three
 //  moving tones now in play, the drone/root is dropped from the color calculation entirely -

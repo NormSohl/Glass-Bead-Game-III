@@ -26,10 +26,10 @@ struct ControlView: View {
                 })
                 .tint(tintcolor)
                 .foregroundStyle(.white)
-                // Tetrad Layers is the generalization Diamonds reduces to at Z=unison (see
-                // TetradsTests) - not a separate thing to compare against, so it takes over
-                // entirely rather than drawing alongside it.
-                .disabled(settings.showTetrads)
+                // Applies to diamond rendering everywhere on the graph, not just the flat
+                // Z-independent view - GraphView ANDs this into TetradView's own showTetrads
+                // param too, so it also hides the tetrad diamonds on whichever Z plane is
+                // current when the 3rd moving tone is on.
 
                 Toggle(isOn: $settings.showDissonance, label:{
                     Text("Dissonance Field")

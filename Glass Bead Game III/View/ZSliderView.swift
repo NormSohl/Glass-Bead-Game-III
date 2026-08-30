@@ -64,7 +64,8 @@ struct ZSliderView: View {
                 // the two. Diamonds centered horizontally in the narrow canvas, sized by each
                 // element's own numerator/denominator complexity - DiamondView's same inverted-
                 // power formula, applied to one ratio instead of an X:Y pair since there's no
-                // second axis here to pair it against.
+                // second axis here to pair it against. Diamond fill itself respects
+                // settings.showDiamonds, same as the graph's; the gridlines don't.
                 for interval in scale.scale {
                     var y = scale.convertScaleValueToScreenUnits(
                         normalizedValue: interval.valueNormalized, screenSize: size.height)
@@ -100,15 +101,17 @@ struct ZSliderView: View {
                         ? TetradView.unisonColor
                         : Color(red: shade, green: shade, blue: 0.0)
 
-                    let x = Double(size.width) / 2
-                    let diamondPath = Path { path in
-                        path.move(to: CGPoint(x: x - diamondSize, y: y))
-                        path.addLine(to: CGPoint(x: x, y: y + diamondSize))
-                        path.addLine(to: CGPoint(x: x + diamondSize, y: y))
-                        path.addLine(to: CGPoint(x: x, y: y - diamondSize))
-                        path.closeSubpath()
+                    if settings.showDiamonds {
+                        let x = Double(size.width) / 2
+                        let diamondPath = Path { path in
+                            path.move(to: CGPoint(x: x - diamondSize, y: y))
+                            path.addLine(to: CGPoint(x: x, y: y + diamondSize))
+                            path.addLine(to: CGPoint(x: x + diamondSize, y: y))
+                            path.addLine(to: CGPoint(x: x, y: y - diamondSize))
+                            path.closeSubpath()
+                        }
+                        context.fill(diamondPath, with: .color(color))
                     }
-                    context.fill(diamondPath, with: .color(color))
                 }
 
                 // Same driven-vs-touch split as HitTestView's x/y - see AppSettings.

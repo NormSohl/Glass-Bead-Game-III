@@ -38,9 +38,11 @@ struct GraphView: View {
                     Graph(scale: scale, tetradLayers: tetradLayers, settings: settings)
                     // Tetrad Layers is the generalization Diamonds reduces to at Z=unison, not
                     // an independent thing to compare against it - so it takes over entirely
-                    // (Diamonds doesn't draw at all) rather than the two overlapping, which
+                    // (DiamondView doesn't draw at all) rather than the two overlapping, which
                     // showed as a smaller tetrad diamond nested inside a larger, unrelated,
-                    // Z-independent 2D diamond at the same position.
+                    // Z-independent 2D diamond at the same position. Diamonds itself (Norm)
+                    // means "all diamonds, on any plane" though, so it's ANDed into TetradView's
+                    // gate too rather than only ever disabling DiamondView.
                     DiamondView(diamonds: diamonds,
                                 showDiamonds: settings.showDiamonds && !settings.showTetrads,
                                 scale: scale,
@@ -48,7 +50,7 @@ struct GraphView: View {
                     TetradView(tetradLayers: tetradLayers,
                                scale: scale,
                                settings: settings,
-                               showTetrads: settings.showTetrads)
+                               showTetrads: settings.showTetrads && settings.showDiamonds)
 
                     HitTestView(scale:scale, settings: settings)
                 }.border(.orange)
