@@ -49,19 +49,32 @@ class Sound {
         midi.initMidi()
     }
 
-    // Sets each voice's enabled state from its own toggle AND its own zone's touch count -
-    // drone from activeTouchCount (it has no touch zone of its own, so it follows "is anything
-    // being touched"), X/Y from graphTouchCount, Z from zSliderTouchCount.
-    private func applyLiveVoiceEnables(){
-        audio.triad.enableTriadRootTone(enable: enableDrone && activeTouchCount > 0)
+    // Split into three independent groups rather than one "recompute everything" function -
+    // Norm: pedal-sustained graph notes were cutting out the moment the Z-slider was touched,
+    // because a single shared apply-everything call, fired from *any* zone's begin/end, was
+    // recomputing X/Y's enable from graphTouchCount even when it was the Z-slider (not the
+    // graph) that triggered the call. graphTouchCount was correctly 0 at that point (the graph
+    // touch had already ended) - the touch count was right, but recomputing X/Y at all in
+    // response to an unrelated zone's touch was the bug: a pedal-sustained voice must only ever
+    // be touched by its own zone's begin/end, or the pedal being released, never by another
+    // zone's activity. Each begin/end below now only calls the group(s) it actually owns.
+    private func applyGraphVoiceEnables(){
         audio.triad.enableTriadXTone(enable: enableX && graphTouchCount > 0)
         audio.triad.enableTriadYTone(enable: enableY && graphTouchCount > 0)
-        audio.triad.enableTriadZTone(enable: enableZ && zSliderTouchCount > 0)
-
-        midi.rootMidiEnable = enableDrone && activeTouchCount > 0
         midi.xMidiEnable = enableX && graphTouchCount > 0
         midi.yMidiEnable = enableY && graphTouchCount > 0
+    }
+
+    private func applyZVoiceEnables(){
+        audio.triad.enableTriadZTone(enable: enableZ && zSliderTouchCount > 0)
         midi.zMidiEnable = enableZ && zSliderTouchCount > 0
+    }
+
+    // Drone has no touch zone of its own, so it follows "is anything being touched" - any zone
+    // beginning/ending legitimately affects it, unlike X/Y/Z above.
+    private func applyDroneVoiceEnable(){
+        audio.triad.enableTriadRootTone(enable: enableDrone && activeTouchCount > 0)
+        midi.rootMidiEnable = enableDrone && activeTouchCount > 0
     }
 
     private func startEngine(amp: Float){
@@ -74,34 +87,41 @@ class Sound {
         midi.stopMidi()
     }
 
-    /// Call when the graph (X/Y) touch zone begins. X/Y are enabled here (via
-    /// applyLiveVoiceEnables), independent of whether the Z-slider is also currently held - the
+    /// Call when the graph (X/Y) touch zone begins. Only the graph's own voice group is
+    /// touched (never Z's), independent of whether the Z-slider is also currently held - the
     /// shared engine itself starts only on the overall 0->1 transition, so an already-active
     /// Z-slider touch doesn't get redundantly restarted.
     func beginGraphTouch(amp: Float) {
         graphTouchCount += 1
         activeTouchCount += 1
-        applyLiveVoiceEnables()
+        applyGraphVoiceEnables()
+        applyDroneVoiceEnable()
         if activeTouchCount == 1 { startEngine(amp: amp) }
     }
 
     /// Call when the graph touch zone ends. Disables X/Y (unless `pedal` is held, matching the
     /// existing sustain behavior - voices keep sounding regardless of touch state until the
     /// pedal itself is released) and stops the shared engine only once every zone has ended.
+    /// Never touches Z's own enable state.
     func endGraphTouch(pedal: Bool) {
         graphTouchCount = max(0, graphTouchCount - 1)
         activeTouchCount = max(0, activeTouchCount - 1)
         if !pedal {
-            applyLiveVoiceEnables()
+            applyGraphVoiceEnables()
+            applyDroneVoiceEnable()
             if activeTouchCount == 0 { stopEngine() }
         }
     }
 
     /// Z-slider touch begin/end - same as beginGraphTouch/endGraphTouch, for Z instead of X/Y.
+    /// Never touches X/Y's own enable state - a pedal-sustained graph note must keep sounding
+    /// untouched while the Z-slider is used, and only become editable again by touching the
+    /// graph itself (beginGraphTouch above) or by the pedal being released.
     func beginZTouch(amp: Float) {
         zSliderTouchCount += 1
         activeTouchCount += 1
-        applyLiveVoiceEnables()
+        applyZVoiceEnables()
+        applyDroneVoiceEnable()
         if activeTouchCount == 1 { startEngine(amp: amp) }
     }
 
@@ -109,7 +129,8 @@ class Sound {
         zSliderTouchCount = max(0, zSliderTouchCount - 1)
         activeTouchCount = max(0, activeTouchCount - 1)
         if !pedal {
-            applyLiveVoiceEnables()
+            applyZVoiceEnables()
+            applyDroneVoiceEnable()
             if activeTouchCount == 0 { stopEngine() }
         }
     }
@@ -137,7 +158,9 @@ class Sound {
     /// whatever was ONLY still sounding because of the pedal).
     func releasePedal() {
         guard activeTouchCount == 0 else { return }
-        applyLiveVoiceEnables()
+        applyGraphVoiceEnables()
+        applyZVoiceEnables()
+        applyDroneVoiceEnable()
         stopEngine()
     }
 
