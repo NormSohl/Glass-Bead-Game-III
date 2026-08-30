@@ -51,6 +51,9 @@ class Sound {
 
     func initSound(){
         midi.initMidi()
+        midi.onEvent = { [weak self] event in
+            self?.handleIncomingMidi(channel: event.channel, kind: event.kind)
+        }
     }
 
     // Split into three independent groups rather than one "recompute everything" function -
@@ -63,10 +66,10 @@ class Sound {
     // be touched by its own zone's begin/end, or the pedal being released, never by another
     // zone's activity. Each begin/end below now only calls the group(s) it actually owns.
     private func applyGraphVoiceEnables(){
-        audio.triad.enableTriadXTone(enable: enableX && graphTouchCount > 0)
-        audio.triad.enableTriadYTone(enable: enableY && graphTouchCount > 0)
-        midi.xMidiEnable = enableX && graphTouchCount > 0
-        midi.yMidiEnable = enableY && graphTouchCount > 0
+        audio.triad.enableTriadXTone(enable: enableX && (graphTouchCount > 0 || xExternallyDriven))
+        audio.triad.enableTriadYTone(enable: enableY && (graphTouchCount > 0 || yExternallyDriven))
+        midi.xMidiEnable = enableX && (graphTouchCount > 0 || xExternallyDriven)
+        midi.yMidiEnable = enableY && (graphTouchCount > 0 || yExternallyDriven)
     }
 
     // Unlike X/Y (applyGraphVoiceEnables, gated on graphTouchCount specifically), Z follows
@@ -211,5 +214,126 @@ class Sound {
 
     func setRootNote(midiNote: Int){
         midi.setRootNote(note: midiNote)
+    }
+
+    // MARK: - External MIDI drive (generic MIDI input, step 3 of the standalone-sequencer plan)
+    //
+    // Lets an external MIDI source - a controller, or eventually a standalone Seq app - drive
+    // X/Y/Z independently via note-on/note-off on that voice's own channel (see
+    // Midi.onEvent/handleIncomingMidi below). Unlike a graph touch, which always moves X and Y
+    // together as one crosshair, each externally-driven voice enables/disables on its own,
+    // since a MIDI controller can hold an X note without an adjoining Y note - so this needs
+    // its own per-voice bools rather than reusing graphTouchCount, though it still folds into
+    // the shared activeTouchCount for engine start/stop and Z/drone's existing "any touch"
+    // gating (applyZVoiceEnables/applyDroneVoiceEnable need no changes for that reason - only
+    // applyGraphVoiceEnables gained a per-voice OR above, since external drive enables X/Y
+    // independently where a touch never could).
+    private var xExternallyDriven = false
+    private var yExternallyDriven = false
+    private var zExternallyDriven = false
+
+    // Remembers the most recent note-on per voice so a later pitch-bend-only message (which
+    // carries no note number of its own) can still be decoded into a frequency.
+    private var lastIncomingNote: [SequencerVoice: Int] = [:]
+
+    private func voiceForChannel(_ channel: Int) -> SequencerVoice? {
+        let mpe = settings?.useMIDI_MPE ?? false
+        let xChannel = mpe ? midi.xMidiMPEChannel : midi.xMidiChannel
+        let yChannel = mpe ? midi.yMidiMPEChannel : midi.yMidiChannel
+        let zChannel = mpe ? midi.zMidiMPEChannel : midi.zMidiChannel
+        switch channel {
+        case xChannel: return .x
+        case yChannel: return .y
+        case zChannel: return .z
+        default: return nil // includes the drone/root channel - external drive doesn't cover
+                             // drone in this step, since drone has no crosshair of its own to
+                             // drive and no SequencerVoice case represents it (see ControlData's
+                             // SequencerVoice enum).
+        }
+    }
+
+    private func frequencyForIncoming(note: Int, pitchBend: Int) -> Double {
+        let mpe = settings?.useMIDI_MPE ?? false
+        let range = mpe ? (settings?.pitchBendRangeMPE ?? 24) : (settings?.pitchBendRange ?? 12)
+        return PitchBendMath.frequencyFromNoteAndPitchBend(note: note, pitchBend: pitchBend, pitchBendRange: range)
+    }
+
+    /// Wired up as `midi.onEvent` in initSound() - the single entry point for everything this
+    /// app does in response to incoming MIDI. Channel-to-voice interpretation lives here
+    /// (in the app target), not in GBGSound's Midi class, which reports events generically -
+    /// see the standalone-sequencer plan's step 3 notes on keeping that layer low-level.
+    func handleIncomingMidi(channel: Int, kind: Midi.MidiInputEvent.Kind) {
+        guard let voice = voiceForChannel(channel) else { return }
+        switch kind {
+        case .noteOn(let note, _):
+            lastIncomingNote[voice] = note
+            beginExternalDrive(voice: voice, frequency: frequencyForIncoming(note: note, pitchBend: 8192))
+        case .noteOff:
+            lastIncomingNote[voice] = nil
+            endExternalDrive(voice: voice)
+        case .pitchBend(let value):
+            guard let note = lastIncomingNote[voice] else { return }
+            updateExternalDrivePitch(voice: voice, frequency: frequencyForIncoming(note: note, pitchBend: value))
+        }
+    }
+
+    private func beginExternalDrive(voice: SequencerVoice, frequency: Double) {
+        switch voice {
+        case .x:
+            xExternallyDriven = true
+            setXPitch(frequency: frequency)
+            settings?.xFrequency = frequency
+        case .y:
+            yExternallyDriven = true
+            setYPitch(frequency: frequency)
+            settings?.yFrequency = frequency
+        case .z:
+            zExternallyDriven = true
+            setZPitch(frequency: frequency)
+            settings?.zFrequency = frequency
+        }
+        settings?.externallyDrivenVoices.insert(voice)
+        activeTouchCount += 1
+        applyGraphVoiceEnables()
+        applyZVoiceEnables()
+        applyDroneVoiceEnable()
+        if activeTouchCount == 1 { startEngine(amp: 1) }
+    }
+
+    private func updateExternalDrivePitch(voice: SequencerVoice, frequency: Double) {
+        switch voice {
+        case .x:
+            guard xExternallyDriven else { return }
+            setXPitch(frequency: frequency)
+            settings?.xFrequency = frequency
+        case .y:
+            guard yExternallyDriven else { return }
+            setYPitch(frequency: frequency)
+            settings?.yFrequency = frequency
+        case .z:
+            guard zExternallyDriven else { return }
+            setZPitch(frequency: frequency)
+            settings?.zFrequency = frequency
+        }
+    }
+
+    private func endExternalDrive(voice: SequencerVoice) {
+        switch voice {
+        case .x:
+            guard xExternallyDriven else { return }
+            xExternallyDriven = false
+        case .y:
+            guard yExternallyDriven else { return }
+            yExternallyDriven = false
+        case .z:
+            guard zExternallyDriven else { return }
+            zExternallyDriven = false
+        }
+        settings?.externallyDrivenVoices.remove(voice)
+        activeTouchCount = max(0, activeTouchCount - 1)
+        applyGraphVoiceEnables()
+        applyZVoiceEnables()
+        applyDroneVoiceEnable()
+        if activeTouchCount == 0 { stopEngine() }
     }
 }

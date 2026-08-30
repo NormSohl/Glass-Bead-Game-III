@@ -48,10 +48,12 @@ public class Midi{
     // CoreMIDI values
     private var midiClient: MIDIClientRef = 0;
     private var outPort:MIDIPortRef = 0;
+    private var inPort: MIDIPortRef = 0;
 
     // midi sources
-    private var midiSources:[midiEndpoint] = []
+    public var midiSources:[midiEndpoint] = []
     private var sourceNum = 0
+    private var sourceConnected = false
 
     //midi destinations
     public var midiDestinations:[midiEndpoint] = []
@@ -107,11 +109,33 @@ public class Midi{
         public var name: String = ""
     }
 
+    // Parsed incoming MIDI, reported raw - channel + note/velocity/pitch-bend - with no
+    // built-in "channel 2 means X" interpretation. That mapping is graph-specific and belongs
+    // to whatever owns AppSettings (Sound.handleIncomingMidi in the app target), not this
+    // generic package - see the standalone-sequencer foundation plan, step 3.
+    public struct MidiInputEvent {
+        public enum Kind {
+            case noteOn(note: Int, velocity: Int)
+            case noteOff(note: Int)
+            case pitchBend(value: Int)
+        }
+        public let channel: Int // 1...16
+        public let kind: Kind
+    }
+
+    // Fires on the main queue (CoreMIDI's read block runs on its own high-priority thread,
+    // and every plausible consumer of this - AppSettings, Sound's touch/enable state - is
+    // main-thread-bound UI state) whenever a note-on/off or pitch-bend arrives on the
+    // connected source. nil (the default) until something sets it - there's no source
+    // connected at all until setMidiSource is called, so this is inert out of the box.
+    public var onEvent: ((MidiInputEvent) -> Void)?
+
     public init() {}
 
     public func initMidi(){
         MIDIClientCreate("Glass Bead Game" as CFString, nil, nil, &midiClient);
         MIDIOutputPortCreate(midiClient, "Glass Bead Game" as CFString, &outPort);
+        initMidiInput()
         initMidiSources()
         initMidiDestinations()
         if useMPE {
@@ -125,6 +149,19 @@ public class Midi{
             enableMPE()
         }
         sendPitchBendSensitivity()
+    }
+
+    // Mirrors setMidiDestination above, for the input side - connects the input port to the
+    // chosen source (disconnecting whatever was previously connected first, if anything), so
+    // switching sources at runtime doesn't leave the old one still delivering packets too.
+    public func setMidiSource(source: Int){
+        guard source >= 0, source < midiSources.count else { return }
+        if sourceConnected, sourceNum < midiSources.count {
+            MIDIPortDisconnectSource(inPort, midiSources[sourceNum].midiEndpoint)
+        }
+        sourceNum = source
+        MIDIPortConnectSource(inPort, midiSources[sourceNum].midiEndpoint, nil)
+        sourceConnected = true
     }
 
     private struct MpeChannel{
@@ -470,6 +507,49 @@ public class Midi{
         zMidiEnable = preVerifyZEnable
         setMidiRootPitch(frequency: referenceFrequency)
         verifyRangeActive = false
+    }
+
+    private func initMidiInput(){
+        MIDIInputPortCreateWithBlock(midiClient, "Glass Bead Game" as CFString, &inPort) { [weak self] packetListPointer, _ in
+            self?.handleIncomingPacketList(packetListPointer)
+        }
+    }
+
+    // Decodes each packet in the list into a MidiInputEvent and dispatches it via onEvent, on
+    // the main queue - this block runs on CoreMIDI's own receive thread, not main. Only the
+    // three message types this app's own output side cares about are decoded (note on/off,
+    // pitch bend); anything else (CC, aftertouch, program change...) is silently ignored, same
+    // "keep it generic, don't overreach" spirit as the rest of this input path.
+    private func handleIncomingPacketList(_ packetListPointer: UnsafePointer<MIDIPacketList>){
+        var packet = packetListPointer.pointee.packet
+        let numPackets = packetListPointer.pointee.numPackets
+        for _ in 0..<numPackets {
+            let status = packet.data.0
+            let messageType = status & 0xF0
+            let channel = Int(status & 0x0F) + 1
+            let event: MidiInputEvent?
+            switch messageType {
+            case channelVoiceMessages.noteOn:
+                // Velocity 0 is a note-off in disguise, per spec - some sources send it instead
+                // of a real 0x80 note-off.
+                let velocity = Int(packet.data.2)
+                event = velocity == 0
+                    ? MidiInputEvent(channel: channel, kind: .noteOff(note: Int(packet.data.1)))
+                    : MidiInputEvent(channel: channel, kind: .noteOn(note: Int(packet.data.1), velocity: velocity))
+            case channelVoiceMessages.noteOff:
+                event = MidiInputEvent(channel: channel, kind: .noteOff(note: Int(packet.data.1)))
+            case channelVoiceMessages.pitchBendChange:
+                let value = Int(packet.data.2) << 7 | Int(packet.data.1)
+                event = MidiInputEvent(channel: channel, kind: .pitchBend(value: value))
+            default:
+                event = nil
+            }
+            if midiTrace { print("Midi: handleIncomingPacketList: status=\(String(format: "0x%02X", status)) messageType=\(String(format: "0x%02X", messageType)) channel=\(channel) event=\(String(describing: event))") }
+            if let event {
+                DispatchQueue.main.async { [weak self] in self?.onEvent?(event) }
+            }
+            packet = MIDIPacketNext(&packet).pointee
+        }
     }
 
     private func initMidiSources(){

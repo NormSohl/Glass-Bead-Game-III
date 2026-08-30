@@ -35,13 +35,14 @@ struct HitTestView: View {
             let rootFrequency = settings.rootFrequency
             let snapped = !isShift
 
-            // x: touch-driven, unless the sequencer is currently driving this axis (playback,
-            // scrub, or a piano-roll handle drag on an X note) - see AppSettings.
-            // sequencerDrivenVoices. When driven, the crosshair is drawn from whatever the
-            // sequencer already wrote into settings.xFrequency instead of from hoverLocation,
-            // and touching the graph has no effect on it (the DragGesture below skips the write
-            // too) - the sequencer owns this axis's output until it's done with it.
-            if settings.sequencerDrivenVoices.contains(.x) {
+            // x: touch-driven, unless the sequencer or incoming MIDI is currently driving this
+            // axis (playback, scrub, a piano-roll handle drag on an X note, or an external MIDI
+            // note-on - see AppSettings.sequencerDrivenVoices/externallyDrivenVoices and
+            // Sound.handleIncomingMidi). When driven, the crosshair is drawn from whatever was
+            // already written into settings.xFrequency instead of from hoverLocation, and
+            // touching the graph has no effect on it (the DragGesture below skips the write
+            // too) - whichever source is driving owns this axis's output until it's done.
+            if settings.sequencerDrivenVoices.contains(.x) || settings.externallyDrivenVoices.contains(.x) {
                 let xNormalized = log2(settings.xFrequency / rootFrequency)
                 crosshairPoint.x = scale.convertScaleValueToScreenUnits(normalizedValue: xNormalized, screenSize: size.width)
             } else {
@@ -63,7 +64,7 @@ struct HitTestView: View {
 
             // y: same pattern as x, above.
             let yCrosshair: Double
-            if settings.sequencerDrivenVoices.contains(.y) {
+            if settings.sequencerDrivenVoices.contains(.y) || settings.externallyDrivenVoices.contains(.y) {
                 let yNormalized = log2(settings.yFrequency / rootFrequency)
                 yCrosshair = scale.convertScaleValueToScreenUnits(normalizedValue: yNormalized, screenSize: size.height)
             } else {

@@ -148,9 +148,29 @@ struct ControlView: View {
                 .pickerStyle(.menu)
                 .disabled(!settings.useMIDI)
                 .tint(.white)
-                
+
+#if os(iOS)
+                Text("MIDI Source:").foregroundStyle(.white)
+#endif
+                // Lets an external controller, or eventually a standalone Seq app, drive X/Y/Z
+                // over MIDI the same way touch does - see Sound.handleIncomingMidi and the
+                // standalone-sequencer foundation plan's step 3.
+                Picker("MIDI Source:", selection: $settings.sourceIndex) {
+                    ForEach(sound.midi.midiSources.indices, id: \.self) { index in
+                        Text(sound.midi.midiSources[index].name).foregroundStyle(.white)
+                    }
+                }
+                .listItemTint(.white)
+                .background(tintcolor)
+                .onChange(of: settings.sourceIndex) {
+                    sound.midi.setMidiSource(source: settings.sourceIndex)
+                }
+                .pickerStyle(.menu)
+                .disabled(!settings.useMIDI || sound.midi.midiSources.isEmpty)
+                .tint(.white)
+
                 Divider()
-                
+
                 // Built from the actual channel numbers rather than hardcoded - those moved
                 // once already this session (X/Y/Z first, drone last) and differ between MPE
                 // and non-MPE besides, so a fixed "1, 2, 3, and 4" string would silently go

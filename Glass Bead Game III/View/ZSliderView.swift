@@ -116,12 +116,14 @@ struct ZSliderView: View {
                 }
 
                 // Same driven-vs-touch split as HitTestView's x/y - see AppSettings.
-                // sequencerDrivenVoices. When the sequencer owns Z (playback, scrub, or a
-                // piano-roll handle drag on a Z note), the marker is drawn from whatever it
-                // already wrote into settings.zFrequency instead of from touch. Same read-only
-                // treatment applies before the first real touch (see hasTouched above).
+                // sequencerDrivenVoices/externallyDrivenVoices. When the sequencer or incoming
+                // MIDI owns Z (playback, scrub, a piano-roll handle drag on a Z note, or an
+                // external MIDI note-on - see Sound.handleIncomingMidi), the marker is drawn
+                // from whatever was already written into settings.zFrequency instead of from
+                // touch. Same read-only treatment applies before the first real touch (see
+                // hasTouched above).
                 let markerY: Double
-                if settings.sequencerDrivenVoices.contains(.z) || !hasTouched {
+                if settings.sequencerDrivenVoices.contains(.z) || settings.externallyDrivenVoices.contains(.z) || !hasTouched {
                     let zNormalized = log2(settings.zFrequency / settings.rootFrequency)
                     let crosshair = scale.convertScaleValueToScreenUnits(normalizedValue: zNormalized, screenSize: size.height)
                     markerY = size.height - crosshair

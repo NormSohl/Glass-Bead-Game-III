@@ -72,6 +72,15 @@ class AppSettings: ObservableObject{
     // ZSliderView.
     @Published var showSequencer: Bool = false
     @Published var sequencerDrivenVoices: Set<SequencerVoice> = []
+
+    // Which X/Y/Z axes are currently being driven by incoming MIDI (a controller, or
+    // eventually a standalone Seq app) rather than touch - see Sound.handleIncomingMidi. Kept
+    // as its own set rather than folded into sequencerDrivenVoices above: SequencerState is
+    // documented as the "sole writer" of that one and replaces it wholesale on every update,
+    // so a second concurrent writer there would risk one clobbering the other's bits. Read
+    // alongside sequencerDrivenVoices by HitTestView/ZSliderView (either one means "don't
+    // read touch for this axis's crosshair").
+    @Published var externallyDrivenVoices: Set<SequencerVoice> = []
     
     // root pitch
     @Published var rootFrequency: Double = 261.6255653005986 // middle c  // no UI yet if ever. MIDI note number 60
@@ -103,6 +112,8 @@ class AppSettings: ObservableObject{
     @Published var highestRatio: Double = 3/1
     @Published var highestRatioNormalized:Double = 0.0 // initialized in the init function 0 to 1 is an octave. >1 for higher values
     @Published var destinationIndex:Int = 0
+    // MIDI Source picker binding, mirroring destinationIndex above - see Midi.setMidiSource.
+    @Published var sourceIndex:Int = 0
     
     // Lowest ratio =
     // 2/3 is a fifth below 1/1
