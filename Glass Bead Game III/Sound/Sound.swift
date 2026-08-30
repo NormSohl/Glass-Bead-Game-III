@@ -203,6 +203,10 @@ class Sound {
         midi.setMidiPitchBendRangeMPE(pitchBendRange: pitchBendRange)
     }
 
+    func setUseMPE(useMpe: Bool){
+        midi.useMPE(useMpe: useMpe)
+    }
+
     func setRootNote(midiNote: Int){
         midi.setRootNote(note: midiNote)
     }

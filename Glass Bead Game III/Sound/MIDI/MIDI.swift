@@ -121,6 +121,7 @@ class Midi{
         if useMPE {
             enableMPE()
         }
+        sendPitchBendSensitivity()
     }
 
     private struct MpeChannel{
@@ -149,6 +150,36 @@ class Midi{
         sendMidiRPN(channel: mpeChannel.lowerZoneMasterChannel,
                     rpn: registeredParameterNumbers.mpeConfiguration,
                     msb: 0)
+    }
+
+    // RPN 0 (Pitch Bend Sensitivity) tells the receiver what range to interpret this app's
+    // outgoing pitch-bend numbers against - without it, a receiver just falls back to its own
+    // default (often 2 semitones on plain GM-style gear, or 48 on many MPE-oriented
+    // instruments), which won't match pitchBendRange/pitchBendRangeMPE and renders every bend
+    // at the wrong interval. Norm: real devices often ignore this and need manual
+    // configuration anyway, but it's still the right thing to send. In MPE this is zone-wide -
+    // one message on the zone's master channel covers every member channel, same as the MPE
+    // Configuration message above - so it's called from the same places that resend that
+    // (destination changes, MPE toggled on/off). Outside MPE there's no zone, so each of the
+    // four channels needs its own declaration. Deliberately NOT called from inside
+    // enableMPE() itself: enableMPE's very first call happens from initMidi(), at app launch,
+    // before AppSettings has ever pushed a real pitchBendRangeMPE value - sending 0 there
+    // would tell a receiver to actually zero out its bend range, worse than not telling it
+    // anything. Every call site below runs after a real value is guaranteed to be set.
+    private func sendPitchBendSensitivity(){
+        if useMPE {
+            sendMidiRPN(channel: mpeChannel.lowerZoneMasterChannel,
+                        rpn: registeredParameterNumbers.pitchBendSensitivity,
+                        msb: UInt8(pitchBendRangeMPE),
+                        lsb: 0)
+        } else {
+            for channel in [rootMidiChannel, xMidiChannel, yMidiChannel, zMidiChannel] {
+                sendMidiRPN(channel: UInt8(channel),
+                            rpn: registeredParameterNumbers.pitchBendSensitivity,
+                            msb: UInt8(pitchBendRange),
+                            lsb: 0)
+            }
+        }
     }
 
     func startMidi(){
@@ -319,11 +350,13 @@ class Midi{
         // parameter shares a name with the property it sets, so `self.` disambiguates
         self.pitchBendRange = pitchBendRange
         //print("\nMidi: SetMidiPitchBendRange: Range = \(pitchBendRange)")
+        sendPitchBendSensitivity()
     }
 
     func setMidiPitchBendRangeMPE(pitchBendRange: Int){
         pitchBendRangeMPE = pitchBendRange
         //print("\nMidi: SetMidiPitchBendRangeMPE: Range = \(pitchBendRangeMPE)")
+        sendPitchBendSensitivity()
     }
 
     func useMPE(useMpe:Bool){
@@ -334,6 +367,7 @@ class Midi{
         else {
             disableMPE()
         }
+        sendPitchBendSensitivity()
     }
 
     func setRootNote(note: Int){
@@ -560,30 +594,34 @@ class Midi{
     }
 
     private func sendMidiCC(channel:UInt8, cc:UInt8, value: UInt8? = nil){
-        // control change (CC) messages are 2 byte midi messages that allow 128 bit values to be sent to one of
+        // control change (CC) messages are 2 or 3 byte midi messages that allow 128 bit values to be sent to one of
         // 128 preset destinations representing things like the Modulation wheel and breath controllers.
         //
         // Command byte: Bn
         //     B = CC ID (Means this is an CC Message)
         //     n = Channel:
         //     Data byte 1: CC ID
-        //     Data byte 2: value of the CC
+        //     Data byte 2: value of the CC (omitted entirely for a value-less CC, length 2 instead of 3)
         //
-        // CC messages are also used for RPNs. See the sendMidiRPN function for more details
-        var length:UInt8 = 0
-        if value == nil {
-            length = 1
-        }
-        else {
-            length = 2
-        }
-
-        // create packet
+        // CC messages are also used for RPNs. See the sendMidiRPN function for more details.
+        //
+        // Fixed a real bug here (2026-08-29): `cc` was never actually written into the packet
+        // at all, and `value` was written into data.1 - the CC-number slot - instead of data.2,
+        // the value slot. Every RPN this file has ever sent (MPE Configuration in
+        // enableMPE/disableMPE, and Pitch Bend Sensitivity) was going out as a malformed,
+        // incomplete packet no receiver could have interpreted correctly - confirmed via the
+        // same CoreMIDI virtual-destination monitor used for this session's other MIDI
+        // testing: enableMPE's RPN6 produced zero bytes at the receiver before this fix.
         var packet1 = MIDIPacket();
         packet1.timeStamp = 0;
-        packet1.length = UInt16(length);
         packet1.data.0 = channelVoiceMessages.controlChange | (UInt8(channel) - 1) //(0x90 + (channel-1))
-        if value != nil {packet1.data.1 = value!}
+        packet1.data.1 = cc
+        if let value {
+            packet1.length = 3
+            packet1.data.2 = value
+        } else {
+            packet1.length = 2
+        }
 
         //Add packet to packet list and send it to destNum
         var packetList = MIDIPacketList(numPackets: 1, packet: packet1);

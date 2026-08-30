@@ -133,8 +133,25 @@ class AppSettings: ObservableObject{
         
         sound.setRootPitch(frequency: self.rootFrequency)
         sound.setRootNote(midiNote: self.rootMidiNote)
-        sound.setPitchBendRange(pitchBendRange: self.pitchBendRange)
+        // MPE's range first, then the non-MPE range, then the mode itself - Midi.useMPE
+        // defaults true (matching useMIDI_MPE's own default below) and each range setter
+        // immediately re-declares whichever range is currently active via RPN 0 (see
+        // Midi.sendPitchBendSensitivity), so setting the *inactive* range first would
+        // transmit it as if it were current. This order keeps every message correct instead
+        // of sending a wrong value that a moment later gets corrected.
         sound.setPitchBendRangeMPE(pitchBendRange: self.pitchBendRangeMPE)
+        sound.setPitchBendRange(pitchBendRange: self.pitchBendRange)
+        // Midi.useMPE is a separate stored var with its own hardcoded default, not something
+        // that reads straight through settings the way enableDrone/enableX/Y/Z do (see the
+        // comment on those below) - it wasn't drifting silently before only because both
+        // defaults happened to independently be true, the exact fragility that comment
+        // describes. Norm: "make MPE default if it is not" - explicitly syncing it here means
+        // the real answer no longer depends on two hardcoded defaults staying coincidentally
+        // aligned. Matters musically, not just cosmetically: the graph's default range (3/1
+        // above root to 1/2 below, ~19 semitones up and 12 down) only fits inside MPE's wider
+        // pitchBendRangeMPE - the plain pitchBendRange would clip everything above +12
+        // semitones.
+        sound.setUseMPE(useMpe: self.useMIDI_MPE)
         // X/Y/Z's underlying Midi/Audio pitch state otherwise stays at Midi's own raw 0.0
         // default (garbage - a 0Hz-derived pitch bend clamps to the minimum) until each one's
         // own view actually publishes a real value. X/Y happen to get seeded as a side effect
