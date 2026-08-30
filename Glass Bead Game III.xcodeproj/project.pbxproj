@@ -33,7 +33,13 @@
 		6758A0F1AE2A43FE863D9772 /* SequencerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 067D6370D71F4AAB81C7FCAB /* SequencerView.swift */; };
 		6488C93050F1451C827BF475 /* RootIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C57554EBB6D407B81C07AAF /* RootIndicatorView.swift */; };
 		F4CDD0102BD145C7BD92A70B /* SeqApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F35D5C9D9E84298AE75468E /* SeqApp.swift */; };
-		15FCF57288EE48B9A8087725 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBE90E7B4BC244A38A40DC8D /* ContentView.swift */; };
+		11280A0FE44E4B508045F64C /* SeqSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 796BD56083BA49C1BA9CCD93 /* SeqSettings.swift */; };
+		8878126A0E2B457A823BFDAD /* SequencerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA574CC535E9488087FE433B /* SequencerState.swift */; };
+		1BD79A4C38D54541987EBE6C /* PianoRollCoordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60EBDB420A6441FD86D347C5 /* PianoRollCoordinates.swift */; };
+		B5350927B1EA469B8572FCAC /* PianoRollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F5DEAD64F3749BC96777619 /* PianoRollView.swift */; };
+		F360FFA894604821B07976E7 /* RootIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04CFF1117DA340028AAA74C8 /* RootIndicatorView.swift */; };
+		993C55E39EE9405B91FC52E1 /* TransportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 034D090B4A594A8DB3E796B9 /* TransportView.swift */; };
+		C9DDCB90C8F2408F86C84FAB /* SequencerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FC5B11E74EC4FFC823642D9 /* SequencerView.swift */; };
 		FE88F8752F854C75871D6C00 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F71E89B896DE4710A56E4B62 /* Assets.xcassets */; };
 		647B50C93934404799447CE2 /* GBGCore in Frameworks */ = {isa = PBXBuildFile; productRef = 04B162C5595040048C6852EF /* GBGCore */; };
 		E434633F43BE43C28F278AE5 /* GBGSound in Frameworks */ = {isa = PBXBuildFile; productRef = B2C3D4E5F60718293A4B5C6D /* GBGSound */; };
@@ -68,8 +74,14 @@
 		D6DF75EF1C024FBCA782C7AE /* TetradView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TetradView.swift; sourceTree = "<group>"; };
 		969C76870C734BBD95B79A2E /* Seq.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Seq.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9F35D5C9D9E84298AE75468E /* SeqApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeqApp.swift; sourceTree = "<group>"; };
-		DBE90E7B4BC244A38A40DC8D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		2C54886396D84BE08EF97D59 /* Seq.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Seq.entitlements; sourceTree = "<group>"; };
+		796BD56083BA49C1BA9CCD93 /* SeqSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeqSettings.swift; sourceTree = "<group>"; };
+		CA574CC535E9488087FE433B /* SequencerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequencerState.swift; sourceTree = "<group>"; };
+		60EBDB420A6441FD86D347C5 /* PianoRollCoordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PianoRollCoordinates.swift; sourceTree = "<group>"; };
+		8F5DEAD64F3749BC96777619 /* PianoRollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PianoRollView.swift; sourceTree = "<group>"; };
+		04CFF1117DA340028AAA74C8 /* RootIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootIndicatorView.swift; sourceTree = "<group>"; };
+		034D090B4A594A8DB3E796B9 /* TransportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransportView.swift; sourceTree = "<group>"; };
+		4FC5B11E74EC4FFC823642D9 /* SequencerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequencerView.swift; sourceTree = "<group>"; };
 		F71E89B896DE4710A56E4B62 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -117,7 +129,13 @@
 			isa = PBXGroup;
 			children = (
 				9F35D5C9D9E84298AE75468E /* SeqApp.swift */,
-				DBE90E7B4BC244A38A40DC8D /* ContentView.swift */,
+				796BD56083BA49C1BA9CCD93 /* SeqSettings.swift */,
+				CA574CC535E9488087FE433B /* SequencerState.swift */,
+				60EBDB420A6441FD86D347C5 /* PianoRollCoordinates.swift */,
+				8F5DEAD64F3749BC96777619 /* PianoRollView.swift */,
+				04CFF1117DA340028AAA74C8 /* RootIndicatorView.swift */,
+				034D090B4A594A8DB3E796B9 /* TransportView.swift */,
+				4FC5B11E74EC4FFC823642D9 /* SequencerView.swift */,
 				F71E89B896DE4710A56E4B62 /* Assets.xcassets */,
 				2C54886396D84BE08EF97D59 /* Seq.entitlements */,
 			);
@@ -377,7 +395,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				F4CDD0102BD145C7BD92A70B /* SeqApp.swift in Sources */,
-				15FCF57288EE48B9A8087725 /* ContentView.swift in Sources */,
+				11280A0FE44E4B508045F64C /* SeqSettings.swift in Sources */,
+				8878126A0E2B457A823BFDAD /* SequencerState.swift in Sources */,
+				1BD79A4C38D54541987EBE6C /* PianoRollCoordinates.swift in Sources */,
+				B5350927B1EA469B8572FCAC /* PianoRollView.swift in Sources */,
+				F360FFA894604821B07976E7 /* RootIndicatorView.swift in Sources */,
+				993C55E39EE9405B91FC52E1 /* TransportView.swift in Sources */,
+				C9DDCB90C8F2408F86C84FAB /* SequencerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
