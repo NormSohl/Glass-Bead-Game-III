@@ -61,11 +61,6 @@ struct ControlView: View {
                 // the grid down to otherwise.
                 .disabled(!settings.showTetrads)
 
-                // Drone now lives as its own toolbar button and a "D" key command
-                // (ContentView), per Norm - removed from here rather than duplicated, same as
-                // Portamento/Pedal above. Sound.enableDrone still reads settings.playDrone
-                // straight through sound.settings regardless of which UI changed it.
-
                 Toggle("Note X", isOn: $settings.playNoteX)
                     .tint(tintcolor)
                     .foregroundStyle(.white)
@@ -77,17 +72,6 @@ struct ControlView: View {
                 Toggle("Note Z", isOn: $settings.playNoteZ)
                     .tint(tintcolor)
                     .foregroundStyle(.white)
-
-                // Snapping now lives as its own toolbar button (the waveform.path icon in
-                // ContentView's title bar, labeled "Portamento" there) - important enough to
-                // reach without opening this popover, per Norm. Removed from here rather than
-                // duplicated, since both would drive the exact same settings.snap.
-
-                // Pedal now also lives as its own toolbar button and a Space-bar key command
-                // (ContentView) - release-on-off (sound.releasePedal()) is wired as a didSet on
-                // AppSettings.pedal itself now, not here, since this Toggle's onChange only ever
-                // fired while this popover happened to be open. Removed from here rather than
-                // duplicated, same as Drone/Portamento above.
 
                 Divider()
 #if os(iOS)
