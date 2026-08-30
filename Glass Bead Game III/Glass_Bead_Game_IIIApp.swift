@@ -15,6 +15,15 @@ struct GlassBeadGameIIIApp: App {
     
     init() {
         sound.initSound()
+        #if os(macOS)
+        // AppKit's tooltip hover delay (NSInitialToolTipDelay, milliseconds) isn't exposed as a
+        // System Settings toggle, but it IS just a standard user default - and since defaults
+        // are per-bundle-identifier, registering it here only changes this app's own tooltip
+        // delay, not the system default or any other app's. Norm: the toolbar tooltips (piano
+        // keys, portamento, pedal, drone, gear) were taking a while to first appear - macOS's
+        // out-of-the-box default is on the order of a second or more.
+        UserDefaults.standard.register(defaults: ["NSInitialToolTipDelay": 300])
+        #endif
     }
     
     var body: some Scene {
