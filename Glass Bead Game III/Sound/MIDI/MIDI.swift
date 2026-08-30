@@ -78,18 +78,23 @@ class Midi{
     var yMidiIsPlaying = false
     var zMidiIsPlaying = false
 
-    // midi channels
-    var rootMidiChannel = 1
-    var xMidiChannel = 2
-    var yMidiChannel = 3
-    var zMidiChannel = 4
+    // midi channels - X/Y/Z first, drone last (not first) since drone is the one optional
+    // voice: a receiver only listening for "my three main voices" can just use the first
+    // three channels and never has to care whether drone happens to be on, instead of drone
+    // always occupying channel 1 and shifting what X/Y/Z sit on depending on nothing (their
+    // own channels were always fixed either way, but always one slot later than they needed
+    // to be).
+    var xMidiChannel = 1
+    var yMidiChannel = 2
+    var zMidiChannel = 3
+    var rootMidiChannel = 4
 
-    // midi MPE channels
+    // midi MPE channels - same X/Y/Z-first, drone-last ordering as above.
     // MPE channel 1 is master channel for zone
-    var rootMidiMPEChannel = 2
-    var xMidiMPEChannel = 3
-    var yMidiMPEChannel = 4
-    var zMidiMPEChannel = 5
+    var xMidiMPEChannel = 2
+    var yMidiMPEChannel = 3
+    var zMidiMPEChannel = 4
+    var rootMidiMPEChannel = 5
 
     // list of possible midi notes
     var noteList = NoteList()
@@ -152,7 +157,8 @@ class Midi{
         if useMPE{
             if rootMidiEnable {
                 rootMidiIsPlaying = true
-                // Root note on channel 1
+                // Root (drone) note - always last of the four MPE channels, see the
+                // rootMidiMPEChannel declaration above.
                 rootMidiPitchBend = PitchBendMath.freqToPB(frequency: rootMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
                 sendMidiNoteOn(channel: rootMidiMPEChannel, note: rootMidiNote, velocity:rootMidiVelocity)
                 sendMidiPitchBend(channel: rootMidiMPEChannel, value: rootMidiPitchBend) // root note has centered pitchbend, should be 8192
@@ -160,7 +166,6 @@ class Midi{
 
             if xMidiEnable {
                 xMidiIsPlaying = true
-                // X note on channel 2
                 xMidiPitchBend = PitchBendMath.freqToPB(frequency: xMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
                 sendMidiNoteOn(channel: xMidiMPEChannel, note: xMidiNote, velocity: xMidiVelocity)
                 sendMidiPitchBend(channel: xMidiMPEChannel, value: xMidiPitchBend)
@@ -168,7 +173,6 @@ class Midi{
 
             if yMidiEnable {
                 yMidiIsPlaying = true
-                // Y note on channel 3
                 yMidiPitchBend = PitchBendMath.freqToPB(frequency: yMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
                 sendMidiNoteOn(channel: yMidiMPEChannel, note: yMidiNote, velocity: yMidiVelocity)
                 sendMidiPitchBend(channel: yMidiMPEChannel, value: yMidiPitchBend)
@@ -176,7 +180,6 @@ class Midi{
 
             if zMidiEnable {
                 zMidiIsPlaying = true
-                // Z note on channel 5
                 zMidiPitchBend = PitchBendMath.freqToPB(frequency: zMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
                 sendMidiNoteOn(channel: zMidiMPEChannel, note: zMidiNote, velocity: zMidiVelocity)
                 sendMidiPitchBend(channel: zMidiMPEChannel, value: zMidiPitchBend)
@@ -185,7 +188,8 @@ class Midi{
         else { // not MPE
             if rootMidiEnable {
                 rootMidiIsPlaying = true
-                // Root note on channel 1
+                // Root (drone) note - always last of the four channels, see the
+                // rootMidiChannel declaration above.
                 sendMidiNoteOff(channel: rootMidiChannel, note: rootMidiNote)
                 sendMidiPitchBend(channel:rootMidiChannel, value: rootMidiPitchBend) // root note has centered pitchbend, should be 8192
                 sendMidiNoteOn(channel: rootMidiChannel, note: rootMidiNote, velocity: rootMidiVelocity)
@@ -193,7 +197,6 @@ class Midi{
 
             if xMidiEnable {
                 xMidiIsPlaying = true
-                // X note on channel 2
                 sendMidiNoteOff(channel: xMidiChannel, note: xMidiNote)
                 xMidiPitchBend = PitchBendMath.freqToPB(frequency: xMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRange)
                 sendMidiPitchBend(channel: xMidiChannel, value: xMidiPitchBend)
@@ -202,7 +205,6 @@ class Midi{
 
             if yMidiEnable {
                 yMidiIsPlaying = true
-                // Y note on channel 3
                 //print ("\nMidi: startMidi: Y")
                 // Send note off to quiet glitch when changing PB and to clear channel for new note if needed
                 sendMidiNoteOff(channel: yMidiChannel, note: yMidiNote)
@@ -213,7 +215,6 @@ class Midi{
 
             if zMidiEnable {
                 zMidiIsPlaying = true
-                // Z note on channel 4
                 sendMidiNoteOff(channel: zMidiChannel, note: zMidiNote)
                 zMidiPitchBend = PitchBendMath.freqToPB(frequency: zMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRange)
                 sendMidiPitchBend(channel: zMidiChannel, value: zMidiPitchBend)
@@ -231,29 +232,29 @@ class Midi{
 
         if useMPE{
             //print ("Midi: stopMidi: Root")
-            sendMidiNoteOff(channel: 2, note: rootMidiNote)
+            sendMidiNoteOff(channel: rootMidiMPEChannel, note: rootMidiNote)
 
             //print ("Midi: stopMidi: X")
-            sendMidiNoteOff(channel: 3, note: xMidiNote)
+            sendMidiNoteOff(channel: xMidiMPEChannel, note: xMidiNote)
 
             //print ("Midi: stopMidi: Y")
-            sendMidiNoteOff(channel: 4, note: yMidiNote)
+            sendMidiNoteOff(channel: yMidiMPEChannel, note: yMidiNote)
 
             //print ("Midi: stopMidi: Z")
-            sendMidiNoteOff(channel: 5, note: zMidiNote)
+            sendMidiNoteOff(channel: zMidiMPEChannel, note: zMidiNote)
         }
         else {
             //print ("Midi: stopMidi: Root")
-            sendMidiNoteOff(channel: 1, note: rootMidiNote)
+            sendMidiNoteOff(channel: rootMidiChannel, note: rootMidiNote)
 
             //print ("Midi: stopMidi: X")
-            sendMidiNoteOff(channel: 2, note: xMidiNote)
+            sendMidiNoteOff(channel: xMidiChannel, note: xMidiNote)
 
             //print ("Midi: stopMidi: Y")
-            sendMidiNoteOff(channel: 3, note: yMidiNote)
+            sendMidiNoteOff(channel: yMidiChannel, note: yMidiNote)
 
             //print ("Midi: stopMidi: Z")
-            sendMidiNoteOff(channel: 4, note: zMidiNote)
+            sendMidiNoteOff(channel: zMidiChannel, note: zMidiNote)
         }
     }
 
@@ -339,7 +340,28 @@ class Midi{
         rootMidiNote = note
     }
 
+    // Saved by tuneStart, restored by tuneStop - see the comment on tuneStart for why.
+    private var preTuneRootEnable = false
+    private var preTuneXEnable = false
+    private var preTuneYEnable = false
+    private var preTuneZEnable = false
+
     func tuneStart(){
+        // Tuning is a deliberate, explicit action independent of whatever's currently
+        // touched - it should always sound all four voices, unlike startMidi()'s normal
+        // callers which rely on rootMidiEnable/xMidiEnable/yMidiEnable/zMidiEnable already
+        // reflecting live touch state (see Sound.apply*VoiceEnables). Forcing them true here
+        // without saving/restoring would leave them stuck true after tuning ends, right back
+        // to the stale-enable bug fixed by defaulting them false in the first place - so the
+        // real prior state is saved here and put back in tuneStop.
+        preTuneRootEnable = rootMidiEnable
+        preTuneXEnable = xMidiEnable
+        preTuneYEnable = yMidiEnable
+        preTuneZEnable = zMidiEnable
+        rootMidiEnable = true
+        xMidiEnable = true
+        yMidiEnable = true
+        zMidiEnable = true
         // set all frequencies  to A:440
         setMidiRootPitch(frequency: 440)
         setMidiXPitch(frequency: 440)
@@ -352,6 +374,10 @@ class Midi{
     func tuneStop(){
         if midiTrace {print("Midi: tuneStop")}
         stopMidi()
+        rootMidiEnable = preTuneRootEnable
+        xMidiEnable = preTuneXEnable
+        yMidiEnable = preTuneYEnable
+        zMidiEnable = preTuneZEnable
         setMidiRootPitch(frequency: referenceFrequency)
     }
 
