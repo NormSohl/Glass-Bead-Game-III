@@ -81,6 +81,13 @@ class AppSettings: ObservableObject{
     @Published var yFrequency: Double = 261.6255653005986 // starts at unison with the root
     @Published var zFrequency: Double = 261.6255653005986 // starts at unison with the root
 
+    // True for exactly the span of a Z-slider touch-drag (ZSliderView's DragGesture,
+    // onChanged...onEnded) - not tied to audio/pedal like Sound's own zSliderTouchCount is.
+    // DissonanceView reads this to decide between its own two render qualities: a cheap
+    // resolution kept live while this is true, versus progressively refining upward once it
+    // goes false (see DissonanceView's header comment).
+    @Published var zDragActive: Bool = false
+
     //@Published var numberOfOctaves: Double = 2
     // Highest ratio =
     // 3/2 gives range of a fifth above 1/1

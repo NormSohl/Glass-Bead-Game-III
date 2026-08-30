@@ -150,6 +150,7 @@ struct ZSliderView: View {
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
                     .onChanged { value in
                         hasTouched = true
+                        settings.zDragActive = true
                         hoverLocation = value.location
                         hoverLocation.y = zSliderHeight - hoverLocation.y
                         if isSound == false {
@@ -158,6 +159,7 @@ struct ZSliderView: View {
                         }
                     }
                     .onEnded { _ in
+                        settings.zDragActive = false
                         sound.endZTouch(pedal: settings.pedal)
                         if !settings.pedal {
                             isSound = false
