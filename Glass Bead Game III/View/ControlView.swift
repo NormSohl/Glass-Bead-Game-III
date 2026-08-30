@@ -149,7 +149,16 @@ struct ControlView: View {
                 
                 Divider()
                 
-                let details = "Midi channels 1, 2, 3, and 4 are sending A: 440 hz" // to the \(sound.midi.midiDestinations[settings.destinationIndex].name)"
+                // Built from the actual channel numbers rather than hardcoded - those moved
+                // once already this session (X/Y/Z first, drone last) and differ between MPE
+                // and non-MPE besides, so a fixed "1, 2, 3, and 4" string would silently go
+                // stale exactly the way this one had, telling the user the wrong channels to
+                // check on their receiving synth.
+                let tuningMidiChannels = (settings.useMIDI_MPE
+                    ? [sound.midi.xMidiMPEChannel, sound.midi.yMidiMPEChannel, sound.midi.zMidiMPEChannel, sound.midi.rootMidiMPEChannel]
+                    : [sound.midi.xMidiChannel, sound.midi.yMidiChannel, sound.midi.zMidiChannel, sound.midi.rootMidiChannel]
+                ).sorted()
+                let details = "Midi channels \(tuningMidiChannels[0]), \(tuningMidiChannels[1]), \(tuningMidiChannels[2]), and \(tuningMidiChannels[3]) are sending A: 440 hz" // to the \(sound.midi.midiDestinations[settings.destinationIndex].name)"
                 Button("Tune Midi"){
                     if settings.tuneMidi == false{
                         sound.midi.tuneStart()
