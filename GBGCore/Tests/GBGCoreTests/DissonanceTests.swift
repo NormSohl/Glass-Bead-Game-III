@@ -206,19 +206,21 @@ final class DissonanceTests: XCTestCase {
         XCTAssertTrue(grid.isEmpty)
     }
 
-    func testRoughnessGridStopsPollingAfterCancellationIsDetected() {
-        // isCancelled is polled once per outer row - once it starts returning true, the row
-        // loop should bail immediately rather than finishing the remaining rows, so the poll
-        // count should land at (roughly) the row where cancellation kicked in, not resolution.
+    func testRoughnessGridStopsEarlyOnceCancelledMidGrid() {
+        // isCancelled is polled once per row-batch (an internal, tunable granularity - rows
+        // within a batch run in parallel, so nothing finer than "a batch" can be promised) -
+        // cancelling partway through a large-enough grid should still bail out well before
+        // every row/poll opportunity has been exhausted, rather than silently finishing the
+        // whole grid regardless of cancellation.
         let scale = Scale(limit: 5, highestRatio: 2.0, lowestRatio: 0.5)
-        let resolution = 20
+        let resolution = 200
         var pollCount = 0
-        let cancelAfter = 5
-        _ = Dissonance.roughnessGrid(scale: scale, rootFrequency: 261.63, limit: 5, resolution: resolution, isCancelled: {
+        let grid = Dissonance.roughnessGrid(scale: scale, rootFrequency: 261.63, limit: 5, resolution: resolution, isCancelled: {
             pollCount += 1
-            return pollCount > cancelAfter
+            return pollCount >= 2
         })
-        XCTAssertEqual(pollCount, cancelAfter + 1)
+        XCTAssertTrue(grid.isEmpty)
+        XCTAssertLessThan(pollCount, resolution)
     }
 
     func testRoughnessGridValuesAreNeverNegative() {

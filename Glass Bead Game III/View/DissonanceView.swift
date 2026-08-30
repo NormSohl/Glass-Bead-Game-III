@@ -174,9 +174,9 @@ struct DissonanceView: View {
     // as it finishes so the field visibly sharpens in steps rather than jumping once at the
     // end. cache.refinementTask.cancel() (called the instant a new drag starts, see the Canvas
     // closure above) doesn't just skip *applying* a pass already computing - the isCancelled
-    // closure passed to renderRoughnessImage below is polled from inside its own grid loop, so
-    // a cancellation actually stops that loop within a row or two, not once it happens to
-    // finish computing a result that would only get thrown away.
+    // closure passed to renderRoughnessImage below is polled from inside roughnessGrid's own
+    // row-batch loop (GBGCore), so a cancellation actually stops that loop within a batch or
+    // two, not once it happens to finish computing a result that would only get thrown away.
     private func scheduleRefinement(scale: Scale, rootFrequency: Double, zFrequency: Double?, limit: Int, canvasWidth: Int, startKey: CacheKey) {
         let steps = [0.7, 0.85, 1.0]
             .map { max(1, Int((Double(canvasWidth) * $0).rounded())) }

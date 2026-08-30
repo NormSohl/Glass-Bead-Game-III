@@ -32,6 +32,7 @@
 //    pairs (root x X, root x Y, X x Y) - not just matching harmonic numbers.
 
 import Foundation
+import Dispatch
 
 enum Dissonance {
     /// A harmonic weighting scheme: given a 1-indexed harmonic number, returns its amplitude weight.
@@ -84,14 +85,22 @@ enum Dissonance {
     /// reference the `limit` parameter directly, so the fallback is resolved in the body.
     static func roughnessBetweenTones(frequencyA: Double, frequencyB: Double, limit: Int, weighting: HarmonicWeighting? = nil) -> Double {
         let weighting = weighting ?? { linearHarmonicWeight($0, limit: limit) }
+        // B's harmonic frequency/weight don't depend on harmonicA at all, but the loop below
+        // used to recompute them fresh on every one of A's `limit` iterations anyway -
+        // precomputed once here instead, same values, same summation order, just without the
+        // redundant work.
+        var freqB = [Double](repeating: 0, count: limit)
+        var weightB = [Double](repeating: 0, count: limit)
+        for h in 1...limit {
+            freqB[h - 1] = harmonicFrequency(fundamental: frequencyB, harmonicNumber: h)
+            weightB[h - 1] = weighting(h)
+        }
         var total = 0.0
         for harmonicA in 1...limit {
             let freqA = harmonicFrequency(fundamental: frequencyA, harmonicNumber: harmonicA)
             let weightA = weighting(harmonicA)
-            for harmonicB in 1...limit {
-                let freqB = harmonicFrequency(fundamental: frequencyB, harmonicNumber: harmonicB)
-                let weightB = weighting(harmonicB)
-                total += pairwiseRoughness(freqA: freqA, weightA: weightA, freqB: freqB, weightB: weightB)
+            for i in 0..<limit {
+                total += pairwiseRoughness(freqA: freqA, weightA: weightA, freqB: freqB[i], weightB: weightB[i])
             }
         }
         return total
@@ -125,14 +134,12 @@ enum Dissonance {
     /// lowest pitch (left of the graph) - same orientation as the rest of the graph's
     /// coordinate space. Each cell is evaluated at its center point along that axis.
     ///
-    /// `isCancelled`, when given, is polled once per outer row (cheap relative to a row's own
-    /// O(resolution) inner cost, but fine-grained enough that a cancellation mid-grid wastes at
-    /// most one row's worth of work) - lets a caller running this off the main thread (see
-    /// DissonanceView's background refinement passes) actually stop computing the moment a
-    /// caller-side cancellation happens, rather than finishing the whole grid and only
-    /// discarding the result afterward. A cancelled call returns `[]`, the same empty-grid
-    /// signal invalid inputs already use, so callers already checking for that don't need a
-    /// second code path.
+    /// `isCancelled`, when given, is polled once per row-batch (see `rowBatchSize` below) -
+    /// lets a caller running this off the main thread (see DissonanceView's background
+    /// refinement passes) actually stop computing shortly after a caller-side cancellation
+    /// happens, rather than finishing the whole grid and only discarding the result
+    /// afterward. A cancelled call returns `[]`, the same empty-grid signal invalid inputs
+    /// already use, so callers already checking for that don't need a second code path.
     static func roughnessGrid(scale: Scale, rootFrequency: Double, zFrequency: Double? = nil, limit: Int, resolution: Int, weighting: HarmonicWeighting? = nil, isCancelled: (() -> Bool)? = nil) -> [[Double]] {
         guard resolution > 0, limit > 0 else { return [] }
         let weighting = weighting ?? { linearHarmonicWeight($0, limit: limit) }
@@ -145,6 +152,40 @@ enum Dissonance {
         // both axes share the same fraction-to-frequency mapping, so compute it once per index
         let frequencyAt = (0..<resolution).map { frequency(atFraction: (Double($0) + 0.5) / Double(resolution)) }
 
+        // Harmonic amplitude weight depends only on the harmonic number (1...limit), never on
+        // which tone it belongs to - one array shared by every harmonic series below, instead
+        // of every one of them re-deriving it.
+        let weightAt = (1...limit).map { weighting($0) }
+
+        func harmonicFrequencies(fundamental: Double) -> [Double] {
+            (1...limit).map { harmonicFrequency(fundamental: fundamental, harmonicNumber: $0) }
+        }
+
+        // Every axis position's own harmonic series, computed exactly once - O(resolution *
+        // limit) total. Before this, an equivalent series was silently recomputed from scratch
+        // by roughnessBetweenTones on every one of the O(resolution^2) grid-cell evaluations
+        // that happened to touch a given axis position (as either its row or its column), which
+        // was the single largest avoidable cost in the whole computation.
+        let axisHarmonics = frequencyAt.map { harmonicFrequencies(fundamental: $0) }
+        let rootHarmonics = harmonicFrequencies(fundamental: rootFrequency)
+        let zHarmonics = zFrequency.map { harmonicFrequencies(fundamental: $0) }
+
+        // Sum of pairwiseRoughness across every harmonic-of-seriesA x harmonic-of-seriesB pair -
+        // the shared core both the root/Z 1D tables and the main X-Y grid loop reduce to, once
+        // their harmonic series are already sitting in an array rather than needing deriving.
+        // Reads only `weightAt` (immutable, computed above) and its own by-value arguments, so
+        // it's safe to call from multiple rows in parallel below.
+        func pairwiseSum(_ seriesA: [Double], _ seriesB: [Double]) -> Double {
+            var total = 0.0
+            for i in 0..<limit {
+                let a = seriesA[i], weightA = weightAt[i]
+                for j in 0..<limit {
+                    total += pairwiseRoughness(freqA: a, weightA: weightA, freqB: seriesB[j], weightB: weightAt[j])
+                }
+            }
+            return total
+        }
+
         // roughnessBetweenTones(root, ·) has only one free argument (root is always the fixed
         // frequency), so the root-X and root-Y terms are the same function evaluated at a
         // position, not two independent things to compute - one 1D table serves both, reused
@@ -154,36 +195,70 @@ enum Dissonance {
         // two tones (the same reason a higher root frequency produces tighter banding) - so
         // X-Y genuinely needs its own computation per cell. Its own X<->Y symmetry is already
         // covered by the mirroring below.
-        let rootTermAt = frequencyAt.map { roughnessBetweenTones(frequencyA: rootFrequency, frequencyB: $0, limit: limit, weighting: weighting) }
+        let rootTermAt = axisHarmonics.map { pairwiseSum(rootHarmonics, $0) }
 
         // Z is fixed for the whole field too (like root), so its X/Y terms are the same kind
         // of cheap 1D lookup as rootTermAt - the O(resolution^2) loop below only gains two
         // array reads and an addition per cell, not a second full pairwise computation.
-        let zTermAt = zFrequency.map { z in frequencyAt.map { roughnessBetweenTones(frequencyA: z, frequencyB: $0, limit: limit, weighting: weighting) } }
-        let rootZ = zFrequency.map { roughnessBetweenTones(frequencyA: rootFrequency, frequencyB: $0, limit: limit, weighting: weighting) } ?? 0
+        let zTermAt = zHarmonics.map { z in axisHarmonics.map { pairwiseSum(z, $0) } }
+        let rootZ = zHarmonics.map { pairwiseSum(rootHarmonics, $0) } ?? 0
 
-        var grid = [[Double]](repeating: [Double](repeating: 0, count: resolution), count: resolution)
         // totalRoughness(root, X, Y[, Z]) is symmetric under swapping X and Y (every term
         // pairs X and Y with the same fixed frequencies - root and, when present, Z - so
         // swapping X and Y leaves the sum invariant), and both grid axes share the same
         // fraction mapping above - so grid[row][col] == grid[col][row] always. Only the
         // diagonal and one triangle need computing; the other triangle is a mirror, cutting
         // the cost roughly in half.
-        for row in 0..<resolution {
-            if let isCancelled, isCancelled() { return [] }
-            let yFrequency = frequencyAt[row]
-            let rootY = rootTermAt[row]
-            for col in row..<resolution {
-                let xFrequency = frequencyAt[col]
-                let rootX = rootTermAt[col]
-                let xY = roughnessBetweenTones(frequencyA: xFrequency, frequencyB: yFrequency, limit: limit, weighting: weighting)
-                var value = rootX + rootY + xY
-                if let zTermAt {
-                    value += rootZ + zTermAt[col] + zTermAt[row]
+        //
+        // Rows are otherwise independent - a row only ever writes its own row and the mirrored
+        // column position in every other row, and no two different rows' writes ever land on
+        // the same cell (each row "owns" a disjoint set of flat-buffer indices: its own row
+        // band, plus one fixed column offset - its own row number - in every other row band).
+        // So rows are computed in parallel batches across CPU cores via a flat, unsafe buffer
+        // rather than one at a time into a plain [[Double]] (whose COW/uniqueness machinery
+        // isn't documented as safe for concurrent same-array different-index writes the way a
+        // raw buffer explicitly is). Batched - not one single resolution-wide
+        // concurrentPerform - so isCancelled is still polled somewhat promptly rather than only
+        // once for the entire grid: Norm, "interrupt the redraw the moment the drag message
+        // comes in, don't wait." rowBatchSize is a plain tunable constant, not derived from
+        // core count - small enough that a cancellation wastes at most one batch's already-
+        // parallelized work, large enough that concurrentPerform's own per-call overhead stays
+        // negligible next to the row math it's dispatching.
+        let rowBatchSize = 32
+        var flat = [Double](repeating: 0, count: resolution * resolution)
+        var wasCancelled = false
+        flat.withUnsafeMutableBufferPointer { buffer in
+            var batchStart = 0
+            while batchStart < resolution {
+                if let isCancelled, isCancelled() { wasCancelled = true; return }
+                let batchCount = min(rowBatchSize, resolution - batchStart)
+                DispatchQueue.concurrentPerform(iterations: batchCount) { offset in
+                    let row = batchStart + offset
+                    let yHarmonics = axisHarmonics[row]
+                    let rootY = rootTermAt[row]
+                    for col in row..<resolution {
+                        let xHarmonics = axisHarmonics[col]
+                        let rootX = rootTermAt[col]
+                        let xY = pairwiseSum(xHarmonics, yHarmonics)
+                        var value = rootX + rootY + xY
+                        if let zTermAt {
+                            value += rootZ + zTermAt[col] + zTermAt[row]
+                        }
+                        buffer[row * resolution + col] = value
+                        buffer[col * resolution + row] = value
+                    }
                 }
-                grid[row][col] = value
-                grid[col][row] = value
+                batchStart += batchCount
             }
+        }
+        if wasCancelled { return [] }
+
+        // Reshape the flat buffer back into the [[Double]] every existing caller already
+        // expects - a plain, single-threaded copy, cheap next to the math that produced it.
+        var grid = [[Double]]()
+        grid.reserveCapacity(resolution)
+        for row in 0..<resolution {
+            grid.append(Array(flat[(row * resolution)..<((row + 1) * resolution)]))
         }
         return grid
     }
