@@ -147,13 +147,15 @@ struct ContentView: View {
                 // "Snapping" checkbox in ControlView used to control (removed once this existed;
                 // both drove the same property). Norm: important enough to reach without opening
                 // the settings popover first. Deliberately no custom active-state color - Norm
-                // preferred this match the plain gray-idle/white-on-press look the piano-keys and
-                // gear buttons already have, rather than standing out with its own persistent
-                // color.
+                // preferred this match the plain gray-idle/white-on-press look the other buttons
+                // already have, rather than standing out with its own persistent color. Scribble
+                // icon, chosen over waveform.path (the original - Norm: "does not say portamento
+                // to me") and a couple curve/diagonal-line candidates compared directly in the
+                // toolbar - a loose freeform line reading as "continuous/unconstrained."
                 Button {
                     settings.snap.toggle()
                 } label: {
-                    Image(systemName: "waveform.path")
+                    Image(systemName: "scribble")
                 }
                 .help("Portamento (G or H) - drag continuously between pitches instead of snapping to scale degrees")
             }
