@@ -145,6 +145,7 @@ final class SequencerState: ObservableObject {
         if let index = graphMidiOut.midiDestinations.firstIndex(where: { $0.name == graphVirtualDestinationName }) {
             detectedGraphDestinationIndex = index
         }
+        synthMidiOut.initMidi()
     }
 
     var hasAnyNotes: Bool {
@@ -164,26 +165,23 @@ final class SequencerState: ObservableObject {
         }
     }
 
-    // MARK: - Graph MIDI-out engine
+    // MARK: - MIDI-out engine (shared core, driven per-output below)
 
-    /// Looks up the current note for `voice` at `playheadSample` and drives graphMidiOut
+    /// Looks up the current note for `voice` at `sample` and drives `output` on `channel`
     /// accordingly - fires note-on when a genuinely new Note starts (by reference identity),
     /// sends an updated pitch-bend on every call while the same note keeps sounding (this is
     /// what carries a Transition's glide/curve over MIDI, not just one flat pitch per note),
-    /// and fires note-off once amplitude drops to 0 or no note is found. Shared by both
-    /// pollPlayback (continuous, ~30Hz during real playback) and scrub (discrete, per drag
-    /// update) - both need identical note-on/hold/off logic, just called at different
-    /// cadences. No-ops entirely when graphOutputEnabled is false.
-    private func updateGraphMidiOutput(voice: PartVoice, at sample: Int) {
-        guard graphOutputEnabled else { return }
-        let channel = GraphMidiChannel.forVoice(voice)
-        let currentNote = part(for: voice).getCurrentNote(timeSlice: sample)
-        let sounding = graphMidiSoundingNote[voice]
-
-        guard let note = currentNote, note.amplitude > 0 else {
+    /// and fires note-off once amplitude drops to 0 or no note is found. `sounding` is the
+    /// caller's own per-voice tracking slot (graphMidiSoundingNote/synthMidiSoundingNote),
+    /// passed by reference so this one function serves both outputs identically. Shared by
+    /// both pollPlayback (continuous, ~30Hz during real playback) and scrub (discrete, per
+    /// drag update) - both need identical note-on/hold/off logic, just called at different
+    /// cadences.
+    private func driveMidiOutput(_ output: SeqMidiOut, channel: Int, note: Note?, sample: Int, sounding: inout Note?) {
+        guard let note, note.amplitude > 0 else {
             if sounding != nil {
-                graphMidiOut.noteOff(channel: channel, note: graphMidiFixedNote)
-                graphMidiSoundingNote[voice] = nil
+                output.noteOff(channel: channel, note: graphMidiFixedNote)
+                sounding = nil
             }
             return
         }
@@ -193,20 +191,76 @@ final class SequencerState: ObservableObject {
 
         if sounding !== note {
             let velocity = min(127, max(1, Int(note.amplitude * 127)))
-            graphMidiOut.noteOn(channel: channel, note: graphMidiFixedNote, velocity: velocity)
-            graphMidiSoundingNote[voice] = note
+            output.noteOn(channel: channel, note: graphMidiFixedNote, velocity: velocity)
+            sounding = note
         }
-        graphMidiOut.pitchBend(channel: channel, value: pitchBendValue)
+        output.pitchBend(channel: channel, value: pitchBendValue)
     }
 
-    /// Flushes any voices still tracked as sounding over the Graph connection - called when a
-    /// whole play/scrub session ends (not just per-voice reaching amplitude 0 naturally),
-    /// since ending playback mid-note wouldn't otherwise produce a note-off.
-    private func flushGraphMidiOutput() {
-        for (voice, _) in graphMidiSoundingNote {
-            graphMidiOut.noteOff(channel: GraphMidiChannel.forVoice(voice), note: graphMidiFixedNote)
+    /// Flushes any voices still tracked as sounding on `output` - called when a whole
+    /// play/scrub session ends (not just per-voice reaching amplitude 0 naturally), since
+    /// ending playback mid-note wouldn't otherwise produce a note-off.
+    private func flushMidiOutput(_ output: SeqMidiOut, sounding: inout [PartVoice: Note], channelForVoice: (PartVoice) -> Int) {
+        for (voice, _) in sounding {
+            output.noteOff(channel: channelForVoice(voice), note: graphMidiFixedNote)
         }
-        graphMidiSoundingNote.removeAll()
+        sounding.removeAll()
+    }
+
+    private func updateGraphMidiOutput(voice: PartVoice, at sample: Int) {
+        guard graphOutputEnabled else { return }
+        var sounding = graphMidiSoundingNote[voice]
+        driveMidiOutput(graphMidiOut, channel: GraphMidiChannel.forVoice(voice), note: part(for: voice).getCurrentNote(timeSlice: sample), sample: sample, sounding: &sounding)
+        graphMidiSoundingNote[voice] = sounding
+    }
+
+    private func flushGraphMidiOutput() {
+        flushMidiOutput(graphMidiOut, sounding: &graphMidiSoundingNote, channelForVoice: GraphMidiChannel.forVoice)
+    }
+
+    // MARK: - External synth MIDI-out (Step 4)
+    //
+    // A second, independent connection alongside the Graph one above - Norm: "we'll also want
+    // a dedicated Seq midi out port to connect with synths." Unlike the Graph connection
+    // (fixed channels matching Graph's own established defaults, since Graph's receive side
+    // expects them exactly), a real synth's channel routing is arbitrary/whatever the
+    // performer's rig expects - user-configurable per voice, defaulting to 1/2/3/4. MPE/RPN
+    // pitch-bend-sensitivity declaration is deliberately not sent here (the plan calls it
+    // optional for this connection) - a real synth on the receiving end may need its pitch
+    // bend range set by hand to match, same caveat Graph's own "Tune Midi" UI already carries
+    // for modular/analog gear that can't be retuned automatically over MIDI.
+    private let synthMidiOut = SeqMidiOut()
+    @Published var synthOutputEnabled: Bool = false
+    @Published var synthDestinationIndex: Int = 0 {
+        didSet { synthMidiOut.setMidiDestination(destination: synthDestinationIndex) }
+    }
+    var synthMidiDestinations: [SeqMidiOut.MidiEndpointInfo] { synthMidiOut.midiDestinations }
+
+    @Published var synthDroneChannel: Int = 1
+    @Published var synthXChannel: Int = 2
+    @Published var synthYChannel: Int = 3
+    @Published var synthZChannel: Int = 4
+
+    private func synthChannel(for voice: PartVoice) -> Int {
+        switch voice {
+        case .drone: return synthDroneChannel
+        case .x: return synthXChannel
+        case .y: return synthYChannel
+        case .z: return synthZChannel
+        }
+    }
+
+    private var synthMidiSoundingNote: [PartVoice: Note] = [:]
+
+    private func updateSynthMidiOutput(voice: PartVoice, at sample: Int) {
+        guard synthOutputEnabled else { return }
+        var sounding = synthMidiSoundingNote[voice]
+        driveMidiOutput(synthMidiOut, channel: synthChannel(for: voice), note: part(for: voice).getCurrentNote(timeSlice: sample), sample: sample, sounding: &sounding)
+        synthMidiSoundingNote[voice] = sounding
+    }
+
+    private func flushSynthMidiOutput() {
+        flushMidiOutput(synthMidiOut, sounding: &synthMidiSoundingNote, channelForVoice: synthChannel(for:))
     }
 
     /// Called by PianoRollView while a drone note's handle is being dragged, alongside the note
@@ -232,6 +286,7 @@ final class SequencerState: ObservableObject {
         stopPlayheadPolling()
         audio.stopAudio()
         flushGraphMidiOutput()
+        flushSynthMidiOutput()
         isPlaying = false
         drivenDroneFrequency = nil
         drivenDroneAmplitude = nil
@@ -261,6 +316,7 @@ final class SequencerState: ObservableObject {
         drivenDroneFrequency = scorePlayer.currentDroneFrequency
         for voice in PartVoice.allCases {
             updateGraphMidiOutput(voice: voice, at: playheadSample)
+            updateSynthMidiOutput(voice: voice, at: playheadSample)
         }
         if !scorePlayer.isPlaying {
             stop() // natural end-of-piece
@@ -305,6 +361,7 @@ final class SequencerState: ObservableObject {
 
         for voice in PartVoice.allCases {
             updateGraphMidiOutput(voice: voice, at: playheadSample)
+            updateSynthMidiOutput(voice: voice, at: playheadSample)
         }
     }
 
@@ -313,6 +370,7 @@ final class SequencerState: ObservableObject {
         isScrubbing = false
         audio.stopAudio()
         flushGraphMidiOutput()
+        flushSynthMidiOutput()
         drivenDroneFrequency = nil
         drivenDroneAmplitude = nil
     }

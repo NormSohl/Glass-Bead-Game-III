@@ -98,10 +98,48 @@ struct TransportView: View {
                 Spacer()
             }
             .font(.callout)
+
+            // External synth MIDI-out connection (Step 4) - a second, independent output
+            // alongside Graph Out above, with its own destination and user-configurable
+            // channel-per-voice (a real synth's routing is arbitrary, unlike Graph's fixed
+            // defaults). See SequencerState's external synth MIDI-out section.
+            HStack(spacing: 12) {
+                Toggle(isOn: $sequencer.synthOutputEnabled) {
+                    Text("Synth Out")
+                }
+                .disabled(sequencer.synthMidiDestinations.isEmpty)
+
+                Picker("Destination", selection: $sequencer.synthDestinationIndex) {
+                    ForEach(sequencer.synthMidiDestinations.indices, id: \.self) { index in
+                        Text(sequencer.synthMidiDestinations[index].name).tag(index)
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(width: 220)
+                .disabled(sequencer.synthMidiDestinations.isEmpty)
+
+                channelStepper("D", value: $sequencer.synthDroneChannel, color: voiceColors[.drone] ?? .white)
+                channelStepper("X", value: $sequencer.synthXChannel, color: voiceColors[.x] ?? .white)
+                channelStepper("Y", value: $sequencer.synthYChannel, color: voiceColors[.y] ?? .white)
+                channelStepper("Z", value: $sequencer.synthZChannel, color: voiceColors[.z] ?? .white)
+
+                Spacer()
+            }
+            .font(.callout)
         }
         .tint(tintColor)
         .foregroundStyle(.white)
         .padding(12)
         .background(Color.black)
+    }
+
+    /// One voice's channel-number stepper for the external synth connection - a compact
+    /// "label + number + up/down" control, four of these side by side stand in for a proper
+    /// per-voice settings sheet without needing one for just four small integers.
+    private func channelStepper(_ label: String, value: Binding<Int>, color: Color) -> some View {
+        Stepper(value: value, in: 1...16) {
+            Text("\(label): \(value.wrappedValue)").foregroundStyle(color)
+        }
+        .frame(width: 90)
     }
 }
