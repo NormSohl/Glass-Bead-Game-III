@@ -124,6 +124,25 @@ final class SequencerState: ObservableObject {
 
     private var playheadTimer: Timer?
 
+    // Internal synth on/off (Step 6 - closing a real gap against the plan's own "three
+    // independent, simultaneously-enable-able outputs" promise: Graph Out/Synth Out already
+    // had their own toggles, internal synth didn't). Gates only the Triad's per-tone
+    // audibility, never audio.startAudio/stopAudio themselves - ScorePlayer.advance() only
+    // ever runs from inside Audio's real-time render callback (Audio.swift's
+    // AVAudioSourceNode block), so the audio engine has to keep running regardless of this
+    // toggle or playback timing/MIDI-out (which reads scorePlayer.currentSample/isPlaying)
+    // would break too, not just go silent.
+    @Published var internalSynthEnabled: Bool = true {
+        didSet { applyInternalSynthEnable() }
+    }
+
+    private func applyInternalSynthEnable() {
+        audio.triad.enableTriadRootTone(enable: internalSynthEnabled)
+        audio.triad.enableTriadXTone(enable: internalSynthEnabled)
+        audio.triad.enableTriadYTone(enable: internalSynthEnabled)
+        audio.triad.enableTriadZTone(enable: internalSynthEnabled)
+    }
+
     init(settings: SeqSettings) {
         self.settings = settings
         self.sampleRate = audio.sampleRate
@@ -133,13 +152,11 @@ final class SequencerState: ObservableObject {
             dronePart: dronePart, xPart: xPart, yPart: yPart, zPart: zPart,
             sampleRate: sampleRate)
         audio.scorePlayer = scorePlayer
-        // No touch-based enable-gating exists in Seq - all four voices are simply always
-        // enabled; whether anything is actually heard is governed entirely by whether a Part
-        // has a nonzero-amplitude note at the current playhead.
-        audio.triad.enableTriadRootTone(enable: true)
-        audio.triad.enableTriadXTone(enable: true)
-        audio.triad.enableTriadYTone(enable: true)
-        audio.triad.enableTriadZTone(enable: true)
+        // No touch-based enable-gating exists in Seq - all four voices are simply gated on
+        // internalSynthEnabled alone; whether anything is actually heard beyond that is
+        // governed entirely by whether a Part has a nonzero-amplitude note at the current
+        // playhead.
+        applyInternalSynthEnable()
 
         graphMidiOut.initMidi()
         if let index = graphMidiOut.midiDestinations.firstIndex(where: { $0.name == graphVirtualDestinationName }) {

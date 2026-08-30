@@ -89,6 +89,16 @@ struct TransportView: View {
                 Spacer()
             }
 
+            // Internal synth on/off (Step 6) - the first of Seq's three independent outputs;
+            // Graph Out/Synth Out below are the other two. All three can be on at once.
+            HStack(spacing: 12) {
+                Toggle(isOn: $sequencer.internalSynthEnabled) {
+                    Text("Internal Synth")
+                }
+                Spacer()
+            }
+            .font(.callout)
+
             // Graph MIDI-out connection - a second, independent output alongside the internal
             // synth above (both can be on at once, matching Graph's own "internal synth" +
             // "MIDI" checkbox precedent). See SequencerState's Graph MIDI-out section.
