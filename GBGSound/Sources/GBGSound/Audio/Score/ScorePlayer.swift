@@ -23,7 +23,7 @@
 import Foundation
 import GBGCore
 
-class ScorePlayer {
+public class ScorePlayer {
     private let triad: Triad
     private let dronePart: Part?
     private let xPart: Part?
@@ -41,8 +41,8 @@ class ScorePlayer {
     // just check "every voice ran out of notes" without risking a new click at the cutoff.
     private let silenceThreshold = 0.0001
 
-    private(set) var currentSample: Int = 0
-    private(set) var isPlaying: Bool = false
+    public private(set) var currentSample: Int = 0
+    public private(set) var isPlaying: Bool = false
 
     private var currentDroneNote: Note?
     private var currentXNote: Note?
@@ -54,10 +54,10 @@ class ScorePlayer {
     // without duplicating the note-lookup/percentComplete math - nil when that voice has no
     // current note. Set alongside the existing triad.setTriad*Pitch calls below; not a new
     // computation, just also stashing a value already being computed.
-    private(set) var currentDroneFrequency: Double?
-    private(set) var currentXFrequency: Double?
-    private(set) var currentYFrequency: Double?
-    private(set) var currentZFrequency: Double?
+    public private(set) var currentDroneFrequency: Double?
+    public private(set) var currentXFrequency: Double?
+    public private(set) var currentYFrequency: Double?
+    public private(set) var currentZFrequency: Double?
 
     // The amplitude actually sent to Triad last sample, per voice - chases each note's own
     // envelope value (or 0, once a voice runs out of notes) rather than jumping straight to it.
@@ -66,7 +66,7 @@ class ScorePlayer {
     private var appliedYAmplitude: Double = 0
     private var appliedZAmplitude: Double = 0
 
-    init(triad: Triad, dronePart: Part?, xPart: Part?, yPart: Part?, zPart: Part?, sampleRate: Double, amplitudeRampSeconds: Double = 0.005) {
+    public init(triad: Triad, dronePart: Part?, xPart: Part?, yPart: Part?, zPart: Part?, sampleRate: Double, amplitudeRampSeconds: Double = 0.005) {
         self.triad = triad
         self.dronePart = dronePart
         self.xPart = xPart
@@ -78,7 +78,7 @@ class ScorePlayer {
     /// Primes each active Part's starting note and begins playback at `atSample`. Not real-time
     /// safe - uses Part's brute-force `getCurrentNote` lookup, meant to be called once before
     /// playback starts, never from inside the audio render loop.
-    func start(atSample: Int = 0) {
+    public func start(atSample: Int = 0) {
         currentSample = atSample
         currentDroneNote = dronePart?.getCurrentNote(timeSlice: atSample)
         currentXNote = xPart?.getCurrentNote(timeSlice: atSample)
@@ -95,7 +95,7 @@ class ScorePlayer {
         isPlaying = true
     }
 
-    func stop() {
+    public func stop() {
         isPlaying = false
     }
 

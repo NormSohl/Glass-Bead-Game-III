@@ -10,7 +10,7 @@ import GBGCore
 import CoreMIDI
 import AudioToolbox
 
-class Midi{
+public class Midi{
     // control debug trace
     private var midiTrace = false
 
@@ -54,7 +54,7 @@ class Midi{
     private var sourceNum = 0
 
     //midi destinations
-    var midiDestinations:[midiEndpoint] = []
+    public var midiDestinations:[midiEndpoint] = []
     private var destNum = 0
 
     // midi enable channels - false until each one's own zone has actually been touched at
@@ -68,10 +68,10 @@ class Midi{
     // it isn't needed - stopMidi's note-off sweep already unconditionally covers channels 1-4
     // (or 2-5 in MPE) regardless of these flags, so hung-note cleanup was never what this
     // default was doing.
-    var rootMidiEnable = false
-    var xMidiEnable = false
-    var yMidiEnable = false
-    var zMidiEnable = false
+    public var rootMidiEnable = false
+    public var xMidiEnable = false
+    public var yMidiEnable = false
+    public var zMidiEnable = false
 
     // midi notes on?
     var rootMidiIsPlaying = false
@@ -85,29 +85,31 @@ class Midi{
     // always occupying channel 1 and shifting what X/Y/Z sit on depending on nothing (their
     // own channels were always fixed either way, but always one slot later than they needed
     // to be).
-    var xMidiChannel = 1
-    var yMidiChannel = 2
-    var zMidiChannel = 3
-    var rootMidiChannel = 4
+    public var xMidiChannel = 1
+    public var yMidiChannel = 2
+    public var zMidiChannel = 3
+    public var rootMidiChannel = 4
 
     // midi MPE channels - same X/Y/Z-first, drone-last ordering as above.
     // MPE channel 1 is master channel for zone
-    var xMidiMPEChannel = 2
-    var yMidiMPEChannel = 3
-    var zMidiMPEChannel = 4
-    var rootMidiMPEChannel = 5
+    public var xMidiMPEChannel = 2
+    public var yMidiMPEChannel = 3
+    public var zMidiMPEChannel = 4
+    public var rootMidiMPEChannel = 5
 
     // list of possible midi notes
     var noteList = NoteList()
 
     // possible midi destinations
-    struct midiEndpoint{
+    public struct midiEndpoint{
         var midiEndpoint: MIDIEndpointRef = 0
         var index: Int = 0
-        var name: String = ""
+        public var name: String = ""
     }
 
-    func initMidi(){
+    public init() {}
+
+    public func initMidi(){
         MIDIClientCreate("Glass Bead Game" as CFString, nil, nil, &midiClient);
         MIDIOutputPortCreate(midiClient, "Glass Bead Game" as CFString, &outPort);
         initMidiSources()
@@ -117,7 +119,7 @@ class Midi{
         }
     }
 
-    func setMidiDestination(destination: Int){
+    public func setMidiDestination(destination: Int){
         destNum = destination
         if useMPE {
             enableMPE()
@@ -183,7 +185,7 @@ class Midi{
         }
     }
 
-    func startMidi(){
+    public func startMidi(){
         // note values and pitchbend have already been stored in shared variables
         if midiTrace {print("\nMidi: startMidi: useMPE = \(useMPE), rootMidiNote = \(rootMidiNote), xMidiNote = \(xMidiNote), yMidiNote = \(yMidiNote), rootMidiFrequency = \(rootMidiFrequency)")}
         if useMPE{
@@ -255,7 +257,7 @@ class Midi{
         }
     }
 
-    func stopMidi(){
+    public func stopMidi(){
         if midiTrace {print("\nMidi: stopMidi: useMPE = \(useMPE), rootMidiNote = \(rootMidiNote), xMidiNote = \(xMidiNote), yMidiNote = \(yMidiNote)")}
         rootMidiIsPlaying = false
         xMidiIsPlaying = false
@@ -290,7 +292,7 @@ class Midi{
         }
     }
 
-    func setMidiReferencePitch(frequency: Double){
+    public func setMidiReferencePitch(frequency: Double){
         referenceFrequency = frequency
         rootMidiFrequency = referenceFrequency
         if midiTrace { print("Midi: SetMidiReferencePitch: frequency = \(referenceFrequency)")}
@@ -301,7 +303,7 @@ class Midi{
         if midiTrace { print("Midi: SetRootPitch: frequency = \(rootMidiFrequency)")}
     }
 
-    func setMidiXPitch(frequency: Double){
+    public func setMidiXPitch(frequency: Double){
         xMidiFrequency = frequency
         if xMidiIsPlaying{
             if useMPE{
@@ -317,7 +319,7 @@ class Midi{
         if midiTrace { print("Midi: SetXMidiPitch: frequency = \(xMidiFrequency)")}
     }
 
-    func setMidiYPitch(frequency: Double){
+    public func setMidiYPitch(frequency: Double){
         yMidiFrequency = frequency
         if yMidiIsPlaying{
             if useMPE{
@@ -332,7 +334,7 @@ class Midi{
         if midiTrace { print("Midi: SetYMidiPitch: frequency = \(yMidiFrequency)")}
     }
 
-    func setMidiZPitch(frequency: Double){
+    public func setMidiZPitch(frequency: Double){
         zMidiFrequency = frequency
         if zMidiIsPlaying{
             if useMPE{
@@ -347,20 +349,20 @@ class Midi{
         if midiTrace { print("Midi: SetZMidiPitch: frequency = \(zMidiFrequency)")}
     }
 
-    func setMidiPitchBendRange(pitchBendRange: Int){
+    public func setMidiPitchBendRange(pitchBendRange: Int){
         // parameter shares a name with the property it sets, so `self.` disambiguates
         self.pitchBendRange = pitchBendRange
         //print("\nMidi: SetMidiPitchBendRange: Range = \(pitchBendRange)")
         sendPitchBendSensitivity()
     }
 
-    func setMidiPitchBendRangeMPE(pitchBendRange: Int){
+    public func setMidiPitchBendRangeMPE(pitchBendRange: Int){
         pitchBendRangeMPE = pitchBendRange
         //print("\nMidi: SetMidiPitchBendRangeMPE: Range = \(pitchBendRangeMPE)")
         sendPitchBendSensitivity()
     }
 
-    func useMPE(useMpe:Bool){
+    public func useMPE(useMpe:Bool){
         useMPE = useMpe
         if useMPE {
             enableMPE()
@@ -371,7 +373,7 @@ class Midi{
         sendPitchBendSensitivity()
     }
 
-    func setRootNote(note: Int){
+    public func setRootNote(note: Int){
         rootMidiNote = note
     }
 
@@ -381,7 +383,7 @@ class Midi{
     private var preTuneYEnable = false
     private var preTuneZEnable = false
 
-    func tuneStart(){
+    public func tuneStart(){
         // Tuning is a deliberate, explicit action independent of whatever's currently
         // touched - it should always sound all four voices, unlike startMidi()'s normal
         // callers which rely on rootMidiEnable/xMidiEnable/yMidiEnable/zMidiEnable already
@@ -406,7 +408,7 @@ class Midi{
         startMidi()
     }
 
-    func tuneStop(){
+    public func tuneStop(){
         if midiTrace {print("Midi: tuneStop")}
         stopMidi()
         rootMidiEnable = preTuneRootEnable
@@ -435,7 +437,7 @@ class Midi{
     /// (simpler and more robust than trying to glide root's pitch live, which nothing else in
     /// this class currently supports), a small, acceptable click for a calibration tool no one
     /// is performing with.
-    func verifyRangeSet(ratio: Double){
+    public func verifyRangeSet(ratio: Double){
         if verifyRangeActive {
             stopMidi()
         } else {
@@ -458,7 +460,7 @@ class Midi{
         startMidi()
     }
 
-    func verifyRangeStop(){
+    public func verifyRangeStop(){
         guard verifyRangeActive else { return }
         if midiTrace {print("Midi: verifyRangeStop")}
         stopMidi()

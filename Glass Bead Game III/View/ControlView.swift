@@ -7,6 +7,7 @@
 
 import SwiftUI
 import GBGCore
+import GBGSound
 
 struct ControlView: View {
     @ObservedObject var settings: AppSettings

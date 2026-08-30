@@ -9,6 +9,7 @@
 
 import Foundation
 import GBGCore
+import GBGSound
 
 class Sound {
     var midi = Midi()

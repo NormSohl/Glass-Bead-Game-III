@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		6CD18EB7875F4D6D83FA672A /* GBGCore in Frameworks */ = {isa = PBXBuildFile; productRef = 04B162C5595040048C6852EF /* GBGCore */; };
+		C3D4E5F60718293A4B5C6D7E /* GBGSound in Frameworks */ = {isa = PBXBuildFile; productRef = B2C3D4E5F60718293A4B5C6D /* GBGSound */; };
 		4D9981F43229467D80A3D2BF /* PitchHitTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A8E917E593A42A893FBEA9C /* PitchHitTest.swift */; };
 		A38475822A7D41D583CA3B43 /* ZSliderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 792C3694A73A41E196B16CA2 /* ZSliderView.swift */; };
 		0634BD102B8A8912001E3644 /* TickView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0634BD0F2B8A8912001E3644 /* TickView.swift */; };
@@ -22,13 +23,7 @@
 		06824C022B886963002E9661 /* ControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BFB2B886963002E9661 /* ControlView.swift */; };
 		06D0626C2BAA9A9000C68262 /* ControlData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062682BAA9A9000C68262 /* ControlData.swift */; };
 		06D062702BAA9C4E00C68262 /* Sound.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D0626F2BAA9C4E00C68262 /* Sound.swift */; };
-		06D062722BAA9D5500C68262 /* MIDI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062712BAA9D5500C68262 /* MIDI.swift */; };
-		06D062762BAA9DDB00C68262 /* Audio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062752BAA9DDB00C68262 /* Audio.swift */; };
-		06D062782BAA9EBA00C68262 /* Triad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062772BAA9EBA00C68262 /* Triad.swift */; };
-		06D0627A2BAA9F0600C68262 /* Tone.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062792BAA9F0600C68262 /* Tone.swift */; };
-		06D0627C2BAA9F3D00C68262 /* Waveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D0627B2BAA9F3D00C68262 /* Waveform.swift */; };
 		EE645A5026D54B47871B55B4 /* ScoreCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290A597C9AA1404D82BB59FA /* ScoreCapture.swift */; };
-		F361DB7B65D04809AFF4A4EC /* ScorePlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59AED3FE64FB46FAA5A9A25F /* ScorePlayer.swift */; };
 		8CFA26E61CFF41F3AE63BE38 /* TetradView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6DF75EF1C024FBCA782C7AE /* TetradView.swift */; };
 		3CA7A56CF9D14019BD27A538 /* SequencerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61F25530CB8543C38246A5E0 /* SequencerState.swift */; };
 		77FF969EFCF34B57B50DAE47 /* SequencerCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F52D7FAD54F4E1C89615DE3 /* SequencerCapture.swift */; };
@@ -56,7 +51,6 @@
 		06824BFB2B886963002E9661 /* ControlView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControlView.swift; sourceTree = "<group>"; };
 		06D062312BAA953300C68262 /* Overview.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Overview.md; sourceTree = "<group>"; };
 		290A597C9AA1404D82BB59FA /* ScoreCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreCapture.swift; sourceTree = "<group>"; };
-		59AED3FE64FB46FAA5A9A25F /* ScorePlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScorePlayer.swift; sourceTree = "<group>"; };
 		61F25530CB8543C38246A5E0 /* SequencerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequencerState.swift; sourceTree = "<group>"; };
 		6F52D7FAD54F4E1C89615DE3 /* SequencerCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequencerCapture.swift; sourceTree = "<group>"; };
 		3B0221ED3F7B43F7B53A7EED /* PianoRollCoordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PianoRollCoordinates.swift; sourceTree = "<group>"; };
@@ -66,11 +60,6 @@
 		0C57554EBB6D407B81C07AAF /* RootIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootIndicatorView.swift; sourceTree = "<group>"; };
 		06D062682BAA9A9000C68262 /* ControlData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControlData.swift; sourceTree = "<group>"; };
 		06D0626F2BAA9C4E00C68262 /* Sound.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sound.swift; sourceTree = "<group>"; };
-		06D062712BAA9D5500C68262 /* MIDI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MIDI.swift; sourceTree = "<group>"; };
-		06D062752BAA9DDB00C68262 /* Audio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Audio.swift; sourceTree = "<group>"; };
-		06D062772BAA9EBA00C68262 /* Triad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Triad.swift; sourceTree = "<group>"; };
-		06D062792BAA9F0600C68262 /* Tone.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tone.swift; sourceTree = "<group>"; };
-		06D0627B2BAA9F3D00C68262 /* Waveform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Waveform.swift; sourceTree = "<group>"; };
 		D6DF75EF1C024FBCA782C7AE /* TetradView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TetradView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -80,6 +69,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6CD18EB7875F4D6D83FA672A /* GBGCore in Frameworks */,
+				C3D4E5F60718293A4B5C6D7E /* GBGSound in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -159,7 +149,6 @@
 			isa = PBXGroup;
 			children = (
 				06D0626F2BAA9C4E00C68262 /* Sound.swift */,
-				06D0623D2BAA955100C68262 /* MIDI */,
 				06D062242BAA952900C68262 /* Audio */,
 			);
 			name = Sound;
@@ -169,10 +158,6 @@
 		06D062242BAA952900C68262 /* Audio */ = {
 			isa = PBXGroup;
 			children = (
-				06D062752BAA9DDB00C68262 /* Audio.swift */,
-				06D062772BAA9EBA00C68262 /* Triad.swift */,
-				06D062792BAA9F0600C68262 /* Tone.swift */,
-				06D0627B2BAA9F3D00C68262 /* Waveform.swift */,
 				06D0622C2BAA953300C68262 /* Score */,
 			);
 			name = Audio;
@@ -184,20 +169,10 @@
 			children = (
 				06D062312BAA953300C68262 /* Overview.md */,
 				290A597C9AA1404D82BB59FA /* ScoreCapture.swift */,
-				59AED3FE64FB46FAA5A9A25F /* ScorePlayer.swift */,
 				6F52D7FAD54F4E1C89615DE3 /* SequencerCapture.swift */,
 			);
 			path = Score;
 			sourceTree = "<group>";
-		};
-		06D0623D2BAA955100C68262 /* MIDI */ = {
-			isa = PBXGroup;
-			children = (
-				06D062712BAA9D5500C68262 /* MIDI.swift */,
-			);
-			name = MIDI;
-			path = "Glass Bead Game III/Sound/MIDI";
-			sourceTree = SOURCE_ROOT;
 		};
 		06D0626B2BAA9A9000C68262 /* Data */ = {
 			isa = PBXGroup;
@@ -215,12 +190,20 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = GBGCore;
 		};
+		A1B2C3D4E5F60718293A4B5C /* XCLocalSwiftPackageReference "GBGSound" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = GBGSound;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		04B162C5595040048C6852EF /* GBGCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = GBGCore;
+		};
+		B2C3D4E5F60718293A4B5C6D /* GBGSound */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = GBGSound;
 		};
 /* End XCSwiftPackageProductDependency section */
 
@@ -240,6 +223,7 @@
 			name = "Glass Bead Game III";
 			packageProductDependencies = (
 				04B162C5595040048C6852EF /* GBGCore */,
+				B2C3D4E5F60718293A4B5C6D /* GBGSound */,
 			);
 			productName = "Glass Bead Game III";
 			productReference = 06824BDA2B881E3C002E9661 /* Glass Bead Game III.app */;
@@ -271,6 +255,7 @@
 			mainGroup = 06824BD12B881E3C002E9661;
 			packageReferences = (
 				10D44CB7B2FC4126835AF8A6 /* XCLocalSwiftPackageReference "GBGCore" */,
+				A1B2C3D4E5F60718293A4B5C /* XCLocalSwiftPackageReference "GBGSound" */,
 			);
 			productRefGroup = 06824BDB2B881E3C002E9661 /* Products */;
 			projectDirPath = "";
@@ -305,19 +290,13 @@
 				06824BFE2B886963002E9661 /* HitTestView.swift in Sources */,
 				06D062702BAA9C4E00C68262 /* Sound.swift in Sources */,
 				06824BFC2B886963002E9661 /* DissonanceView.swift in Sources */,
-				06D0627A2BAA9F0600C68262 /* Tone.swift in Sources */,
 				06824C022B886963002E9661 /* ControlView.swift in Sources */,
-				06D062782BAA9EBA00C68262 /* Triad.swift in Sources */,
 				06824C012B886963002E9661 /* GraphView.swift in Sources */,
-				06D0627C2BAA9F3D00C68262 /* Waveform.swift in Sources */,
 				0634BD102B8A8912001E3644 /* TickView.swift in Sources */,
 				4D9981F43229467D80A3D2BF /* PitchHitTest.swift in Sources */,
 				A38475822A7D41D583CA3B43 /* ZSliderView.swift in Sources */,
-				06D062722BAA9D5500C68262 /* MIDI.swift in Sources */,
-				06D062762BAA9DDB00C68262 /* Audio.swift in Sources */,
 				8CFA26E61CFF41F3AE63BE38 /* TetradView.swift in Sources */,
 				EE645A5026D54B47871B55B4 /* ScoreCapture.swift in Sources */,
-				F361DB7B65D04809AFF4A4EC /* ScorePlayer.swift in Sources */,
 				3CA7A56CF9D14019BD27A538 /* SequencerState.swift in Sources */,
 				77FF969EFCF34B57B50DAE47 /* SequencerCapture.swift in Sources */,
 				A5DA1C17ECB64112B8862FCB /* PianoRollCoordinates.swift in Sources */,

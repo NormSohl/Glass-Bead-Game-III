@@ -7,6 +7,7 @@
 
 import SwiftUI
 import GBGCore
+import GBGSound
 
 struct ContentView: View {
     @StateObject private var settings = AppSettings()

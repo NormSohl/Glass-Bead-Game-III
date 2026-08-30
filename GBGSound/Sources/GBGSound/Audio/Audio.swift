@@ -8,10 +8,10 @@
 import Foundation
 import AVFoundation
 
-class Audio {
+public class Audio {
     // manage debug audio trace
     let audioTrace = false
-    
+
     // AV components
     let engine: AVAudioEngine
     let mainMixer: AVAudioMixerNode
@@ -19,20 +19,20 @@ class Audio {
     let outputFormat: AVAudioFormat
     let inputFormat: AVAudioFormat
     let echo = AVAudioUnitDelay()
-    
-    var triad = Triad()
+
+    public var triad = Triad()
 
     // Set once the sequencer exists (SequencerState.init) - advanced one sample at a time from
     // inside the render callback below, ahead of reading triad.getTriadValue(), so score
     // playback pushes its own pitch/amplitude into the same triad live touch already drives.
     // nil (the default, before any sequencer exists, and always true when the sequencer panel
     // has never been opened) makes the callback behave exactly as it always has.
-    var scorePlayer: ScorePlayer?
+    public var scorePlayer: ScorePlayer?
 
     // variables for synthesis of signal
-    var sampleRate: Double
-    
-    init(){
+    public var sampleRate: Double
+
+    public init(){
         if audioTrace {print("Audio init")}
         // create the nodes for the audio chain
         engine = AVAudioEngine()
@@ -102,14 +102,14 @@ class Audio {
             if audioTrace { print("Audio: stopEngine")}
     }
     
-    func startAudio(amp: Float){
+    public func startAudio(amp: Float){
         if self.mainMixer.outputVolume == 0 {
             self.mainMixer.outputVolume = amp
             if audioTrace { print("Audio: startAudio: mainMixer.outputVolume = \(mainMixer.outputVolume)")}
         }
     }
-    
-    func stopAudio(){
+
+    public func stopAudio(){
         self.mainMixer.outputVolume = 0.0
             if audioTrace {print("Audio: stopAudio: mainMixer.outputVolume = \(mainMixer.outputVolume)")}
     }
