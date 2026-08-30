@@ -131,8 +131,16 @@ struct ZSliderView: View {
                         graphSize: size.height,
                         rootFrequency: settings.rootFrequency,
                         snapped: settings.snap)
-                    settings.zFrequency = hit.frequency
-                    sound.setZPitch(frequency: hit.frequency)
+                    // hit.frequency is a pure function of hoverLocation/rootFrequency/snap, so
+                    // it only actually differs from settings.zFrequency when one of those truly
+                    // changed since the last render - guards against resending the exact same Z
+                    // pitch (to both the synth and any live MIDI destination) on every unrelated
+                    // view update this Canvas happens to re-run for. Same bug, same fix, as
+                    // HitTestView's X/Y.
+                    if hit.frequency != settings.zFrequency {
+                        settings.zFrequency = hit.frequency
+                        sound.setZPitch(frequency: hit.frequency)
+                    }
                     // hit.crosshair is in the same bottom-up convention as X/Y; flip back to draw
                     markerY = size.height - hit.crosshair
                 }

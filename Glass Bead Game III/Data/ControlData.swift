@@ -56,7 +56,6 @@ class AppSettings: ObservableObject{
     @Published var useMIDI: Bool = true
     @Published var useMIDI_MPE: Bool = true
     @Published var tuneMidi: Bool = false
-    @Published var test: Bool = false
     @Published var selectedGraphShape: GraphShape = .square
 
     // Sequencer panel visibility, and which X/Y/Z axes it's currently driving instead of touch

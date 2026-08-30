@@ -176,36 +176,7 @@ struct ControlView: View {
                     Text(details)
                 }
                 .disabled(!settings.useMIDI)
-                
-                let details2 = "Midi test sent" //to the \(sound.midi.midiDestinations[settings.destinationIndex].name)"
-                
-                Button("Test"){
-                    if settings.test == false{
-                        sound.midi.test(enable: true)
-                        settings.test = true
-                    }
-                    else {
-                        sound.midi.test(enable: false)
-                        settings.test = false
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .alert(
-                    "Testing",
-                    isPresented: $settings.test,
-                    presenting: details2
-                ) { details2 in
-                    Button(role: .cancel) {
-                        sound.midi.test(enable: false )
-                    } label: {
-                        Text("Stop")
-                    }
-                    
-                } message:{ details2 in
-                    Text(details2)
-                }
-                .disabled(!settings.useMIDI)
-                
+
                 Spacer()
             }.padding([.leading,.trailing,.top], 20)
             }

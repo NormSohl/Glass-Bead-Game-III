@@ -345,25 +345,6 @@ class Midi{
         setMidiRootPitch(frequency: referenceFrequency)
     }
 
-    func test(enable: Bool){
-        // send a glissando for entire pitchbend range
-        let channel:Int = 2
-        let note:Int = 0x3C
-        let velocity:Int = 100
-        if enable {
-            sendMidiNoteOn(channel: channel,
-                           note: note,
-                           velocity: velocity)
-
-            for i in 0 ... 16383 {
-                sendMidiPitchBend(channel: channel, value: i)
-            }
-        }
-        else{
-            sendMidiNoteOff(channel: channel, note: note)
-        }
-    }
-
     private func initMidiSources(){
         let numSources = MIDIGetNumberOfSources()
 

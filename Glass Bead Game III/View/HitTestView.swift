@@ -45,8 +45,18 @@ struct HitTestView: View {
                 crosshairPoint.x = scale.convertScaleValueToScreenUnits(normalizedValue: xNormalized, screenSize: size.width)
             } else {
                 let xHit = pitchHitTest(scale: scale, screenLocation: hoverLocation.x, graphSize: size.width, rootFrequency: rootFrequency, snapped: snapped)
-                sound.setXPitch(frequency: xHit.frequency)
-                settings.xFrequency = xHit.frequency
+                // xHit.frequency is a pure function of hoverLocation/rootFrequency/snapped, so
+                // it's only actually different from settings.xFrequency when one of those truly
+                // changed since the last render - guards against resending the exact same pitch
+                // (to both the synth and, critically, any live MIDI destination) on every
+                // unrelated view update this Canvas happens to re-run for, e.g. any other
+                // settings change while a voice is already playing. Norm found this via a MIDI
+                // capture: X/Y pitch bend kept re-arriving on a fixed stale value continuously
+                // while nothing was actually being touched.
+                if xHit.frequency != settings.xFrequency {
+                    sound.setXPitch(frequency: xHit.frequency)
+                    settings.xFrequency = xHit.frequency
+                }
                 crosshairPoint.x = xHit.crosshair
             }
 
@@ -57,8 +67,10 @@ struct HitTestView: View {
                 yCrosshair = scale.convertScaleValueToScreenUnits(normalizedValue: yNormalized, screenSize: size.height)
             } else {
                 let yHit = pitchHitTest(scale: scale, screenLocation: hoverLocation.y, graphSize: size.height, rootFrequency: rootFrequency, snapped: snapped)
-                sound.setYPitch(frequency: yHit.frequency)
-                settings.yFrequency = yHit.frequency
+                if yHit.frequency != settings.yFrequency {
+                    sound.setYPitch(frequency: yHit.frequency)
+                    settings.yFrequency = yHit.frequency
+                }
                 yCrosshair = yHit.crosshair
             }
 
