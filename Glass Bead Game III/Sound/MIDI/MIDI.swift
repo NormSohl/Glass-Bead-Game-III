@@ -56,11 +56,21 @@ class Midi{
     var midiDestinations:[midiEndpoint] = []
     private var destNum = 0
 
-    // midi enable channels
-    var rootMidiEnable = true
-    var xMidiEnable = true
-    var yMidiEnable = true
-    var zMidiEnable = true
+    // midi enable channels - false until each one's own zone has actually been touched at
+    // least once (Sound.apply{Graph,Z}VoiceEnables/applyDroneVoiceEnable set the real value
+    // from then on, but only ever run in response to that zone's own touch begin/end - see
+    // Sound.swift's zone-isolation comments). Defaulting true left the untouched zones enabled
+    // until their first touch: any startMidi() call before the Z-slider had ever been touched
+    // this session, e.g. a plain graph touch, sent a Z note-on too, at whatever garbage pitch
+    // zMidiFrequency/zMidiNote happened to default to. Norm remembered defaulting true as
+    // possibly intentional (guarding against hung notes from a previous session) but agreed
+    // it isn't needed - stopMidi's note-off sweep already unconditionally covers channels 1-4
+    // (or 2-5 in MPE) regardless of these flags, so hung-note cleanup was never what this
+    // default was doing.
+    var rootMidiEnable = false
+    var xMidiEnable = false
+    var yMidiEnable = false
+    var zMidiEnable = false
 
     // midi notes on?
     var rootMidiIsPlaying = false
