@@ -93,12 +93,18 @@ public struct SeqDocument: Codable {
     public let xPart: PartDTO
     public let yPart: PartDTO
     public let zPart: PartDTO
+    // Metadata only, from a live recording's onset times (see TempoDetection.swift) - nil for a
+    // document with no detected tempo (never recorded, or recorded but unmetered/melismatic,
+    // which is the expected result for that material, not a gap). Never drives note placement;
+    // future UI (grid display, opt-in snap-on-drag) is the only consumer.
+    public let tempoInfo: TempoInfo?
 
-    public init(dronePart: Part, xPart: Part, yPart: Part, zPart: Part) {
+    public init(dronePart: Part, xPart: Part, yPart: Part, zPart: Part, tempoInfo: TempoInfo? = nil) {
         self.dronePart = PartDTO(part: dronePart)
         self.xPart = PartDTO(part: xPart)
         self.yPart = PartDTO(part: yPart)
         self.zPart = PartDTO(part: zPart)
+        self.tempoInfo = tempoInfo
     }
 
     /// Applies this document onto Seq's own existing Part instances (SequencerState's
