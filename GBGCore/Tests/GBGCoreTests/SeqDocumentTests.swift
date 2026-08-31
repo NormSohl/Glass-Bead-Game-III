@@ -113,4 +113,121 @@ final class SeqDocumentTests: XCTestCase {
         XCTAssertEqual(part.notes[0].endTime, 50)
         XCTAssertEqual(part.notes[0].startFrequency, 220)
     }
+
+    // MARK: - centsOffset: defaults to 0, doesn't perturb the five existing transitions
+
+    func testCentsOffsetDefaultsToZeroForEveryExistingTransition() {
+        let transitions: [Transition] = [TransFlat(), TransLinear(), TransEaseIn(), TransEaseOut(), TransEaseInEaseOut()]
+        for transition in transitions {
+            for t in stride(from: 0.0, through: 1.0, by: 0.25) {
+                XCTAssertEqual(transition.centsOffset(percentComplete: t), 0)
+            }
+        }
+    }
+
+    func testExistingTransitionsFrequencyUnaffectedByCentsOffsetAddition() {
+        // Note.getCurrentFrequency's new centsOffset term must be provably inert for every
+        // transition that existed before this change - guards against a regression in the
+        // shared formula, not just in centsOffset's own default.
+        let part = Part(name: "test")
+        let note = part.insertNote(startTime: 0, endTime: 100, startFrequency: 220, endFrequency: 440, amplitude: 1, transition: TransLinear())
+        XCTAssertEqual(note.getCurrentFrequency(percentComplete: 0.5), 330, accuracy: 0.0001)
+    }
+
+    // MARK: - TransRecordedContour
+
+    func testRecordedContourInterpolatesLinearlyBetweenSamples() {
+        let transition = TransRecordedContour(samples: [0, 100, 0])
+        XCTAssertEqual(transition.centsOffset(percentComplete: 0), 0, accuracy: 0.0001)
+        XCTAssertEqual(transition.centsOffset(percentComplete: 0.5), 100, accuracy: 0.0001)
+        XCTAssertEqual(transition.centsOffset(percentComplete: 1.0), 0, accuracy: 0.0001)
+        XCTAssertEqual(transition.centsOffset(percentComplete: 0.25), 50, accuracy: 0.0001)
+    }
+
+    func testRecordedContourWithNoSamplesIsInert() {
+        let transition = TransRecordedContour(samples: [])
+        XCTAssertEqual(transition.centsOffset(percentComplete: 0.5), 0)
+    }
+
+    func testRecordedContourGlidesLinearlyWhenStartAndEndDiffer() {
+        // A deliberate portamento kept as one note (startFrequency != endFrequency) rather
+        // than split - the contour's own `interpolate` must still produce a genuine glide, per
+        // the "deviation from the normal path" design, not just when start == end.
+        let part = Part(name: "test")
+        let note = part.insertNote(
+            startTime: 0, endTime: 100, startFrequency: 220, endFrequency: 440, amplitude: 1,
+            transition: TransRecordedContour(samples: [0, 0, 0]))
+        XCTAssertEqual(note.getCurrentFrequency(percentComplete: 0.5), 330, accuracy: 0.0001)
+    }
+
+    func testRecordedContourAppliesDeviationOnTopOfAStaticPitch() {
+        // The ordinary recorded-touch case: startFrequency == endFrequency, so the linear base
+        // is a constant and the deviation is the whole recorded shape.
+        let part = Part(name: "test")
+        let note = part.insertNote(
+            startTime: 0, endTime: 100, startFrequency: 440, endFrequency: 440, amplitude: 1,
+            transition: TransRecordedContour(samples: [0, 1200, 0])) // dips a full octave up at the midpoint
+        XCTAssertEqual(note.getCurrentFrequency(percentComplete: 0), 440, accuracy: 0.0001)
+        XCTAssertEqual(note.getCurrentFrequency(percentComplete: 0.5), 880, accuracy: 0.0001)
+        XCTAssertEqual(note.getCurrentFrequency(percentComplete: 1.0), 440, accuracy: 0.0001)
+    }
+
+    // MARK: - Part.insertRecordedNote: the two-part coupling helper
+
+    func testInsertRecordedNoteSetsBothTheActiveTransitionAndThePersistentBuffer() {
+        let part = Part(name: "test")
+        let samples = [0.0, 10, -10, 0]
+        let note = part.insertRecordedNote(startTime: 0, endTime: 100, startFrequency: 440, endFrequency: 440, amplitude: 1, recordedPitchBend: samples)
+
+        XCTAssertEqual(note.transitionKind, .recordedContour)
+        XCTAssertEqual(note.recordedPitchBend, samples)
+        XCTAssertEqual(note.getCurrentFrequency(percentComplete: 1.0 / 3.0), 440 * pow(2, 10.0 / 1200), accuracy: 0.01)
+    }
+
+    // MARK: - recordedPitchBend: independent of the active transition, survives persistence
+
+    func testRecordedPitchBendSurvivesJSONRoundTripIndependentlyOfActiveTransitionKind() throws {
+        let part = Part(name: "x")
+        let note = part.insertNote(
+            startTime: 0, endTime: 1000, startFrequency: 440, endFrequency: 440, amplitude: 1,
+            transition: TransLinear()) // active transition is .linear, NOT .recordedContour
+        note.recordedPitchBend = [0, 50, -50, 0] // but a recorded buffer is still attached
+
+        let dronePart = Part(name: "drone")
+        let yPart = Part(name: "y")
+        let zPart = Part(name: "z")
+        let original = SeqDocument(dronePart: dronePart, xPart: part, yPart: yPart, zPart: zPart)
+
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(SeqDocument.self, from: data)
+
+        let loadedX = Part(name: "x")
+        decoded.apply(toDronePart: Part(name: "drone"), xPart: loadedX, yPart: Part(name: "y"), zPart: Part(name: "z"))
+
+        XCTAssertEqual(loadedX.notes.count, 1)
+        XCTAssertEqual(loadedX.notes[0].transitionKind, .linear)
+        XCTAssertEqual(loadedX.notes[0].recordedPitchBend, [0, 50, -50, 0])
+    }
+
+    func testRecordedContourNoteRoundTripsAndPlaysBackIdenticallyAfterReload() throws {
+        let part = Part(name: "x")
+        let samples = [0.0, 30, -30, 0]
+        part.insertRecordedNote(
+            startTime: 0, endTime: 1000, startFrequency: 440, endFrequency: 440, amplitude: 1,
+            recordedPitchBend: samples)
+
+        let original = SeqDocument(dronePart: Part(name: "drone"), xPart: part, yPart: Part(name: "y"), zPart: Part(name: "z"))
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(SeqDocument.self, from: data)
+
+        let loadedX = Part(name: "x")
+        decoded.apply(toDronePart: Part(name: "drone"), xPart: loadedX, yPart: Part(name: "y"), zPart: Part(name: "z"))
+
+        XCTAssertEqual(loadedX.notes.count, 1)
+        XCTAssertEqual(loadedX.notes[0].transitionKind, .recordedContour)
+        XCTAssertEqual(loadedX.notes[0].recordedPitchBend, [0, 30, -30, 0])
+        // The reconstructed transition must actually be a working TransRecordedContour, not
+        // just tagged as one - confirm playback reproduces the original curve.
+        XCTAssertEqual(loadedX.notes[0].getCurrentFrequency(percentComplete: 1.0 / 3.0), 440 * pow(2, 30.0 / 1200), accuracy: 0.01)
+    }
 }

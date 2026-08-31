@@ -20,8 +20,12 @@ public struct NoteDTO: Codable {
     public let amplitude: Double
     public let transitionKind: TransitionKind
     public let envelopeKind: EnvelopeKind
+    // Independent of transitionKind above - the persistent recorded buffer survives a switch
+    // to a different active transition, so this can be populated even when transitionKind
+    // isn't .recordedContour (see Note.recordedPitchBend's own doc comment for why).
+    public let recordedPitchBend: [Double]?
 
-    public init(startTime: Int, endTime: Int, startFrequency: Double, endFrequency: Double, amplitude: Double, transitionKind: TransitionKind, envelopeKind: EnvelopeKind) {
+    public init(startTime: Int, endTime: Int, startFrequency: Double, endFrequency: Double, amplitude: Double, transitionKind: TransitionKind, envelopeKind: EnvelopeKind, recordedPitchBend: [Double]? = nil) {
         self.startTime = startTime
         self.endTime = endTime
         self.startFrequency = startFrequency
@@ -29,6 +33,7 @@ public struct NoteDTO: Codable {
         self.amplitude = amplitude
         self.transitionKind = transitionKind
         self.envelopeKind = envelopeKind
+        self.recordedPitchBend = recordedPitchBend
     }
 
     init(note: Note) {
@@ -39,6 +44,7 @@ public struct NoteDTO: Codable {
         self.amplitude = note.amplitude
         self.transitionKind = note.transitionKind
         self.envelopeKind = note.envelopeKind
+        self.recordedPitchBend = note.recordedPitchBend
     }
 }
 
@@ -60,12 +66,24 @@ public struct PartDTO: Codable {
     func apply(to part: Part) {
         part.notes.removeAll()
         for noteDTO in notes {
-            part.insertNote(
+            // .recordedContour needs the real sample data, which TransitionKind.makeTransition()
+            // can't supply on its own (see its own doc comment) - construct it directly from
+            // this note's buffer when that's the active kind.
+            let transition: Transition
+            if noteDTO.transitionKind == .recordedContour, let buffer = noteDTO.recordedPitchBend {
+                transition = TransRecordedContour(samples: buffer)
+            } else {
+                transition = noteDTO.transitionKind.makeTransition()
+            }
+            let newNote = part.insertNote(
                 startTime: noteDTO.startTime, endTime: noteDTO.endTime,
                 startFrequency: noteDTO.startFrequency, endFrequency: noteDTO.endFrequency,
                 amplitude: noteDTO.amplitude,
-                transition: noteDTO.transitionKind.makeTransition(),
+                transition: transition,
                 envelope: noteDTO.envelopeKind.makeEnvelope())
+            // Independent of which transition ended up active above - the buffer survives
+            // regardless (see NoteDTO.recordedPitchBend's own comment).
+            newNote.recordedPitchBend = noteDTO.recordedPitchBend
         }
     }
 }

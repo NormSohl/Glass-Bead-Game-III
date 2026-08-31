@@ -18,6 +18,15 @@ public class Note:HasLength{
     var envelope: Envelope = EnvFlat()
     var transition: Transition = TransFlat()
 
+    // The recorded pitch-bend buffer, if this note has one - independent of `transition`
+    // above, which only determines what's currently *played*. Set once when a recording is
+    // captured/segmented; untouched by later transition switches (the UI lets a note's
+    // transition be changed freely - via a picker on its own indicator in the piano roll -
+    // without discarding a recorded buffer just because something else is selected right now);
+    // cleared only by an explicit purge. Reselecting `.recordedContour` from that picker
+    // constructs a fresh TransRecordedContour from this same buffer.
+    public var recordedPitchBend: [Double]? = nil
+
     init (startTime:Int, endTime:Int, startFrequency:Double, endFrequency:Double, amplitude:Double){
         self.startTime = startTime // in samples from start of piece
         self.endTime = endTime  // in samples from start of piece
@@ -54,7 +63,10 @@ public class Note:HasLength{
     public func getCurrentFrequency (percentComplete:Double)->Double{
         //let location:Double = Double(endTime) / Double(startTime)
         let freqRange = endFrequency - startFrequency
-        return startFrequency + (freqRange * self.transition.interpolate(percentComplete:percentComplete))
+        let base = startFrequency + (freqRange * self.transition.interpolate(percentComplete:percentComplete))
+        let centsOffset = self.transition.centsOffset(percentComplete:percentComplete)
+        guard centsOffset != 0 else { return base }
+        return base * pow(2, centsOffset / 1200)
     }
 
     // percentComplete is a 0 to 1 value indicating chronological position in current note. 0 is start, 1 is finished

@@ -81,6 +81,29 @@ public class Part: HasLength {
         return newNote
     }
 
+    /// Convenience for inserting a note whose transition is a recorded pitch-bend contour -
+    /// couples the two things a caller has to set together (the active TransRecordedContour,
+    /// for playback, and Note.recordedPitchBend, the persistent buffer that survives switching
+    /// to a different transition and back - see that property's own doc comment) so callers
+    /// (live recording capture, segmentation) can't set one and forget the other, which
+    /// otherwise means the buffer silently doesn't survive a save/load round trip even though
+    /// the note plays correctly in the same session.
+    @discardableResult
+    public func insertRecordedNote(
+        startTime: Int, endTime: Int,
+        startFrequency: Double, endFrequency: Double,
+        amplitude: Double,
+        recordedPitchBend: [Double]
+    ) -> Note {
+        let note = insertNote(
+            startTime: startTime, endTime: endTime,
+            startFrequency: startFrequency, endFrequency: endFrequency,
+            amplitude: amplitude,
+            transition: TransRecordedContour(samples: recordedPitchBend))
+        note.recordedPitchBend = recordedPitchBend
+        return note
+    }
+
     /// Ripple-inserts a span of time at `at`, shifting every note starting at or after it
     /// forward by `duration`. Unlike insertNote, this never discards material: a note whose
     /// span straddles `at` is split into two surviving pieces first, continuous at the cut (the
