@@ -19,7 +19,8 @@ struct HitTestView: View {
     
     let scale: Scale
     @ObservedObject var settings: AppSettings
-    
+    @ObservedObject var recordingState: RecordingState
+
     @State private var hoverLocation: CGPoint = .zero
     //@State private var isHovering = false
     @State private var isDrag = false
@@ -125,6 +126,7 @@ struct HitTestView: View {
                 isShift = true
                 if isSound == false{
                     sound.beginGraphTouch(amp: 1)
+                    recordingState.beginGraphTouch()
                     isSound = true
                 }
             }
@@ -133,6 +135,7 @@ struct HitTestView: View {
                 isDrag = false
                 isShift = false
                 sound.endGraphTouch(pedal: settings.pedal)
+                recordingState.endGraphTouch()
                 if !settings.pedal {
                     isSound = false
                 }
@@ -156,6 +159,7 @@ struct HitTestView: View {
                     }
                     if isSound == false{
                         sound.beginGraphTouch(amp: 1)
+                        recordingState.beginGraphTouch()
                         isSound = true
                     }
                     if hitTestTrace {print("HitTestView: DragGesture .onChanged called. isDrag = \(isDrag), isShift = \(isShift), isSound = \(isSound)")}
@@ -166,6 +170,7 @@ struct HitTestView: View {
                     isShift = false
                     // if pedal is true, sound keeps going until the pedal itself is released
                     sound.endGraphTouch(pedal: settings.pedal)
+                    recordingState.endGraphTouch()
                     if !settings.pedal {
                         isSound = false
                     }

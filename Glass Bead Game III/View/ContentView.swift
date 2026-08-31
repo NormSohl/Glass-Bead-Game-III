@@ -12,6 +12,7 @@ import GBGSound
 struct ContentView: View {
     @StateObject private var settings = AppSettings()
     @StateObject private var sequencer: SequencerState
+    @StateObject private var recordingState: RecordingState
 
     // Scale/Diamonds/TetradLayers only depend on the scale's shape (limit, highest/lowest
     // ratio) - not on Z. They're cached here and recomputed only via onChange(of:
@@ -38,6 +39,7 @@ struct ContentView: View {
         let initialSettings = AppSettings()
         _settings = StateObject(wrappedValue: initialSettings)
         _sequencer = StateObject(wrappedValue: SequencerState(sampleRate: sound.audio.sampleRate, settings: initialSettings))
+        _recordingState = StateObject(wrappedValue: RecordingState(settings: initialSettings, sampleRateProvider: { sound.audio.sampleRate }))
         let initialScale = Scale(
             limit: limitMap[initialSettings.selectedLimit] ?? 1,
             highestRatio: initialSettings.highestRatio,
@@ -68,7 +70,8 @@ struct ContentView: View {
                         GraphView(scale: scale,
                                   diamonds: diamonds,
                                   tetradLayers: tetradLayers,
-                                  settings: settings
+                                  settings: settings,
+                                  recordingState: recordingState
                         )
                         .rotationEffect(.degrees(settings.viewRotation))
                         .animation(.easeIn, value: settings.viewRotation)
@@ -93,7 +96,7 @@ struct ContentView: View {
                     // rendered height (see graphSquareHeight above) rather than left to fill
                     // whatever the row's full height happens to be.
                     if settings.showTetrads {
-                        ZSliderView(scale: scale, settings: settings, graphSquareSize: graphSquareHeight)
+                        ZSliderView(scale: scale, settings: settings, graphSquareSize: graphSquareHeight, recordingState: recordingState)
                             .frame(width: 70, height: graphSquareHeight > 0 ? graphSquareHeight : nil)
                     }
                 }
@@ -197,7 +200,7 @@ struct ContentView: View {
                 }
                 .help("Settings - scale, tuning, MIDI, and view options")
                 .popover(isPresented: $settings.showSettings) {
-                    ControlView(settings: settings)
+                    ControlView(settings: settings, recordingState: recordingState)
                         .frame(minWidth: 340, idealWidth: 380, minHeight: 480, idealHeight: 650)
                 }
             }

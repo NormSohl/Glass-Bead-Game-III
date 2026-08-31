@@ -28,6 +28,7 @@ struct ZSliderView: View {
     // narrower canvas width. Norm: the diamonds should match the rest of the graph, in size as
     // well as color.
     let graphSquareSize: CGFloat
+    @ObservedObject var recordingState: RecordingState
 
     @State private var hoverLocation: CGPoint = .zero
     @State private var isSound = false
@@ -166,12 +167,14 @@ struct ZSliderView: View {
                         hoverLocation.y = zSliderHeight - hoverLocation.y
                         if isSound == false {
                             sound.beginZTouch(amp: 1)
+                            recordingState.beginZTouch()
                             isSound = true
                         }
                     }
                     .onEnded { _ in
                         settings.zDragActive = false
                         sound.endZTouch(pedal: settings.pedal)
+                        recordingState.endZTouch()
                         if !settings.pedal {
                             isSound = false
                         }

@@ -13,6 +13,7 @@ struct GraphView: View {
     let diamonds:Diamonds
     let tetradLayers: TetradLayers
     @ObservedObject var settings: AppSettings
+    @ObservedObject var recordingState: RecordingState
 
     var body: some View {
 
@@ -53,7 +54,7 @@ struct GraphView: View {
                                settings: settings,
                                showTetrads: settings.showTetrads && settings.showDiamonds)
 
-                    HitTestView(scale:scale, settings: settings)
+                    HitTestView(scale:scale, settings: settings, recordingState: recordingState)
                 }.border(.orange)
 
                 // right border

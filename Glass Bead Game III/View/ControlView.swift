@@ -6,12 +6,20 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 import GBGCore
 import GBGSound
 
 struct ControlView: View {
     @ObservedObject var settings: AppSettings
-    
+    @ObservedObject var recordingState: RecordingState
+
+    // Save (Step 3 of the live-record plan) - exportFile is populated right before isExporting
+    // is set true, since .fileExporter needs a real (non-nil) document at the moment it's asked
+    // to present. Mirrors Seq/TransportView.swift's own SeqDocumentFile pattern exactly.
+    @State private var isExporting = false
+    @State private var exportFile: GraphRecordingFile?
+
     var body: some View {
         ZStack{
             Color.black.ignoresSafeArea(.all)
@@ -74,6 +82,35 @@ struct ControlView: View {
                 Toggle("Note Z", isOn: $settings.playNoteZ)
                     .tint(tintcolor)
                     .foregroundStyle(.white)
+
+                Divider()
+
+                // Live recording capture (step 3 of the live-record plan) - arms/disarms
+                // continuous pitch-contour capture from graph touches (see RecordingState), and
+                // saves whatever's captured as a raw SeqDocument for Seq to later import and
+                // segment. Placed here alongside the other transport-adjacent controls rather
+                // than the main toolbar, matching where MIDI Destination/Verify Pitch Bend Range
+                // already live below.
+                Text("Live Recording").bold().foregroundStyle(.white)
+                HStack {
+                    Button {
+                        recordingState.toggleRecording()
+                    } label: {
+                        Label(recordingState.isRecording ? "Stop" : "Record", systemImage: recordingState.isRecording ? "stop.circle.fill" : "circle.fill")
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(recordingState.isRecording ? .red : tintcolor)
+
+                    Button {
+                        exportFile = GraphRecordingFile(document: recordingState.exportDocument())
+                        isExporting = true
+                    } label: {
+                        Label("Save", systemImage: "square.and.arrow.down")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(recordingState.isRecording || !recordingState.hasAnyNotes)
+                }
+                .foregroundStyle(.white)
 
                 Divider()
 #if os(iOS)
@@ -257,8 +294,12 @@ struct ControlView: View {
             }.padding([.leading,.trailing,.top], 20)
             }
         }
+        .fileExporter(isPresented: $isExporting, document: exportFile, contentType: .json, defaultFilename: "Live Recording") { _ in
+            // Nothing else to do either way - the document was already captured at the moment
+            // Save was pressed, so a cancelled/failed export just leaves recordingState as-is.
+        }
     }
-    
+
     func setView() {
         // square graph
         switch settings.selectedGraphShape {
@@ -283,6 +324,34 @@ struct ControlView: View {
             settings.viewOffsetY = -400 // Vertical offset, inverted. negative numbers to go up
             settings.contentMode = .fill
         }
+    }
+}
+
+/// Thin FileDocument wrapper around SeqDocument for .fileExporter, so Graph can save a live
+/// recording using the same JSON persistence Seq's own save/load already uses - mirrors
+/// Seq/TransportView.swift's SeqDocumentFile exactly (that one lives in the Seq target, which
+/// Graph doesn't depend on, so this is Graph's own copy of the same thin adapter rather than a
+/// shared one - SeqDocument itself, the real content, already lives in GBGCore and needs no
+/// duplication).
+struct GraphRecordingFile: FileDocument {
+    static var readableContentTypes: [UTType] { [.json] }
+
+    var document: SeqDocument
+
+    init(document: SeqDocument) {
+        self.document = document
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        guard let data = configuration.file.regularFileContents else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        document = try JSONDecoder().decode(SeqDocument.self, from: data)
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        let data = try JSONEncoder().encode(document)
+        return FileWrapper(regularFileWithContents: data)
     }
 }
 
