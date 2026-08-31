@@ -115,6 +115,14 @@ final class SequencerState: ObservableObject {
     // PianoRollView's Canvas redraws - Part/Note are plain classes with no Combine publishing.
     @Published var scoreRevision: Int = 0
 
+    // The currently loaded document's detected tempo (step 4 of the live-record plan) - set
+    // straight from whatever SeqDocument.loadDocument was last given (nil for a plain hand-built
+    // piece, a plain "Load As-Is" import, or a segmented import over unmetered/melismatic
+    // material - all three are the same "no confident grid" case to PianoRollView). Metadata
+    // only: never touches a Note's own startTime/endTime, just gates the optional bar-line
+    // overlay and its opt-in snap-on-drag.
+    @Published private(set) var tempoInfo: TempoInfo?
+
     @Published var draggingHandle: DraggingHandle?
 
     // Which voice "Add Note" places into, and whether the next canvas tap places a note instead
@@ -455,8 +463,54 @@ final class SequencerState: ObservableObject {
         if isPlaying { stop() }
         if isScrubbing { endScrub() }
         document.apply(toDronePart: dronePart, xPart: xPart, yPart: yPart, zPart: zPart)
+        tempoInfo = document.tempoInfo
         scoreRevision += 1
         playheadSample = 0
+    }
+
+    // MARK: - Import segmentation (Step 4)
+
+    /// Whether `document` looks like a raw, unsegmented live recording - any note across its
+    /// four parts still carrying an active `.recordedContour` transition - rather than a normal
+    /// hand-edited or already-segmented piece. Checked directly against the decoded DTOs (no
+    /// Part instantiation needed, since `NoteDTO.transitionKind` is already public). See
+    /// RecordingState in the Graph target - the only current producer of documents shaped this
+    /// way (always one long recordedContour note per touch-gesture, per voice).
+    static func looksLikeRawRecording(_ document: SeqDocument) -> Bool {
+        [document.dronePart, document.xPart, document.yPart, document.zPart]
+            .flatMap { $0.notes }
+            .contains { $0.transitionKind == .recordedContour }
+    }
+
+    /// Runs the live-record plan's step 4 segmentation pass on `document` and loads the result.
+    /// Segments every note in all four parts via `Part.segmentAllNotes` - a safe no-op
+    /// passthrough for notes without a `recordedPitchBend` buffer (see that function's own doc
+    /// comment), so this is safe to call even on a document that mixes raw-recording and plain
+    /// hand-placed notes, not just a pure recording. Detects tempo from the segmented pieces'
+    /// own onset times and carries it along as the resulting SeqDocument's metadata - nil (no
+    /// confident tempo) is the correct, expected outcome for unmetered/melismatic material, not
+    /// a failure (see TempoDetection.swift's own doc comment).
+    func loadSegmentedDocument(_ document: SeqDocument) {
+        let rawDrone = Part(name: "drone")
+        let rawX = Part(name: "x")
+        let rawY = Part(name: "y")
+        let rawZ = Part(name: "z")
+        document.apply(toDronePart: rawDrone, xPart: rawX, yPart: rawY, zPart: rawZ)
+
+        let segmentedDrone = rawDrone.segmentAllNotes(sampleRate: sampleRate)
+        let segmentedX = rawX.segmentAllNotes(sampleRate: sampleRate)
+        let segmentedY = rawY.segmentAllNotes(sampleRate: sampleRate)
+        let segmentedZ = rawZ.segmentAllNotes(sampleRate: sampleRate)
+
+        let onsets = [segmentedDrone, segmentedX, segmentedY, segmentedZ]
+            .flatMap { $0.notes }
+            .filter { $0.amplitude > 0 } // rests aren't musical onsets
+            .map { $0.startTime }
+            .sorted()
+        let tempo = detectTempo(onsetTimes: onsets, sampleRate: sampleRate)
+
+        let finalDocument = SeqDocument(dronePart: segmentedDrone, xPart: segmentedX, yPart: segmentedY, zPart: segmentedZ, tempoInfo: tempo)
+        loadDocument(finalDocument)
     }
 }
 

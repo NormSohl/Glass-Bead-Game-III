@@ -39,3 +39,21 @@ func pianoRollNiceTimeStepSeconds(pixelsPerSecond: Double, targetPixelSpacing: D
     let niceResidual: Double = residual < 1.5 ? 1 : residual < 3.5 ? 2 : residual < 7.5 ? 5 : 10
     return niceResidual * magnitude
 }
+
+// One beat period, in samples, for a detected tempo - shared by the bar-line overlay (drawing)
+// and the handle-drag snap check (step 4 of the live-record plan), so both agree on exactly
+// where the grid lines actually are.
+func pianoRollBeatPeriodSamples(tempo: TempoInfo, sampleRate: Double) -> Double {
+    60.0 / tempo.bpm * sampleRate
+}
+
+// The nearest beat-grid sample to `sample`, given a detected tempo - `tempo.downbeatOffset` plus
+// the nearest whole multiple of the beat period. Pure rounding, no threshold check - callers
+// decide separately (PianoRollView's own snap-window logic) whether `sample` was actually close
+// enough to this to snap to it.
+func pianoRollNearestBeatSample(to sample: Int, tempo: TempoInfo, sampleRate: Double) -> Int {
+    let periodSamples = pianoRollBeatPeriodSamples(tempo: tempo, sampleRate: sampleRate)
+    guard periodSamples > 0 else { return sample }
+    let beatIndex = ((Double(sample) - Double(tempo.downbeatOffset)) / periodSamples).rounded()
+    return tempo.downbeatOffset + Int((beatIndex * periodSamples).rounded())
+}

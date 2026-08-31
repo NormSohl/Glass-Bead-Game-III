@@ -142,6 +142,31 @@ public func segmentPitch(_ note: Note, sampleRate: Double) -> [Note] {
     return outputs.isEmpty ? [note] : outputs
 }
 
+public extension Part {
+    /// Rebuilds this Part by walking its own existing notes through `segmentPitch`, replacing
+    /// each with whatever pieces segmentation produces - a safe no-op passthrough for notes
+    /// without a `recordedPitchBend` buffer (see `segmentPitch`'s own doc comment), so this is
+    /// safe to call on a mixed raw-recording/hand-edited Part too, not just a pure recording.
+    /// Kept here in GBGCore, not in the Seq target where this pass actually runs at import time
+    /// (see the live-record plan's step 4) - `Note.transition`/`envelope` aren't public, so only
+    /// GBGCore's own code can read a segmented piece's kind directly to rebuild a proper new Note
+    /// from it; Seq only ever sees the result through this one public entry point.
+    func segmentAllNotes(sampleRate: Double) -> Part {
+        let rebuilt = Part(name: name ?? "")
+        for note in notes {
+            for piece in segmentPitch(note, sampleRate: sampleRate) {
+                let inserted = rebuilt.insertNote(
+                    startTime: piece.startTime, endTime: piece.endTime,
+                    startFrequency: piece.startFrequency, endFrequency: piece.endFrequency,
+                    amplitude: piece.amplitude,
+                    transition: piece.transition, envelope: piece.envelope)
+                inserted.recordedPitchBend = piece.recordedPitchBend
+            }
+        }
+        return rebuilt
+    }
+}
+
 private func movingAverageSmooth(_ values: [Double], radiusIndices: Int) -> [Double] {
     guard radiusIndices > 0 else { return values }
     var result = [Double](repeating: 0, count: values.count)

@@ -51,6 +51,22 @@ public class Note:HasLength{
     // the instances themselves, so TransLinear/TransEaseIn/etc never need to become public.
     public var transitionKind: TransitionKind { TransitionKind.kind(of: transition) }
     public var envelopeKind: EnvelopeKind { EnvelopeKind.kind(of: envelope) }
+
+    /// Sets this note's active transition to `kind`, reconstructing it fresh - `.recordedContour`
+    /// specially, from this note's own `recordedPitchBend` buffer (an empty/inert contour if
+    /// that's nil, matching `TransitionKind.makeTransition()`'s own safe-fallback behavior),
+    /// everything else via `TransitionKind.makeTransition()` directly. `recordedPitchBend` itself
+    /// is left untouched either way - see that property's own doc comment on why the buffer
+    /// outlives whichever transition is currently selected. The one public entry point for a
+    /// picker UI outside this module (Seq's piano-roll transition picker) to change a note's
+    /// transition without GBGCore needing to expose `TransRecordedContour` itself.
+    public func selectTransition(_ kind: TransitionKind) {
+        if kind == .recordedContour {
+            transition = TransRecordedContour(samples: recordedPitchBend ?? [])
+        } else {
+            transition = kind.makeTransition()
+        }
+    }
     
     // TODO: Returns the length of the note based on its start time and end time
     func getLengthInSamples()->Int{

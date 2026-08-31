@@ -25,6 +25,12 @@ struct TransportView: View {
     @State private var isImporting = false
     @State private var exportFile: SeqDocumentFile?
 
+    // Import segmentation prompt (Step 4) - set right after a raw-recording-shaped document is
+    // decoded, so the confirmation dialog below has something to act on regardless of which
+    // choice the user makes.
+    @State private var pendingRawImport: SeqDocument?
+    @State private var showSegmentPrompt = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 16) {
@@ -174,7 +180,27 @@ struct TransportView: View {
             guard let data = try? Data(contentsOf: url),
                   let document = try? JSONDecoder().decode(SeqDocument.self, from: data)
             else { return }
-            sequencer.loadDocument(document)
+            if SequencerState.looksLikeRawRecording(document) {
+                pendingRawImport = document
+                showSegmentPrompt = true
+            } else {
+                sequencer.loadDocument(document)
+            }
+        }
+        // Step 4: an imported document shaped like a raw live recording (see
+        // SequencerState.looksLikeRawRecording) offers a choice rather than always segmenting
+        // automatically or always loading as one long continuous note either way - both are
+        // legitimate things to want, so this asks once at import time instead of guessing.
+        .confirmationDialog(
+            "This looks like a raw recording",
+            isPresented: $showSegmentPrompt,
+            presenting: pendingRawImport
+        ) { document in
+            Button("Segment") { sequencer.loadSegmentedDocument(document) }
+            Button("Load As-Is") { sequencer.loadDocument(document) }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            Text("Split it into editable notes, or load the continuous recording unchanged?")
         }
     }
 

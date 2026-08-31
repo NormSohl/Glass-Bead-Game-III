@@ -230,4 +230,41 @@ final class SeqDocumentTests: XCTestCase {
         // just tagged as one - confirm playback reproduces the original curve.
         XCTAssertEqual(loadedX.notes[0].getCurrentFrequency(percentComplete: 1.0 / 3.0), 440 * pow(2, 30.0 / 1200), accuracy: 0.01)
     }
+
+    // MARK: - Note.selectTransition: the picker's one public entry point
+
+    func testSelectTransitionSwitchesToEachOfTheFiveBasicKinds() {
+        let part = Part(name: "test")
+        let note = part.insertNote(startTime: 0, endTime: 100, startFrequency: 220, endFrequency: 440, amplitude: 1)
+        for kind in TransitionKind.allCases where kind != .recordedContour {
+            note.selectTransition(kind)
+            XCTAssertEqual(note.transitionKind, kind)
+        }
+    }
+
+    func testSelectTransitionRecordedContourReconstructsFromTheNotesOwnBuffer() {
+        let part = Part(name: "test")
+        let samples = [0.0, 60, 0]
+        let note = part.insertRecordedNote(startTime: 0, endTime: 100, startFrequency: 440, endFrequency: 440, amplitude: 1, recordedPitchBend: samples)
+
+        // Switch away, then back - the buffer must still be there to reconstruct from, and
+        // playback must match the original curve exactly (not just be tagged .recordedContour).
+        note.selectTransition(.linear)
+        XCTAssertEqual(note.transitionKind, .linear)
+        XCTAssertEqual(note.recordedPitchBend, samples, "switching away must not discard the buffer")
+
+        note.selectTransition(.recordedContour)
+        XCTAssertEqual(note.transitionKind, .recordedContour)
+        XCTAssertEqual(note.getCurrentFrequency(percentComplete: 0.5), 440 * pow(2, 60.0 / 1200), accuracy: 0.01)
+    }
+
+    func testSelectTransitionRecordedContourWithNoBufferDegradesToAnInertContour() {
+        // No recordedPitchBend set at all - selectTransition(.recordedContour) shouldn't crash,
+        // matching TransitionKind.makeTransition()'s own documented safe-fallback behavior.
+        let part = Part(name: "test")
+        let note = part.insertNote(startTime: 0, endTime: 100, startFrequency: 440, endFrequency: 440, amplitude: 1)
+        note.selectTransition(.recordedContour)
+        XCTAssertEqual(note.transitionKind, .recordedContour)
+        XCTAssertEqual(note.getCurrentFrequency(percentComplete: 0.5), 440, accuracy: 0.0001)
+    }
 }

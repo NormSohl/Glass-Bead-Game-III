@@ -158,6 +158,68 @@ final class SegmentationTests: XCTestCase {
         XCTAssertEqual(result.count, 1)
         XCTAssertTrue(result[0] === note)
     }
+
+    // MARK: - Part.segmentAllNotes: the whole-Part rebuild step 4's Seq-side import uses
+
+    func testSegmentAllNotesRebuildsAMixedPartOfPlainAndRecordedNotes() {
+        // A rest, a plain hand-placed note, and a genuine three-phrase recorded note back to
+        // back - segmentAllNotes must pass the first two through untouched (by value, since
+        // segmentPitch's own no-op case returns the same Note it was given, not a fresh Part
+        // built from insertNote) and split only the third.
+        let part = Part(name: "test")
+        part.insertNote(startTime: 0, endTime: 100, startFrequency: 440, endFrequency: 440, amplitude: 0) // rest
+        part.insertNote(startTime: 100, endTime: 200, startFrequency: 440, endFrequency: 550, amplitude: 1) // plain note
+
+        var samples: [Double] = []
+        let contourRate = 100.0
+        func appendDwell(seconds: Double, cents: Double) {
+            samples.append(contentsOf: [Double](repeating: cents, count: Int(seconds * contourRate)))
+        }
+        func appendGlide(seconds: Double, from: Double, to: Double) {
+            let n = Int(seconds * contourRate)
+            for i in 0..<n {
+                let t = Double(i) / Double(n - 1)
+                samples.append(from + (to - from) * t)
+            }
+        }
+        appendDwell(seconds: 0.8, cents: 0)
+        appendGlide(seconds: 0.2, from: 0, to: 700)
+        appendDwell(seconds: 0.8, cents: 700)
+        appendGlide(seconds: 0.2, from: 700, to: -500)
+        appendDwell(seconds: 1.0, cents: -500)
+        let recordedStart = 200
+        let recordedEnd = recordedStart + Int(3.0 * sampleRate)
+        part.insertRecordedNote(startTime: recordedStart, endTime: recordedEnd, startFrequency: 440, endFrequency: 440, amplitude: 1, recordedPitchBend: samples)
+
+        let rebuilt = part.segmentAllNotes(sampleRate: sampleRate)
+
+        // Rest + plain note pass through as-is, then the recorded note becomes 3 pieces.
+        XCTAssertEqual(rebuilt.notes.count, 5)
+        XCTAssertEqual(rebuilt.notes[0].amplitude, 0)
+        XCTAssertEqual(rebuilt.notes[0].startTime, 0)
+        XCTAssertEqual(rebuilt.notes[0].endTime, 100)
+        XCTAssertEqual(rebuilt.notes[1].startFrequency, 440)
+        XCTAssertEqual(rebuilt.notes[1].endFrequency, 550)
+        XCTAssertEqual(rebuilt.notes[1].transitionKind, .flat)
+
+        // Pieces still tile contiguously across the whole rebuilt Part, no gaps/overlaps.
+        for i in 0..<(rebuilt.notes.count - 1) {
+            XCTAssertEqual(rebuilt.notes[i].endTime, rebuilt.notes[i + 1].startTime)
+        }
+        XCTAssertEqual(rebuilt.notes.first?.startTime, 0)
+        XCTAssertEqual(rebuilt.notes.last?.endTime, recordedEnd)
+
+        for piece in rebuilt.notes[2...] {
+            XCTAssertEqual(piece.transitionKind, .recordedContour)
+            XCTAssertNotNil(piece.recordedPitchBend)
+        }
+    }
+
+    func testSegmentAllNotesOnAnEmptyPartReturnsAnEmptyPart() {
+        let part = Part(name: "test")
+        let rebuilt = part.segmentAllNotes(sampleRate: sampleRate)
+        XCTAssertTrue(rebuilt.notes.isEmpty)
+    }
 }
 
 final class TempoDetectionTests: XCTestCase {
