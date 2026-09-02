@@ -18,7 +18,13 @@ import GBGCore
 var pianoRollCanvasSize: CGSize = .zero
 
 private let handleHitRadius: Double = 20
-private let sampledCurvePoints = 24
+// Partline curve-sampling density: points per screen pixel of a note's own width, not a flat
+// per-note count - see Seq/PianoRollView.swift's matching constant for the full reasoning (a
+// fixed count smooths a long note's real recorded-contour detail away far more than a short
+// one sampled at the same count, making equally-detailed data look like different smoothness).
+private let curveSamplesPerPixel: Double = 1.0 / 3.0
+private let minCurveSamplePoints = 8
+private let maxCurveSamplePoints = 2000
 
 private let voiceColors: [PartVoice: Color] = [
     .drone: .gray,
@@ -86,6 +92,10 @@ struct PianoRollView: View {
             let color = voiceColors[voice] ?? .white
 
             for note in part.notes where note.amplitude > 0 {
+                let noteDurationSeconds = Double(note.endTime - note.startTime) / sequencer.sampleRate
+                let notePixelWidth = noteDurationSeconds * sequencer.pixelsPerSecond
+                let sampledCurvePoints = min(maxCurveSamplePoints, max(minCurveSamplePoints, Int(notePixelWidth * curveSamplesPerPixel)))
+
                 var path = Path()
                 for step in 0...sampledCurvePoints {
                     let percent = Double(step) / Double(sampledCurvePoints)
