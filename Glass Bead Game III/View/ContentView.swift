@@ -63,6 +63,14 @@ struct ContentView: View {
 
             VStack(spacing: 0) {
                 HStack(spacing: 0) {
+                    #if os(iOS)
+                    // Opposite the Z-slider (which defaults to trailing below) so a
+                    // performer's other hand doesn't have to reach across the graph for
+                    // either one - the same reasoning behind wanting the Z-slider itself
+                    // movable to the other side. Not yet tied to a shared handedness setting;
+                    // when that's added, both should flip together.
+                    ControlColumn(settings: settings, recordingState: recordingState)
+                    #endif
                     ZStack(){
                         Color.black.ignoresSafeArea(.all)
                         GraphView(scale: scale,
@@ -129,9 +137,12 @@ struct ContentView: View {
         .onChange(of: settings.selectedLimit) {
             rebuildScaleDependentState()
         }
-        // .primaryAction places these in the window's title bar on macOS (next to the traffic
-        // lights) and as trailing nav-bar items on iOS - native chrome on both platforms, rather
-        // than floating buttons drawn over the content.
+        // macOS only - .toolbar has nowhere to attach without a NavigationStack, which this
+        // app deliberately doesn't have (would cost a permanent nav-bar strip of vertical
+        // space). .primaryAction places these in the window's title bar, next to the traffic
+        // lights. The iPad build gets the same five actions via ControlColumn instead - see
+        // its own comment below for why that's a column, not a floating overlay.
+        #if os(macOS)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 // Drone - the last of the settings-popover controls Norm wanted promoted to the
@@ -222,6 +233,7 @@ struct ContentView: View {
                 }
             }
         }
+        #endif
     }
 }
 
@@ -463,6 +475,77 @@ private struct PencilSqueezeMonitor: UIViewRepresentable {
             guard squeeze.phase == .ended else { return }
             settings.pedal.toggle()
         }
+    }
+}
+
+// The same five actions as macOS's window-titlebar toolbar (Drone/Portamento/Pedal/Panic/
+// Settings), laid out top-to-bottom in a fixed-width column instead - a floating overlay
+// was considered and rejected: Norm wants zero vertical space lost to a nav bar (ruling out
+// NavigationStack + .toolbar), and a column sized as a normal HStack sibling, exactly like
+// ZSliderView already is, achieves that for free via the graph's own .layoutPriority(1) +
+// .aspectRatio(.fit) - the square simply shrinks to whatever width remains, same mechanism
+// already proven for the Z-slider, rather than drawing over the content.
+private struct ControlColumn: View {
+    @ObservedObject var settings: AppSettings
+    let recordingState: RecordingState
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer(minLength: 0)
+
+            button("circle.hexagongrid.fill", active: settings.playDrone, label: "Drone") {
+                settings.playDrone.toggle()
+            }
+            // Inverted relative to the other three, same as the macOS toolbar's own version:
+            // settings.snap is "is grid-snapping active" (true = Portamento OFF).
+            button("scribble", active: !settings.snap, label: "Portamento") {
+                settings.snap.toggle()
+            }
+            button("infinity", active: settings.pedal, label: "Pedal") {
+                settings.pedal.toggle()
+            }
+            // Always red, unlike the toggle buttons above - this isn't a mode toggle, it's a
+            // "stop everything now" action, worth visually standing out (matches macOS's own
+            // Panic button).
+            Button {
+                sound.panic()
+            } label: {
+                Image(systemName: "exclamationmark.octagon.fill")
+                    .font(.title2)
+                    .foregroundStyle(.red)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("Panic")
+            Button {
+                settings.showSettings = true
+            } label: {
+                Image(systemName: "gearshape.fill")
+                    .font(.title2)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("Settings")
+            .popover(isPresented: $settings.showSettings) {
+                ControlView(settings: settings, recordingState: recordingState)
+                    .frame(minWidth: 340, idealWidth: 380, minHeight: 480, idealHeight: 650)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .buttonStyle(.plain)
+        .frame(width: 60)
+    }
+
+    private func button(_ systemName: String, active: Bool, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.title2)
+                .foregroundStyle(active ? TetradView.uiAccentColor : Color.primary)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .accessibilityLabel(label)
     }
 }
 
