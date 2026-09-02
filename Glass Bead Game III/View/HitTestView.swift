@@ -236,11 +236,15 @@ struct HitTestView: View {
                     hoverLocation.y = height - hoverLocation.y
                     isDrag = true
                     
-                    // hack to duplicate the effect of shift-down with UI
-                    if isShift == false{
-                        if settings.snap {isShift = false}
-                        else {isShift = true}
-                    }
+                    // Mirrors settings.snap on every touch-move frame, not just once at the
+                    // start of the drag (the original if isShift == false guard here only ever
+                    // synced it the first time) - Norm found that releasing the new momentary-
+                    // Portamento Shift key mid-drag correctly flipped settings.snap (and the
+                    // toolbar icon) but the ongoing drag's own Portamento effect never let go,
+                    // since nothing re-checked it again for the rest of that same touch. Now it
+                    // tracks live, so a mid-drag Shift release (or press) takes effect
+                    // immediately instead of only at the next touch's start.
+                    isShift = !settings.snap
                     if isSound == false{
                         sound.beginGraphTouch(amp: 1)
                         recordingState.beginGraphTouch()
