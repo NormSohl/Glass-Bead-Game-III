@@ -11,7 +11,6 @@ import GBGSound
 
 struct ContentView: View {
     @StateObject private var settings = AppSettings()
-    @StateObject private var sequencer: SequencerState
     @StateObject private var recordingState: RecordingState
 
     // Scale/Diamonds/TetradLayers only depend on the scale's shape (limit, highest/lowest
@@ -38,7 +37,6 @@ struct ContentView: View {
     init() {
         let initialSettings = AppSettings()
         _settings = StateObject(wrappedValue: initialSettings)
-        _sequencer = StateObject(wrappedValue: SequencerState(sampleRate: sound.audio.sampleRate, settings: initialSettings))
         _recordingState = StateObject(wrappedValue: RecordingState(settings: initialSettings, sampleRateProvider: { sound.audio.sampleRate }))
         let initialScale = Scale(
             limit: limitMap[initialSettings.selectedLimit] ?? 1,
@@ -100,27 +98,17 @@ struct ContentView: View {
                             .frame(width: 70, height: graphSquareHeight > 0 ? graphSquareHeight : nil)
                     }
                 }
-
-                // The drone's own on-screen representation - see RootIndicatorView's header
-                // comment for why this exists (nothing else on the graph shows drone at all).
-                RootIndicatorView(scale: scale, settings: settings, sequencer: sequencer)
-
-                if settings.showSequencer {
-                    SequencerView(settings: settings, sound: sound, sequencer: sequencer, scale: scale)
-                        .frame(height: 300)
-                        .transition(.move(edge: .bottom))
-                }
             }
         }
         .frame (minWidth: 800, minHeight: 500)
         #if os(macOS)
         // Locks the window to always resize both axes together, at whatever ratio currently has
         // no dead space (see idealWindowSize) - dragging just one edge would otherwise leave
-        // black borders, since the Z-slider/RootIndicatorView/sequencer strip are fixed-point-size,
-        // not proportional, so only a plain resizable window (no ratio lock) can go out of sync
-        // with the square graph's own aspect. Recomputed whenever the sequencer panel or the
-        // Z-slider (3rd moving tone) show/hide, since either changes the content's natural ratio.
-        .background(WindowAspectLockView(aspectSize: idealWindowSize(sequencerShown: settings.showSequencer, thirdToneShown: settings.showTetrads)))
+        // black borders, since the Z-slider is fixed-point-size, not proportional, so only a
+        // plain resizable window (no ratio lock) can go out of sync with the square graph's own
+        // aspect. Recomputed whenever the Z-slider (3rd moving tone) shows/hides, since that
+        // changes the content's natural ratio.
+        .background(WindowAspectLockView(aspectSize: idealWindowSize(thirdToneShown: settings.showTetrads)))
         // Keyboard access to Portamento/Pedal, per Norm - "third party pedals can be configured
         // to work with them" (many cheap USB foot pedals emulate a plain keystroke). See
         // KeyCommandMonitor's own header comment for the toggle-vs-momentary distinction.
@@ -142,7 +130,12 @@ struct ContentView: View {
                 Button {
                     settings.playDrone.toggle()
                 } label: {
+                    // .tint() doesn't actually recolor a plain icon-only macOS toolbar button
+                    // (confirmed live - a real click toggled the state with zero visible change)
+                    // - foregroundStyle on the glyph itself is what actually works for an SF
+                    // Symbol here.
                     Image(systemName: "circle.hexagongrid.fill")
+                        .foregroundStyle(settings.playDrone ? Color.accentColor : Color.primary)
                 }
                 .help("Drone (D or K) - the sustained reference tone")
             }
@@ -150,47 +143,39 @@ struct ContentView: View {
                 // Portamento toggle - direct toolbar access to the same settings.snap the
                 // "Snapping" checkbox in ControlView used to control (removed once this existed;
                 // both drove the same property). Norm: important enough to reach without opening
-                // the settings popover first. Deliberately no custom active-state color - Norm
-                // preferred this match the plain gray-idle/white-on-press look the other buttons
-                // already have, rather than standing out with its own persistent color. Scribble
-                // icon, chosen over waveform.path (the original - Norm: "does not say portamento
-                // to me") and a couple curve/diagonal-line candidates compared directly in the
-                // toolbar - a loose freeform line reading as "continuous/unconstrained."
+                // the settings popover first. Scribble icon, chosen over waveform.path (the
+                // original - Norm: "does not say portamento to me") and a couple curve/diagonal-
+                // line candidates compared directly in the toolbar - a loose freeform line
+                // reading as "continuous/unconstrained." Tint now reflects on/off state (Norm:
+                // none of these four toggles showed any visible state at all, an earlier
+                // "deliberately no active-state color" call reversed on request).
                 Button {
                     settings.snap.toggle()
                 } label: {
+                    // Inverted relative to the other three buttons' own pattern: settings.snap
+                    // is "is grid-snapping active" (true = Portamento OFF), but this button is
+                    // framed to the user as "Portamento" itself - the underlying HitTestView
+                    // chain is snapped = !isShift, isShift = !settings.snap, so
+                    // snapped == settings.snap directly. Lighting up on settings.snap==true
+                    // would show the icon as "on" exactly when Portamento is actually off.
                     Image(systemName: "scribble")
+                        .foregroundStyle(!settings.snap ? Color.accentColor : Color.primary)
                 }
                 .help("Portamento (G or H) - drag continuously between pitches instead of snapping to scale degrees")
             }
             ToolbarItem(placement: .primaryAction) {
                 // Pedal - a live-performance control, per Norm, so worth reaching without
-                // opening the settings popover first, same reasoning as Portamento above. Same
-                // plain styling (no active-state color) as the other three buttons. Infinity
-                // icon, chosen over shoeprints.fill (the original) and a couple other candidates
-                // compared directly in the toolbar - abstractly represents "keeps sounding
-                // indefinitely," which is exactly what sustain does.
+                // opening the settings popover first, same reasoning as Portamento above.
+                // Infinity icon, chosen over shoeprints.fill (the original) and a couple other
+                // candidates compared directly in the toolbar - abstractly represents "keeps
+                // sounding indefinitely," which is exactly what sustain does.
                 Button {
                     settings.pedal.toggle()
                 } label: {
                     Image(systemName: "infinity")
+                        .foregroundStyle(settings.pedal ? Color.accentColor : Color.primary)
                 }
                 .help("Pedal (Space, held) - sustain: keep the current notes sounding after you release them")
-            }
-            ToolbarItem(placement: .primaryAction) {
-                // Sequencer panel toggle - a panel-slider-style show/hide. Its state gates
-                // AppSettings.sequencerDrivenVoices everywhere else: hidden means no sequencer
-                // code ever touches the graph. Tape-reel icon, chosen over pianokeys (the
-                // original) and a few other candidates compared directly in the toolbar - reads
-                // as playback/recording rather than "an instrument," which fits a piano-roll
-                // sequencer better than a literal keyboard glyph. Moved here (was first) per
-                // Norm - now sits between Drone and Settings.
-                Button {
-                    withAnimation(.easeInOut) { settings.showSequencer.toggle() }
-                } label: {
-                    Image(systemName: "recordingtape")
-                }
-                .help("Sequencer - show or hide the piano-roll editor and transport controls")
             }
             ToolbarItem(placement: .primaryAction) {
                 // Panic - manual escape hatch for a voice stuck sounding (a touch/pedal/
@@ -254,6 +239,13 @@ private struct KeyCommandMonitor: NSViewRepresentable {
     final class Coordinator {
         var settings: AppSettings
         private var monitor: Any?
+        // Portamento's own toggle value (settings.snap) right before Option was pressed for
+        // momentary portamento (see .flagsChanged below) - nil whenever Option isn't currently
+        // being held for this purpose. Restored on release rather than just forcing snap back
+        // to true, so a G/H toggle that was already active before the Option press survives it
+        // (holding Option only means "force portamento on for as long as I hold it," not
+        // "portamento is off the moment I let go").
+        private var snapBeforeOptionHeld: Bool?
 
         init(settings: AppSettings) {
             self.settings = settings
@@ -261,13 +253,16 @@ private struct KeyCommandMonitor: NSViewRepresentable {
 
         func install() {
             guard monitor == nil else { return }
-            monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { [weak self] event in
+            monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { [weak self] event in
                 guard let self else { return event }
                 switch event.type {
                 case .keyDown:
-                    // Space (key code 49) - Pedal, momentary: down while held, matching a real
-                    // damper pedal's own physical behavior.
-                    if event.keyCode == 49 {
+                    // Space (key code 49) or F/J - Pedal, momentary: down while held, matching a
+                    // real damper pedal's own physical behavior. F/J are additional keys for the
+                    // same momentary press/release (not a toggle - that wouldn't fit how a pedal
+                    // actually behaves), Norm's own choice, sitting at the home-row index-finger
+                    // position either hand can reach without retraining.
+                    if event.keyCode == 49 || event.charactersIgnoringModifiers?.lowercased() == "f" || event.charactersIgnoringModifiers?.lowercased() == "j" {
                         self.settings.pedal = true
                         return nil
                     }
@@ -281,28 +276,56 @@ private struct KeyCommandMonitor: NSViewRepresentable {
                     // *right* hand instead (A-S-D-F-G | H-J-K-L-; mirrors position-for-position
                     // around the F/J gap: G<->H, D<->K) - either hand can reach its own pair
                     // without retraining a specific handedness.
-                    if event.charactersIgnoringModifiers?.lowercased() == "g" && !event.isARepeat {
-                        self.settings.snap.toggle()
-                        return nil
-                    }
-                    if event.charactersIgnoringModifiers?.lowercased() == "h" && !event.isARepeat {
-                        self.settings.snap.toggle()
+                    // isARepeat only gates the toggle itself, not consuming the event - gating
+                    // both together (the original bug here) let every repeated keyDown while
+                    // the key stayed held fall through unconsumed, past the end of this switch,
+                    // straight into macOS's own "no responder handled this key" system beep -
+                    // audible proof the event wasn't actually being swallowed. Any matching
+                    // character is now always consumed (return nil unconditionally), whether or
+                    // not this particular keyDown is the one that actually toggles anything.
+                    let character = event.charactersIgnoringModifiers?.lowercased()
+                    if character == "g" || character == "h" {
+                        if !event.isARepeat { self.settings.snap.toggle() }
                         return nil
                     }
                     // "D"/"K" - Drone, same discrete-toggle treatment and mirroring as
                     // Portamento above (not physically a pedal either).
-                    if event.charactersIgnoringModifiers?.lowercased() == "d" && !event.isARepeat {
-                        self.settings.playDrone.toggle()
+                    if character == "d" || character == "k" {
+                        if !event.isARepeat { self.settings.playDrone.toggle() }
                         return nil
                     }
-                    if event.charactersIgnoringModifiers?.lowercased() == "k" && !event.isARepeat {
-                        self.settings.playDrone.toggle()
+                    // Any other bare keypress (no Cmd/Control/Option - those are real menu/
+                    // system shortcuts like Cmd+Q, left alone here) has nothing to do in this
+                    // app - no text field, no other key command - so it would otherwise fall
+                    // through unconsumed to the same "no responder handled this" system beep
+                    // fixed above for the keys this view does recognize. Norm: accidental key
+                    // hits shouldn't beep during a performance. Swallowed, not acted on.
+                    if event.modifierFlags.intersection([.command, .control, .option]).isEmpty {
                         return nil
                     }
                 case .keyUp:
-                    if event.keyCode == 49 {
+                    if event.keyCode == 49 || event.charactersIgnoringModifiers?.lowercased() == "f" || event.charactersIgnoringModifiers?.lowercased() == "j" {
                         self.settings.pedal = false
                         return nil
+                    }
+                case .flagsChanged:
+                    // Option, held on its own - momentary Portamento, mirroring how Space
+                    // already works for Pedal (and physically sitting right next to it on
+                    // Norm's own keyboard). Deliberately separate from G/H's existing discrete
+                    // toggle rather than replacing it - both stay available side by side. Pure
+                    // modifier keys never generate keyDown/keyUp at all, only flagsChanged (with
+                    // no isARepeat concept - it just reports the current modifier set each time
+                    // any modifier changes), so this needs its own case rather than fitting into
+                    // the keyDown/keyUp handling above. Guarded by snapBeforeOptionHeld so a
+                    // flagsChanged fired by some *other* modifier changing while Option stays
+                    // held doesn't re-trigger the capture/restore logic.
+                    let optionHeld = event.modifierFlags.contains(.option)
+                    if optionHeld, self.snapBeforeOptionHeld == nil {
+                        self.snapBeforeOptionHeld = self.settings.snap
+                        self.settings.snap = false
+                    } else if !optionHeld, let previousSnap = self.snapBeforeOptionHeld {
+                        self.settings.snap = previousSnap
+                        self.snapBeforeOptionHeld = nil
                     }
                 default:
                     break
