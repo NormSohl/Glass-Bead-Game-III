@@ -67,6 +67,12 @@ class AppSettings: ObservableObject{
     // doesn't also fire its existing action as a side effect of being captured, and so there's
     // no ambiguity about which of the two active local NSEvent monitors sees a given key first.
     @Published var isCapturingKeyBinding: Bool = false
+    // iOS only (GameController framework's GCKeyboardInput only exposes one global
+    // keyChangedHandler slot at a time, unlike NSEvent's multiple simultaneous local monitors
+    // on macOS) - which action KeyMappingView's capture button is waiting to bind the next
+    // physical keypress to. Set by KeyMappingView, read/cleared by ContentView's iOS
+    // KeyboardMonitor once a key comes in. nil whenever nothing is being captured.
+    @Published var pendingKeyBindingAction: KeyAction? = nil
     @Published var useSynth: Bool = true
     @Published var useMIDI: Bool = true
     @Published var useMIDI_MPE: Bool = true

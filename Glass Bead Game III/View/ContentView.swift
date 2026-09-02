@@ -120,6 +120,11 @@ struct ContentView: View {
         // than competing with the touch surface. See PencilSqueezeMonitor's own comment for
         // the iPad Settings caveat that can silently swallow this.
         .background(PencilSqueezeMonitor(settings: settings))
+        // A physical/Bluetooth keyboard, or a cheap keypad emulating one, driving the same
+        // KeyMapping a Mac keyboard would - Norm: "iPad can connect to a keyboard... button
+        // pads are cheap," so this keeps that path open rather than treating Pencil-squeeze
+        // as the iPad's only input. See KeyboardMonitor's own comment.
+        .background(KeyboardMonitor(settings: settings))
         #endif
         .onChange(of: settings.selectedLimit) {
             rebuildScaleDependentState()
@@ -248,18 +253,11 @@ private struct KeyCommandMonitor: NSViewRepresentable {
     }
 
     final class Coordinator {
-        var settings: AppSettings
+        var settings: AppSettings {
+            didSet { dispatcher.settings = settings }
+        }
+        private let dispatcher: KeyActionDispatcher
         private var monitor: Any?
-        // portamentoMomentary's own "before" value - settings.snap right before some token
-        // bound to it was pressed, nil whenever nothing bound to it is currently held. Restored
-        // on release rather than just forcing snap back to true, so a portamentoToggle press
-        // that already happened before this press survives it (holding the momentary binding
-        // only means "force portamento on for as long as I hold it," not "portamento is off the
-        // moment I let go"). Keyed by KeyAction rather than a single Bool since in principle
-        // more than one bound token could be held in an overlapping press, though that's an
-        // edge case this doesn't try to handle precisely (matches the pre-remap code's own
-        // simplicity for Pedal's multiple keys - see applyKeyUp below).
-        private var snapBeforeMomentaryPortamento: Bool?
         // Which of the four modifier tokens are currently held - flagsChanged reports the
         // CURRENT full modifier set on every call, not a delta, so this is diffed against each
         // new event to find what actually changed (see .flagsChanged below).
@@ -267,6 +265,7 @@ private struct KeyCommandMonitor: NSViewRepresentable {
 
         init(settings: AppSettings) {
             self.settings = settings
+            self.dispatcher = KeyActionDispatcher(settings: settings)
         }
 
         func install() {
@@ -288,7 +287,7 @@ private struct KeyCommandMonitor: NSViewRepresentable {
                         // held fall through unconsumed, straight into macOS's own "no responder
                         // handled this key" system beep. Any matching token is now always
                         // consumed (return nil unconditionally) regardless of repeat state.
-                        self.applyKeyDown(action, isARepeat: event.isARepeat)
+                        self.dispatcher.applyKeyDown(action, isARepeat: event.isARepeat)
                         return nil
                     }
                     // Any other bare keypress (no Cmd/Control - those are real menu/system
@@ -307,7 +306,7 @@ private struct KeyCommandMonitor: NSViewRepresentable {
                 case .keyUp:
                     let token: KeyToken? = event.keyCode == 49 ? " " : event.charactersIgnoringModifiers?.lowercased()
                     if let token, let action = self.settings.keyMapping.action(for: token), action.isMomentary {
-                        self.applyKeyUp(action)
+                        self.dispatcher.applyKeyUp(action)
                         return nil
                     }
                 case .flagsChanged:
@@ -317,12 +316,12 @@ private struct KeyCommandMonitor: NSViewRepresentable {
                     let newlyHeld = modifierKeyTokens.filter { self.isTokenModifierHeld($0, in: event.modifierFlags) }
                     for token in newlyHeld.subtracting(self.heldModifierTokens) {
                         if let action = self.settings.keyMapping.action(for: token) {
-                            self.applyKeyDown(action, isARepeat: false)
+                            self.dispatcher.applyKeyDown(action, isARepeat: false)
                         }
                     }
                     for token in self.heldModifierTokens.subtracting(newlyHeld) {
                         if let action = self.settings.keyMapping.action(for: token), action.isMomentary {
-                            self.applyKeyUp(action)
+                            self.dispatcher.applyKeyUp(action)
                         }
                     }
                     self.heldModifierTokens = newlyHeld
@@ -330,39 +329,6 @@ private struct KeyCommandMonitor: NSViewRepresentable {
                     break
                 }
                 return event
-            }
-        }
-
-        // Momentary actions get pressed; toggle actions get toggled - except
-        // portamentoMomentary, whose "press" temporarily overrides the toggle-backed
-        // settings.snap rather than just setting a boolean, so it can restore whatever value
-        // was there before once released (see snapBeforeMomentaryPortamento's own comment).
-        private func applyKeyDown(_ action: KeyAction, isARepeat: Bool) {
-            switch action {
-            case .pedal:
-                settings.pedal = true
-            case .portamentoMomentary:
-                guard snapBeforeMomentaryPortamento == nil else { return }
-                snapBeforeMomentaryPortamento = settings.snap
-                settings.snap = false
-            case .drone:
-                if !isARepeat { settings.playDrone.toggle() }
-            case .portamentoToggle:
-                if !isARepeat { settings.snap.toggle() }
-            }
-        }
-
-        private func applyKeyUp(_ action: KeyAction) {
-            switch action {
-            case .pedal:
-                settings.pedal = false
-            case .portamentoMomentary:
-                if let previous = snapBeforeMomentaryPortamento {
-                    settings.snap = previous
-                    snapBeforeMomentaryPortamento = nil
-                }
-            case .drone, .portamentoToggle:
-                break // discrete toggles don't care about release
             }
         }
 
@@ -497,6 +463,111 @@ private struct PencilSqueezeMonitor: UIViewRepresentable {
             guard squeeze.phase == .ended else { return }
             settings.pedal.toggle()
         }
+    }
+}
+
+import GameController
+
+// Bridges a physical/Bluetooth keyboard into the same KeyMapping-driven dispatch macOS's
+// KeyCommandMonitor already uses, via KeyActionDispatcher - Norm: "iPad can connect to a
+// keyboard... button pads are cheap," so a cheap USB/Bluetooth keypad works here exactly like
+// a real keyboard would, no separate binding model needed.
+//
+// GCKeyboardInput.keyChangedHandler is a single global any-key handler - unlike NSEvent's
+// multiple simultaneous local monitors on macOS, only one handler can be installed at a time.
+// KeyMappingView's capture flow works around that by setting settings.pendingKeyBindingAction
+// rather than installing its own competing handler (see that view's iOS branch): this same
+// handler checks that first, on every press, before falling through to normal dispatch.
+//
+// keyChangedHandler models each key as a discrete button transition (pressed true once, false
+// once), not a text field's repeat stream - so unlike NSEvent's keyDown, there's no isARepeat
+// concept to gate here at all.
+private struct KeyboardMonitor: UIViewRepresentable {
+    @ObservedObject var settings: AppSettings
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(settings: settings)
+    }
+
+    func makeUIView(context: Context) -> UIView {
+        context.coordinator.install()
+        return UIView()
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        context.coordinator.settings = settings
+    }
+
+    final class Coordinator {
+        var settings: AppSettings {
+            didSet { dispatcher.settings = settings }
+        }
+        private let dispatcher: KeyActionDispatcher
+        private var connectObserver: Any?
+
+        init(settings: AppSettings) {
+            self.settings = settings
+            self.dispatcher = KeyActionDispatcher(settings: settings)
+        }
+
+        func install() {
+            attach(GCKeyboard.coalesced?.keyboardInput)
+            // GCKeyboard.coalesced can read nil even with a keyboard already attached (a
+            // known quirk when checked too early in a view's own lifecycle) - the connect
+            // notification is the reliable path, and covers a keyboard paired after launch too.
+            connectObserver = NotificationCenter.default.addObserver(forName: .GCKeyboardDidConnect, object: nil, queue: .main) { [weak self] notification in
+                self?.attach((notification.object as? GCKeyboard)?.keyboardInput)
+            }
+        }
+
+        private func attach(_ input: GCKeyboardInput?) {
+            guard let input else { return }
+            input.keyChangedHandler = { [weak self] _, _, keyCode, pressed in
+                guard let self, let token = KeyboardMonitor.token(for: keyCode) else { return }
+                // A pending capture from KeyMappingView's "+" button always wins over normal
+                // dispatch, and only reacts to the press half of the gesture.
+                if pressed, let pendingAction = self.settings.pendingKeyBindingAction {
+                    self.settings.keyMapping.bind(token, to: pendingAction)
+                    self.settings.pendingKeyBindingAction = nil
+                    self.settings.isCapturingKeyBinding = false
+                    return
+                }
+                guard !self.settings.isCapturingKeyBinding,
+                      let action = self.settings.keyMapping.action(for: token) else { return }
+                if pressed {
+                    self.dispatcher.applyKeyDown(action, isARepeat: false)
+                } else if action.isMomentary {
+                    self.dispatcher.applyKeyUp(action)
+                }
+            }
+        }
+
+        deinit {
+            if let connectObserver { NotificationCenter.default.removeObserver(connectObserver) }
+        }
+    }
+
+    // Translates GCKeyCode - GameController's physical-key vocabulary - into the same
+    // KeyToken strings KeyMapping already persists, so one KeyMapping (and one
+    // KeyMappingView) drives both platforms' monitors instead of needing a parallel iOS-only
+    // binding model.
+    fileprivate static func token(for keyCode: GCKeyCode) -> KeyToken? {
+        switch keyCode {
+        case .spacebar: return " "
+        case .leftShift, .rightShift: return "shift"
+        case .leftAlt, .rightAlt: return "option"
+        case .leftControl, .rightControl: return "control"
+        case .leftGUI, .rightGUI: return "command"
+        default: break
+        }
+        let letterCodes: [GCKeyCode: Character] = [
+            .keyA: "a", .keyB: "b", .keyC: "c", .keyD: "d", .keyE: "e", .keyF: "f", .keyG: "g",
+            .keyH: "h", .keyI: "i", .keyJ: "j", .keyK: "k", .keyL: "l", .keyM: "m", .keyN: "n",
+            .keyO: "o", .keyP: "p", .keyQ: "q", .keyR: "r", .keyS: "s", .keyT: "t", .keyU: "u",
+            .keyV: "v", .keyW: "w", .keyX: "x", .keyY: "y", .keyZ: "z",
+        ]
+        if let letter = letterCodes[keyCode] { return String(letter) }
+        return nil
     }
 }
 #endif

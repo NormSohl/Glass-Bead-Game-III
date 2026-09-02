@@ -115,10 +115,9 @@ struct ControlView: View {
 
                 // Reachable from here rather than the main toolbar, matching Live Recording
                 // above - this is a "look at this occasionally," not a "reach for every session"
-                // control. macOS only - KeyMappingView remaps NSEvent-driven keyboard shortcuts,
-                // which don't apply to the iPad performance build (Pedal there is Pencil-squeeze
-                // driven instead - see ContentView's PencilSqueezeMonitor).
-                #if os(macOS)
+                // control. Cross-platform: on the iPad performance build this drives a
+                // physical/Bluetooth keyboard's bindings (see ContentView's KeyboardMonitor)
+                // alongside Pencil-squeeze, not instead of it.
                 Button {
                     showKeyMapping = true
                 } label: {
@@ -130,7 +129,6 @@ struct ControlView: View {
                 .popover(isPresented: $showKeyMapping) {
                     KeyMappingView(settings: settings)
                 }
-                #endif
 
                 Divider()
 #if os(iOS)

@@ -4,18 +4,23 @@
 //
 //  Lets Norm see and change which keys drive Drone/Portamento(toggle)/Portamento(hold)/
 //  Pedal(hold) - see KeyMapping.swift for the persisted model this reads/writes, and
-//  ContentView's KeyCommandMonitor for where the mapping actually gets applied live.
+//  ContentView's KeyCommandMonitor (macOS)/KeyboardMonitor (iOS) for where the mapping
+//  actually gets applied live. Cross-platform: a physical/Bluetooth keyboard works the same
+//  way on the iPad performance build as on the Mac.
 //
 
-#if os(macOS)
 import SwiftUI
+#if os(macOS)
 import AppKit
+#endif
 
 struct KeyMappingView: View {
     @ObservedObject var settings: AppSettings
 
     @State private var listeningFor: KeyAction?
+    #if os(macOS)
     @State private var captureMonitor: Any?
+    #endif
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -47,6 +52,13 @@ struct KeyMappingView: View {
         // the popover closing is exactly the kind of dismissal that wouldn't otherwise clear it,
         // and a stuck true here would silence the main key monitor permanently.
         .onDisappear { stopListening() }
+        // On iOS, the actual bind happens inside ContentView's KeyboardMonitor (the only thing
+        // that can see GCKeyboardInput's single global handler) once a key comes in - it clears
+        // isCapturingKeyBinding itself when done, which this view has no other way to notice
+        // since that happens outside any action this view's own body triggered.
+        .onChange(of: settings.isCapturingKeyBinding) { _, isCapturing in
+            if !isCapturing { listeningFor = nil }
+        }
     }
 
     @ViewBuilder
@@ -99,6 +111,7 @@ struct KeyMappingView: View {
         stopListening()
         listeningFor = action
         settings.isCapturingKeyBinding = true
+        #if os(macOS)
         captureMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [self] event in
             switch event.type {
             case .keyDown:
@@ -135,13 +148,23 @@ struct KeyMappingView: View {
                 return event
             }
         }
+        #else
+        // No per-view capture monitor on iOS - GCKeyboardInput only exposes one global
+        // keyChangedHandler slot, already owned by ContentView's KeyboardMonitor. This just
+        // flags which action the next physical keypress should bind to; that monitor does the
+        // actual binding and clears isCapturingKeyBinding, which the .onChange above notices.
+        settings.pendingKeyBindingAction = action
+        #endif
     }
 
     private func stopListening() {
+        #if os(macOS)
         if let captureMonitor { NSEvent.removeMonitor(captureMonitor) }
         captureMonitor = nil
+        #else
+        settings.pendingKeyBindingAction = nil
+        #endif
         listeningFor = nil
         settings.isCapturingKeyBinding = false
     }
 }
-#endif
