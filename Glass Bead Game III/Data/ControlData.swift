@@ -64,22 +64,12 @@ class AppSettings: ObservableObject{
     @Published var verifyRangeRatio: Double? = nil
     @Published var selectedGraphShape: GraphShape = .square
 
-    // Sequencer panel visibility, and which X/Y/Z axes it's currently driving instead of touch
-    // (playback/scrub drive all three at once; dragging a single note's handle in the piano roll
-    // drives just that note's own voice). Empty whenever the panel is hidden or idle, which is
-    // what makes the main graph behave completely unmodified in both those states - see the
-    // sequencer focus-model design notes. Written by SequencerState, read by HitTestView/
-    // ZSliderView.
-    @Published var showSequencer: Bool = false
-    @Published var sequencerDrivenVoices: Set<SequencerVoice> = []
-
-    // Which X/Y/Z axes are currently being driven by incoming MIDI (a controller, or
-    // eventually a standalone Seq app) rather than touch - see Sound.handleIncomingMidi. Kept
-    // as its own set rather than folded into sequencerDrivenVoices above: SequencerState is
-    // documented as the "sole writer" of that one and replaces it wholesale on every update,
-    // so a second concurrent writer there would risk one clobbering the other's bits. Read
-    // alongside sequencerDrivenVoices by HitTestView/ZSliderView (either one means "don't
-    // read touch for this axis's crosshair").
+    // Which X/Y/Z axes are currently being driven by incoming MIDI (Seq, or any other MIDI
+    // controller) rather than touch - see Sound.handleIncomingMidi. Read by HitTestView/
+    // ZSliderView ("don't read touch for this axis's crosshair, use whatever's already been
+    // written into settings.xFrequency/yFrequency/zFrequency instead"). Used to be read
+    // alongside a second set, sequencerDrivenVoices, written by Graph's own in-app sequencer -
+    // removed once the standalone Seq app replaced it.
     @Published var externallyDrivenVoices: Set<SequencerVoice> = []
     
     // root pitch
