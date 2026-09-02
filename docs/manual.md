@@ -20,23 +20,23 @@ iPadOS 17.2 or later, or macOS 14.2 or later. GBG III runs natively on both.
 
 Installs from the App Store, same as any other app — nothing special needed.
 
+GBG III is free software. It doesn't require an account, doesn't ask you to sign in or sign up,
+has no in-app purchases or payments of any kind, and doesn't track or transmit your data
+anywhere — it makes no network connections at all.
+
+tbd: What is the purpose of this app? explain about drones and moving tones, briefly, clearly, and link to the paper live on my website for more details.
+
 On first launch, GBG III asks for nothing — no microphone permission, no Bluetooth pairing
 prompt. It doesn't touch the microphone (its "recording" feature captures your touch/pen
 gestures, not audio - see the Seq manual), and MIDI access needs no permission prompt on either
 platform. Audio output is on by default - if you don't hear anything, check your device's
 volume before anything else. You can start playing immediately.
 
-GBG III is free software. It doesn't require an account, doesn't ask you to sign in or sign up,
-has no in-app purchases or payments of any kind, and doesn't track or transmit your data
-anywhere — it makes no network connections at all.
-
----
-
 ## 2. Playing GBG III live
 
 ### Touch and pen
 
-Drag a finger or Apple Pencil anywhere on the main graph to play X and Y together — your
+Drag a finger or Apple Pencil anywhere on the main graph to play the X and Y tones together — your
 touch's horizontal position sets X, vertical sets Y. Z has its own separate touch zone (the
 narrow slider alongside the graph), so you can hold a Z position with one hand while playing
 X/Y with the other — the standard two-handed setup is a pencil for X/Y in your dominant hand,
@@ -51,6 +51,7 @@ cheap keypad that emulates one) for the same shortcuts. Defaults:
 |---|---|
 | Drone (toggle) | D, K |
 | Portamento (toggle) | G, H |
+tbd: mention pedal toggle 
 | Portamento (hold) | Shift |
 | Pedal (hold) | Space, F, J |
 
@@ -62,18 +63,18 @@ On iPad with an Apple Pencil Pro, squeezing the pencil toggles the Pedal — a g
 same hand already holding the pencil, so it doesn't compete with your other hand's work on the
 Z-slider. If squeeze doesn't seem to do anything, check **Settings → Apple Pencil → Squeeze**
 on the iPad itself: if it's set to "Run Shortcut," iPadOS intercepts the gesture before GBG III
-ever sees it. Any other setting works.
+ever sees it. Any other setting works. tbd: how close to the screen does the pen need to be to use squeeze?
 
 ### The on-screen controls
 
 Drone, Portamento, Pedal, Panic, and Settings are also always reachable as buttons — in the
 window's title bar on Mac, or as a column beside the graph on iPad (on whichever side isn't
 currently hosting the Z-slider — see **Z-Slider Side** under Settings). Useful any time you'd
-rather tap than remember a key, or on iPad without a keyboard connected.
+rather tap than remember a key, or on iPad without a keyboard connected. tbd: mention handedness controls.
 
 ### Portamento — gliding between pitches
 
-By default, touching the graph snaps to the nearest just-intonation scale degree — you always
+By default, touching the graph snaps to the nearest just-intoned scale degree — you always
 land precisely on a tuned pitch. **Portamento** turns that off, so pitch follows your touch
 continuously instead, letting you glide between pitches the way you'd slide a finger on a
 fretless instrument.
@@ -91,12 +92,12 @@ you want continuous pitch motion instead of discrete steps.
 
 **Pedal** works like a piano's damper pedal: it keeps whatever's currently sounding held after
 you lift your touch, instead of cutting off the moment you release. That lets you let go of the
-graph entirely while a tone continues, or layer a new touch on top of an already-sustained one.
+graph entirely while a tone continues, or start a new touch replacing an already-sustained one.
 
 - On Mac, Pedal is **held** (Space, F, or J) — press and hold like a real pedal, release to let
   the sound stop naturally.
-- On iPad, Pencil squeeze and the on-screen button are both **toggles** instead — squeeze once
-  to engage, again to release, since there's no natural physical "hold" gesture for a squeeze.
+-tbd: this is wrong. squeeze is for Portemento.  On iPad, Pencil squeeze and the on-screen button are both **toggles** instead — squeeze once
+  to engage, again to release, since there's no natural physical "hold" gesture for a squeeze. tbd: a midi pedal is supported by default.
 
 ### Panic
 
