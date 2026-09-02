@@ -165,9 +165,25 @@ struct ControlView: View {
                 .onChange(of: settings.selectedGraphShape){
                     setView()
                 }
-                
+
+#if os(iOS)
+                Text("Z-Slider Side:").foregroundStyle(.white)
+#endif
+                // Right-handers wanted the Z-slider on the left instead of Norm's own default -
+                // one setting for both, not two: the iPad ControlColumn always takes whichever
+                // side this isn't (see ContentView's body), so there's no way for the two to
+                // end up on the same side or drift out of sync with each other.
+                Picker("Z-Slider Side:", selection: $settings.zSliderSide) {
+                    ForEach(ControlsSide.allCases) { side in
+                        Text(side.rawValue.capitalized).foregroundStyle(.white)
+                    }
+                }
+                .listItemTint(.white)
+                .background(tintcolor)
+                .pickerStyle(.segmented)
+
                 Divider()
-                
+
                 Toggle("Use internal synth", isOn:$settings.useSynth)
                     .tint(tintcolor)
                     .onChange(of: settings.useSynth) {sound.outputToAudio = settings.useSynth}

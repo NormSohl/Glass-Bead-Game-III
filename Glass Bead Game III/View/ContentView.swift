@@ -62,48 +62,23 @@ struct ContentView: View {
             Color.black.ignoresSafeArea(.all)
 
             VStack(spacing: 0) {
+                // Order swaps with settings.zSliderSide rather than just moving the Z-slider
+                // alone, so the iPad ControlColumn (leading in the .right/default case here)
+                // always ends up on whichever side the Z-slider isn't - one setting moves both,
+                // per Norm's ask, instead of two that could drift out of sync.
                 HStack(spacing: 0) {
-                    #if os(iOS)
-                    // Opposite the Z-slider (which defaults to trailing below) so a
-                    // performer's other hand doesn't have to reach across the graph for
-                    // either one - the same reasoning behind wanting the Z-slider itself
-                    // movable to the other side. Not yet tied to a shared handedness setting;
-                    // when that's added, both should flip together.
-                    ControlColumn(settings: settings, recordingState: recordingState)
-                    #endif
-                    ZStack(){
-                        Color.black.ignoresSafeArea(.all)
-                        GraphView(scale: scale,
-                                  diamonds: diamonds,
-                                  tetradLayers: tetradLayers,
-                                  settings: settings,
-                                  recordingState: recordingState
-                        )
-                        .rotationEffect(.degrees(settings.viewRotation))
-                        .animation(.easeIn, value: settings.viewRotation)
-                        .scaleEffect(CGSize(width: settings.viewScale, height: settings.viewScale))
-                        .offset(x: settings.viewOffsetX, y: settings.viewOffsetY)
-                    }
-                    .aspectRatio(1/1, contentMode: settings.contentMode)
-                    .layoutPriority(1)
-                    .background(
-                        GeometryReader { proxy in
-                            Color.clear
-                                .onAppear { graphSquareHeight = proxy.size.height }
-                                .onChange(of: proxy.size.height) { graphSquareHeight = proxy.size.height }
-                        }
-                    )
-
-                    // Z: its own touch zone, not overlapping the graph - a separate DragGesture here
-                    // tracks its own touch independently of the graph's, so both can be held at once.
-                    // Hidden entirely while the 3rd moving tone is off - Norm: nothing for it
-                    // to control then (no tetrad view to drive), so no point showing a control
-                    // surface for it. Height explicitly matched to the graph square's own
-                    // rendered height (see graphSquareHeight above) rather than left to fill
-                    // whatever the row's full height happens to be.
-                    if settings.showTetrads {
-                        ZSliderView(scale: scale, settings: settings, graphSquareSize: graphSquareHeight, recordingState: recordingState)
-                            .frame(width: 70, height: graphSquareHeight > 0 ? graphSquareHeight : nil)
+                    if settings.zSliderSide == .right {
+                        #if os(iOS)
+                        ControlColumn(settings: settings, recordingState: recordingState)
+                        #endif
+                        graphSquare
+                        zSlider
+                    } else {
+                        zSlider
+                        graphSquare
+                        #if os(iOS)
+                        ControlColumn(settings: settings, recordingState: recordingState)
+                        #endif
                     }
                 }
             }
@@ -234,6 +209,46 @@ struct ContentView: View {
             }
         }
         #endif
+    }
+
+    @ViewBuilder
+    private var graphSquare: some View {
+        ZStack(){
+            Color.black.ignoresSafeArea(.all)
+            GraphView(scale: scale,
+                      diamonds: diamonds,
+                      tetradLayers: tetradLayers,
+                      settings: settings,
+                      recordingState: recordingState
+            )
+            .rotationEffect(.degrees(settings.viewRotation))
+            .animation(.easeIn, value: settings.viewRotation)
+            .scaleEffect(CGSize(width: settings.viewScale, height: settings.viewScale))
+            .offset(x: settings.viewOffsetX, y: settings.viewOffsetY)
+        }
+        .aspectRatio(1/1, contentMode: settings.contentMode)
+        .layoutPriority(1)
+        .background(
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear { graphSquareHeight = proxy.size.height }
+                    .onChange(of: proxy.size.height) { graphSquareHeight = proxy.size.height }
+            }
+        )
+    }
+
+    // Z: its own touch zone, not overlapping the graph - a separate DragGesture here tracks
+    // its own touch independently of the graph's, so both can be held at once. Hidden entirely
+    // while the 3rd moving tone is off - Norm: nothing for it to control then (no tetrad view
+    // to drive), so no point showing a control surface for it. Height explicitly matched to
+    // the graph square's own rendered height (see graphSquareHeight above) rather than left to
+    // fill whatever the row's full height happens to be.
+    @ViewBuilder
+    private var zSlider: some View {
+        if settings.showTetrads {
+            ZSliderView(scale: scale, settings: settings, graphSquareSize: graphSquareHeight, recordingState: recordingState)
+                .frame(width: 70, height: graphSquareHeight > 0 ? graphSquareHeight : nil)
+        }
     }
 }
 

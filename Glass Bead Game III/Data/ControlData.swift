@@ -67,6 +67,13 @@ class AppSettings: ObservableObject{
     // doesn't also fire its existing action as a side effect of being captured, and so there's
     // no ambiguity about which of the two active local NSEvent monitors sees a given key first.
     @Published var isCapturingKeyBinding: Bool = false
+    // Which side the Z-slider sits on (graph's other fixed-width sibling, the iPad
+    // ControlColumn, always takes the opposite side automatically - see ContentView's body).
+    // Persisted like keyMapping - a real physical setup preference (which hand plays which
+    // control), not a session toggle that should reset every launch like most of this class.
+    @Published var zSliderSide: ControlsSide = ControlsSide.loadFromDefaults() {
+        didSet { zSliderSide.saveToDefaults() }
+    }
     // iOS only (GameController framework's GCKeyboardInput only exposes one global
     // keyChangedHandler slot at a time, unlike NSEvent's multiple simultaneous local monitors
     // on macOS) - which action KeyMappingView's capture button is waiting to bind the next
@@ -206,6 +213,27 @@ enum Limit: String, CaseIterable, Identifiable {
 enum GraphShape: String, CaseIterable, Identifiable {
     case square, diamond, triangle
     var id: Self {self}
+}
+
+enum ControlsSide: String, Codable, CaseIterable, Identifiable {
+    case left, right
+    var id: Self { self }
+}
+
+extension ControlsSide {
+    private static let userDefaultsKey = "GlassBeadGameIII.zSliderSide"
+
+    static func loadFromDefaults() -> ControlsSide {
+        guard let raw = UserDefaults.standard.string(forKey: userDefaultsKey),
+              let decoded = ControlsSide(rawValue: raw) else {
+            return .right
+        }
+        return decoded
+    }
+
+    func saveToDefaults() {
+        UserDefaults.standard.set(rawValue, forKey: Self.userDefaultsKey)
+    }
 }
 
 let limitMap: [Limit: Int] = [
