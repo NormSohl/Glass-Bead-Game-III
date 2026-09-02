@@ -58,9 +58,57 @@ struct ZSliderView: View {
             Canvas { context, size in
                 zSliderHeight = size.height
 
-                // Scale-degree gridlines and diamonds, drawn first so the touch marker stays on
-                // top - Norm: the slider should read like a compressed copy of the graph's own
-                // axis, not a bare touch strip. Same convertScaleValueToScreenUnits mapping (and,
+                // Cursor drawn first, diamonds after (and gridlines after that too, in the loop
+                // below) - Norm wants the diamonds sitting fully on top of the cursor bar rather
+                // than the bar cutting a visible line across whichever diamond it currently
+                // overlaps, e.g. the central/unison one when Z sits at the root.
+                //
+                // Same driven-vs-touch split as HitTestView's x/y - see
+                // AppSettings.externallyDrivenVoices. When incoming MIDI (Seq, or any other
+                // controller) owns Z - see Sound.handleIncomingMidi - the marker is drawn from
+                // whatever was already written into settings.zFrequency instead of from touch.
+                // Same read-only treatment applies before the first real touch (see hasTouched
+                // above).
+                let markerY: Double
+                if settings.externallyDrivenVoices.contains(.z) || !hasTouched {
+                    let zNormalized = log2(settings.zFrequency / settings.rootFrequency)
+                    let crosshair = scale.convertScaleValueToScreenUnits(normalizedValue: zNormalized, screenSize: size.height)
+                    markerY = size.height - crosshair
+                } else {
+                    let hit = pitchHitTest(
+                        scale: scale,
+                        screenLocation: hoverLocation.y,
+                        graphSize: size.height,
+                        rootFrequency: settings.rootFrequency,
+                        snapped: settings.snap)
+                    // hit.frequency is a pure function of hoverLocation/rootFrequency/snap, so
+                    // it only actually differs from settings.zFrequency when one of those truly
+                    // changed since the last render - guards against resending the exact same Z
+                    // pitch (to both the synth and any live MIDI destination) on every unrelated
+                    // view update this Canvas happens to re-run for. Same bug, same fix, as
+                    // HitTestView's X/Y.
+                    if hit.frequency != settings.zFrequency {
+                        settings.zFrequency = hit.frequency
+                        sound.setZPitch(frequency: hit.frequency)
+                    }
+                    // hit.crosshair is in the same bottom-up convention as X/Y; flip back to draw
+                    markerY = size.height - hit.crosshair
+                }
+
+                // White - Norm's own choice, distinct from the diamond-list's own colors (now
+                // that those match DiamondView's, gray/yellow/red, none of which would stand out
+                // as a cursor the way the old red - actually TetradView.unisonColor, the X=Y=Z
+                // tetrad-alignment color, a different "unison" than this diamond list's own -
+                // did by coincidence).
+                context.fill(
+                    Path(CGRect(x: 0, y: markerY - 2, width: size.width, height: 4)),
+                    with: .color(.white)
+                )
+
+                // Scale-degree gridlines and diamonds, drawn after the cursor above so the
+                // diamonds stay on top of it - Norm: the slider should read like a compressed
+                // copy of the graph's own axis, not a bare touch strip. Same
+                // convertScaleValueToScreenUnits mapping (and,
                 // as of ContentView's graphSquareHeight, the same pixel height) the graph itself
                 // uses for its gridlines, so a given scale degree lines up row-for-row between
                 // the two. Diamonds centered horizontally in the narrow canvas, sized by each
@@ -86,22 +134,32 @@ struct ZSliderView: View {
 
                     // DiamondView's exact size formula, based on the graph's own content width
                     // (graphSquareSize minus its two 40pt borders) rather than this view's own
-                    // much narrower canvas width - a scale degree's diamond is the same size
-                    // here as it is on the graph itself.
+                    // much narrower canvas width - a scale degree's diamond used to be the same
+                    // size here as on the graph itself. Norm: the larger diamonds in this
+                    // narrower strip read as oversized relative to it - the extra 0.8 factor
+                    // (applied before the floor below, not to it) shrinks anything already well
+                    // above the 4pt floor by 20%, while whatever was already hitting that floor
+                    // stays clamped there exactly as before, unaffected - it can't go smaller
+                    // regardless. This is a deliberate size break from DiamondView's own
+                    // unchanged formula, scoped to this slider alone.
                     let graphContentSize = Double(graphSquareSize) - 2 * settings.border
-                    var diamondSize = (graphContentSize / 35) * sizeNormalized * 0.85
+                    var diamondSize = (graphContentSize / 35) * sizeNormalized * 0.85 * 0.8
                     if diamondSize < 4 { diamondSize = 4 }
 
-                    // DiamondView's exact color formula too - yellow gradient by size, red for
-                    // the root (matching TetradView.unisonColor, same as this slider's own
-                    // cursor) instead of DiamondView's gray, since red is what marks unison
-                    // everywhere else in the tetrad view this slider actually drives.
+                    // Yellow gradient by size, matching DiamondView's own formula - but red, not
+                    // DiamondView's gray, for the central/unison diamond: what actually reads as
+                    // "the graph's own color" at that position in the running app is the X=Y=Z
+                    // tetrad marker (TetradView.unisonColor) drawn over it, not DiamondView's own
+                    // gray diamond underneath - Norm confirmed live. DiamondView's dissonance==3.0
+                    // case already uses this identical red (0.8/0.3/0.3, same values as
+                    // TetradView.unisonColor), so both map to the same color here too.
                     var shade = sizeNormalized
                     if shade > 0.6 { shade = 1.0 }
                     if shade <= 0.6 { shade = shade * 1.5 }
-                    let color: Color = interval.dissonance == 1.0
-                        ? TetradView.unisonColor
-                        : Color(red: shade, green: shade, blue: 0.0)
+                    var color = Color(red: shade, green: shade, blue: 0.0)
+                    if interval.dissonance == 1.0 || interval.dissonance == 3.0 {
+                        color = Color(red: 0.8, green: 0.3, blue: 0.3)
+                    }
 
                     if settings.showDiamonds {
                         let x = Double(size.width) / 2
@@ -113,49 +171,12 @@ struct ZSliderView: View {
                             path.closeSubpath()
                         }
                         context.fill(diamondPath, with: .color(color))
+                        // DiamondView strokes every diamond in gray too - unstroked, this
+                        // slider's fills read brighter/more saturated by contrast, with no
+                        // muting border softening the edge the way the graph's own diamonds have.
+                        context.stroke(diamondPath, with: .color(.gray))
                     }
                 }
-
-                // Same driven-vs-touch split as HitTestView's x/y - see AppSettings.
-                // sequencerDrivenVoices/externallyDrivenVoices. When the sequencer or incoming
-                // MIDI owns Z (playback, scrub, a piano-roll handle drag on a Z note, or an
-                // external MIDI note-on - see Sound.handleIncomingMidi), the marker is drawn
-                // from whatever was already written into settings.zFrequency instead of from
-                // touch. Same read-only treatment applies before the first real touch (see
-                // hasTouched above).
-                let markerY: Double
-                if settings.sequencerDrivenVoices.contains(.z) || settings.externallyDrivenVoices.contains(.z) || !hasTouched {
-                    let zNormalized = log2(settings.zFrequency / settings.rootFrequency)
-                    let crosshair = scale.convertScaleValueToScreenUnits(normalizedValue: zNormalized, screenSize: size.height)
-                    markerY = size.height - crosshair
-                } else {
-                    let hit = pitchHitTest(
-                        scale: scale,
-                        screenLocation: hoverLocation.y,
-                        graphSize: size.height,
-                        rootFrequency: settings.rootFrequency,
-                        snapped: settings.snap)
-                    // hit.frequency is a pure function of hoverLocation/rootFrequency/snap, so
-                    // it only actually differs from settings.zFrequency when one of those truly
-                    // changed since the last render - guards against resending the exact same Z
-                    // pitch (to both the synth and any live MIDI destination) on every unrelated
-                    // view update this Canvas happens to re-run for. Same bug, same fix, as
-                    // HitTestView's X/Y.
-                    if hit.frequency != settings.zFrequency {
-                        settings.zFrequency = hit.frequency
-                        sound.setZPitch(frequency: hit.frequency)
-                    }
-                    // hit.crosshair is in the same bottom-up convention as X/Y; flip back to draw
-                    markerY = size.height - hit.crosshair
-                }
-
-                // Red, matching TetradView.unisonColor - the red unison diamond (X = Y = Z)
-                // tracks wherever this marker currently sits, so the cursor is colored to match
-                // what it drives.
-                context.fill(
-                    Path(CGRect(x: 0, y: markerY - 2, width: size.width, height: 4)),
-                    with: .color(TetradView.unisonColor)
-                )
             }
             .background(.white.opacity(0.08))
             .gesture(
