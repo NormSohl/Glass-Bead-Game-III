@@ -198,9 +198,11 @@ public class Part: HasLength {
     ///
     /// No-op (returns false) if `note` isn't in this Part, if there's no room to satisfy both
     /// minimums, or if the clamped position doesn't actually move anything. If there's no
-    /// neighbor on that edge (`note` is first/last in the Part), only `note`'s own boundary
-    /// moves, clamped against its own opposite edge, `minimumNoteLength`, and (for `.start` with
-    /// no neighbor) 0.
+    /// neighbor on the `.end` edge (`note` is last in the Part), only `note`'s own boundary
+    /// moves - nothing follows it, so there's nothing to leave a gap in. If there's no neighbor
+    /// on the `.start` edge (`note` is first in the Part), the vacated `[0, newTime)` is
+    /// backfilled with a silent rest rather than left uncovered - see the no-neighbor branch
+    /// below for why that matters.
     @discardableResult
     public func moveNoteBoundary(of note: Note, edge: NoteEdge, to newTime: Int, minimumNoteLength: Int = 1) -> Bool {
         guard let index = notes.firstIndex(where: { $0 === note }) else { return false }
@@ -213,7 +215,22 @@ public class Part: HasLength {
             guard lowerBound <= upperBound else { return false }
             let clamped = min(max(newTime, lowerBound), upperBound)
             guard clamped != note.startTime else { return false }
-            previous?.endTime = clamped
+            if let previous {
+                previous.endTime = clamped
+            } else {
+                // No neighbor to shrink - back when this always just moved note.startTime with
+                // nothing else, dragging the Part's very first note's start away from 0 left
+                // [0, clamped) covered by no Note at all. Part.getCurrentNote/getNextNote's
+                // cursor-based traversal (what ScorePlayer's real-time render loop uses) has no
+                // way to recover once it lands in a gap like that - currentXNote (etc.) goes
+                // nil and stays nil, since getNextNote is only ever called from inside the "while
+                // let current = currentXNote" loop in advance() - silencing that voice for the
+                // rest of playback even though real notes exist later. Same class of bug
+                // SequencerState.placeNote was once fixed against, just reachable through this
+                // different code path instead - so it gets the same fix, a backfilled rest.
+                let rest = Note(startTime: 0, endTime: clamped, startFrequency: note.startFrequency, endFrequency: note.startFrequency, amplitude: 0)
+                notes.insert(rest, at: index)
+            }
             note.startTime = clamped
             return true
 

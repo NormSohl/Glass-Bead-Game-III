@@ -276,6 +276,28 @@ final class PartTests: XCTestCase {
         XCTAssertEqual(note.startTime, 10) // clamped at 0 + minimumNoteLength, never negative
     }
 
+    // Regression test: dragging the Part's very first note's start away from time 0 used to
+    // just move note.startTime with nothing else, leaving [0, newStart) covered by no Note at
+    // all - Part.getCurrentNote/getNextNote's cursor-based traversal (what ScorePlayer's
+    // real-time render loop uses) can't recover once it lands in a gap like that, silencing
+    // that voice for the rest of playback even though real notes exist later. Confirmed live:
+    // dragging a handle in Seq's piano roll this way produced a stuck note.
+    func testMoveNoteBoundaryStartWithNoPreviousNeighborBackfillsARest() {
+        let part = Part(name: "test")
+        let note = part.insertNote(startTime: 0, endTime: 200, startFrequency: 220, endFrequency: 220, amplitude: 1)
+
+        let moved = part.moveNoteBoundary(of: note, edge: .start, to: 50, minimumNoteLength: 10)
+
+        XCTAssertTrue(moved)
+        XCTAssertEqual(note.startTime, 50)
+        XCTAssertEqual(part.notes.count, 2) // the backfilled rest, plus the original note
+        XCTAssertEqual(part.notes[0].startTime, 0)
+        XCTAssertEqual(part.notes[0].endTime, 50)
+        XCTAssertEqual(part.notes[0].amplitude, 0) // silent - a rest, not a sounding note
+        XCTAssertEqual(part.notes[1].startTime, 50) // still contiguous - no gap
+        XCTAssertTrue(part.notes[1] === note)
+    }
+
     func testMoveNoteBoundaryEndWithNoNextNeighborGrowsFreely() {
         let part = Part(name: "test")
         let note = part.insertNote(startTime: 0, endTime: 100, startFrequency: 220, endFrequency: 220, amplitude: 1)
