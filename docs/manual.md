@@ -1,9 +1,12 @@
 # Glass Bead Game III — User Manual
 
-*Draft — not yet public. Will publish alongside App Store approval for Graph and Seq.*
+*Glass Bead Game III is shortened to* **GBG III** *throughout this manual.*
 
-This manual covers three things: setting up Graph (and Seq, if you're on a Mac), how to use
-Seq to record, review, and edit performances, and how to connect outboard MIDI gear.
+*Draft — not yet public. Will publish alongside App Store approval for GBG III and Seq.*
+
+This manual is organized in increasing order of complexity: setup, then playing GBG III live,
+then the settings you'll reach for occasionally, then connecting outboard MIDI gear. If you
+want to record a performance and edit it afterward, see the separate **Seq manual**.
 
 ---
 
@@ -11,161 +14,151 @@ Seq to record, review, and edit performances, and how to connect outboard MIDI g
 
 ### Requirements
 
-| | Graph | Seq |
-|---|---|---|
-| iPad | iPadOS 17.2 or later | Not currently supported |
-| Mac | macOS 14.2 or later | macOS 14.2 or later |
+iPadOS 17.2 or later, or macOS 14.2 or later. GBG III runs natively on both.
 
-Seq is a Mac-only companion app today. Graph runs natively on both iPad and Mac.
+### Installing GBG III
 
-### Installing Graph
+Installs from the App Store, same as any other app — nothing special needed.
 
-*[Installation steps depend on final distribution method — TestFlight link or App Store
-listing. Placeholder until that's finalized.]*
-
-On first launch, Graph asks for nothing — no microphone permission, no Bluetooth pairing
+On first launch, GBG III asks for nothing — no microphone permission, no Bluetooth pairing
 prompt. It doesn't touch the microphone (its "recording" feature captures your touch/pen
-gestures, not audio - see §2), and MIDI access needs no permission prompt on either platform.
-You can start playing immediately.
+gestures, not audio - see the Seq manual), and MIDI access needs no permission prompt on either
+platform. Audio output is on by default - if you don't hear anything, check your device's
+volume before anything else. You can start playing immediately.
 
-### Installing Seq
-
-*[Same placeholder as above.]* Seq is a separate app from Graph, with its own icon, though it's
-designed to work closely with Graph when both are running on the same Mac (see §2).
-
-### iPad performance setup
-
-If you're using Graph live on an iPad with an Apple Pencil Pro:
-
-- **Squeeze** toggles the sustain pedal — a free gesture on the same hand already holding the
-  pencil, so it doesn't compete with your other hand.
-- Check **Settings → Apple Pencil → Squeeze** on the iPad itself if squeeze doesn't seem to do
-  anything: if it's set to "Run Shortcut," iPadOS intercepts the gesture before Graph ever sees
-  it. Any other setting works.
-- A Bluetooth or USB keyboard (or a cheap keypad that emulates one) can drive Drone, Portamento,
-  and Pedal too — see **Keyboard Mapping** in Settings to see or change the bindings.
-- The on-screen control column (Drone/Portamento/Pedal/Panic/Settings) and the Z-slider always
-  sit on opposite sides of the graph. **Z-Slider Side** in Settings flips both together, so you
-  can set up for either hand.
+GBG III is free software. It doesn't require an account, doesn't ask you to sign in or sign up,
+has no in-app purchases or payments of any kind, and doesn't track or transmit your data
+anywhere — it makes no network connections at all.
 
 ---
 
-## 2. Using Seq
+## 2. Playing GBG III live
 
-### How Graph and Seq talk to each other
+### Touch and pen
 
-There are two separate ways Graph and Seq connect — it's worth understanding both, since they
-serve different purposes:
+Drag a finger or Apple Pencil anywhere on the main graph to play X and Y together — your
+touch's horizontal position sets X, vertical sets Y. Z has its own separate touch zone (the
+narrow slider alongside the graph), so you can hold a Z position with one hand while playing
+X/Y with the other — the standard two-handed setup is a pencil for X/Y in your dominant hand,
+a thumb on the Z-slider in the other.
 
-1. **Live MIDI, same Mac only.** Graph creates a virtual MIDI destination named
-   "Glass Bead Game III" that Seq automatically detects. When both apps are open on the same
-   Mac, Seq shows a **"Graph detected — Connect"** button; one tap wires Seq's output straight
-   into Graph, so a sequence played back in Seq can sound through Graph itself (or drive Graph's
-   external MIDI/synth output, whatever Graph is currently set up to do). This only works when
-   both apps are running on the *same machine* — there's no wireless/network link built in.
-2. **File export/import, any device.** Graph can save what you've played as a file; Seq can
-   open that file. This is how a performance recorded on the iPad reaches Seq on your Mac —
-   move the file over however you'd move any file (AirDrop, Files app, iCloud Drive, etc.), then
-   open it in Seq.
+### Keyboard shortcuts
 
-### Recording a performance in Graph
+On Mac, your keyboard works immediately. On iPad, connect a Bluetooth or USB keyboard (or a
+cheap keypad that emulates one) for the same shortcuts. Defaults:
 
-In Graph's Settings panel, under **Live Recording**:
+| Action | Keys |
+|---|---|
+| Drone (toggle) | D, K |
+| Portamento (toggle) | G, H |
+| Portamento (hold) | Shift |
+| Pedal (hold) | Space, F, J |
 
-1. Tap **Record**, then play. Graph captures your X/Y/Z touch pitch continuously (300 times a
-   second) for as long as you're actually touching the graph — gaps between phrases are kept as
-   silence, not stitched together.
-2. Tap **Record** again to stop.
-3. Tap **Save** to export a file (default name "Live Recording"). Move this file to wherever
-   Seq will open it from.
+All of these are remappable — see **Keyboard Mapping** under Settings.
 
-The drone voice is never captured this way — there's no touch gesture driving it, so recordings
-only ever contain X/Y/Z material.
+### Apple Pencil Pro squeeze
 
-### Opening a recording in Seq
+On iPad with an Apple Pencil Pro, squeezing the pencil toggles the Pedal — a gesture on the
+same hand already holding the pencil, so it doesn't compete with your other hand's work on the
+Z-slider. If squeeze doesn't seem to do anything, check **Settings → Apple Pencil → Squeeze**
+on the iPad itself: if it's set to "Run Shortcut," iPadOS intercepts the gesture before GBG III
+ever sees it. Any other setting works.
 
-Use Seq's **Open** button and pick the file. If Seq recognizes it as a raw, unsegmented
-recording, it asks:
+### The on-screen controls
 
-- **Segment** — automatically break the continuous recorded pitch into discrete notes (see
-  below).
-- **Load As-Is** — keep it as one long note per gesture, with the full recorded pitch detail
-  intact, and edit/segment by hand later if you want.
-- **Cancel**
+Drone, Portamento, Pedal, Panic, and Settings are also always reachable as buttons — in the
+window's title bar on Mac, or as a column beside the graph on iPad (on whichever side isn't
+currently hosting the Z-slider — see **Z-Slider Side** under Settings). Useful any time you'd
+rather tap than remember a key, or on iPad without a keyboard connected.
 
-### Segmentation
+### Portamento — gliding between pitches
 
-Segmentation looks for places where your pitch was genuinely "sitting still" (within about
-half a semitone of itself for at least a tenth of a second) and treats those as held notes,
-splitting between them at the steepest point of the glide connecting them. It's currently
-**automatic and all-or-nothing** — there's no per-recording control over the sensitivity yet.
-Each resulting note keeps its own recorded micro-pitch detail, so it still plays back with your
-actual expressive detail, not a flattened, quantized pitch.
+By default, touching the graph snaps to the nearest just-intonation scale degree — you always
+land precisely on a tuned pitch. **Portamento** turns that off, so pitch follows your touch
+continuously instead, letting you glide between pitches the way you'd slide a finger on a
+fretless instrument.
 
-If a stretch of playing never sits still long enough anywhere (a continuous glide, or a very
-short gesture), segmentation leaves it as one note rather than guessing at a split.
+Two ways to use it:
+- **Toggle** (G, H, or the button) — turns Portamento on or off for as long as you leave it
+  that way, across as many touches as you like.
+- **Hold** (Shift) — engages Portamento only while held, for a single glide in the middle of an
+  otherwise-snapped phrase, then returns to whatever the toggle state was before you pressed it.
 
-### The Seq window
+This is one of the two main real-time expressive tools, alongside Pedal — reach for it whenever
+you want continuous pitch motion instead of discrete steps.
 
-Top to bottom:
+### Pedal — sustain
 
-- **Transport bar** — play/stop, a scrub slider, a Voice picker (Drone/X/Y/Z) for where new
-  notes get placed, an **Add Note** toggle (tap the empty canvas to place a note of the current
-  duration once armed), a duration stepper, Save/Open, and **Panic**.
-- **Root indicator** — a thin strip showing where the drone currently sits, since the drone has
-  no on-screen crosshair of its own.
-- **Piano roll** — the main editing canvas. Scale-degree gridlines run horizontally; an amber
-  beat grid appears automatically when Seq can detect a steady tempo in what you played (it's
-  fine, and expected, for this not to appear on freely-timed material).
+**Pedal** works like a piano's damper pedal: it keeps whatever's currently sounding held after
+you lift your touch, instead of cutting off the moment you release. That lets you let go of the
+graph entirely while a tone continues, or layer a new touch on top of an already-sustained one.
 
-**Editing a note:** drag its start/end handle to move that boundary (it snaps to the beat grid
-when Seq has detected one). Tap the small square at a note's midpoint to choose how it
-transitions into the next note — Flat, Linear, Ease In, Ease Out, Ease In/Out, or (only if the
-note has recorded detail) Recorded, which also lets you permanently discard that recorded detail
-if you'd rather have a clean curve instead.
-
-**Zoom:** pinch on a trackpad, or use a mouse's scroll wheel — both zoom the timeline
-horizontally and the pitch axis vertically together.
-
-### Sending Seq's output somewhere
-
-Three independent outputs, any combination of which can be on at once:
-
-- **Internal Synth** — Seq's own built-in sound, on by default.
-- **Graph Out** — routes to Graph itself, live, over the same-Mac virtual MIDI connection
-  described above.
-- **Synth Out** — a second, independent MIDI output for driving real outboard gear, with its
-  own destination picker and its own per-voice MIDI channel assignment (Drone/X/Y/Z, each
-  1–16, independently of whatever Graph itself is using).
+- On Mac, Pedal is **held** (Space, F, or J) — press and hold like a real pedal, release to let
+  the sound stop naturally.
+- On iPad, Pencil squeeze and the on-screen button are both **toggles** instead — squeeze once
+  to engage, again to release, since there's no natural physical "hold" gesture for a squeeze.
 
 ### Panic
 
-The red Panic button force-sends a note-off on every channel either output could plausibly be
-using, regardless of what Seq's own bookkeeping thinks is currently sounding. Use it if
-something gets stuck sounding — a very short note can occasionally slip past Seq's own
-note-tracking.
+If something ever gets stuck sounding, the red **Panic** button force-silences every voice
+immediately. A pure safety net — reach for it any time something doesn't stop when you expect.
 
 ---
 
-## 3. Connecting outboard MIDI gear
+## 3. Settings
 
-Graph's **MIDI Destination** and **MIDI Source** pickers (Settings, under Use MIDI) list
-whatever your Mac or iPad already sees as MIDI ports — physical USB-MIDI interfaces, virtual/IAC
-ports, Bluetooth MIDI devices, or Network MIDI sessions. Graph draws no distinction between
-these: if your device already shows up in your Mac's Audio MIDI Setup or your iPad's Bluetooth
+Settings is a popover reached from the gear icon (title bar on Mac, on-screen controls on
+iPad). Most of it is display/exploration, not performance-critical, so you'll reach for these
+occasionally rather than mid-phrase.
+
+- **Diamonds** — shows/hides the diamond markers at valid scale intersections. Turn it off for
+  a cleaner, less cluttered view, especially with Dissonance Field on underneath.
+- **Dissonance Field** — a continuous roughness/consonance visualization behind the grid. Turn
+  it on when exploring unfamiliar harmonic territory and you want to *see* where the consonant
+  regions are, not just the marked diamonds; leave it off otherwise to save a little rendering
+  overhead.
+- **Filter Grid to Z** — thins the background grid down to just the scale degrees relevant to
+  your current Z position, matching how the diamonds themselves thin out. Turn it off if you'd
+  rather see the full, uniform grid regardless of where Z sits.
+- **Note X / Note Y / Note Z** — mutes an individual voice without hiding its crosshair. Use
+  this to practice or explore one or two axes at a time, or to silence a voice you're about to
+  reposition before bringing it back in.
+- **Harmonics** — picks the prime limit (3 through 19) that generates the scale. Lower limits
+  give simpler, more consonant intervals; higher limits open up more exotic, complex ones.
+  Change this to shift the harmonic character of everything available to play.
+- **View** — Square, Diamond, or Triangle: different visual arrangements of the same pitch
+  lattice. Mostly a presentation/exploration choice — try a different one to see the same
+  structure from a different angle, or for a change of look when performing.
+- **Z-Slider Side** — Left or Right. Moves the Z-slider (and, on iPad, the on-screen control
+  column) to whichever side suits your grip - set this once for how you actually hold the
+  device/pencil.
+- **Live Recording** — captures a performance to hand off to Seq for review/editing. See the
+  separate Seq manual for the full recording/import workflow.
+- **Keyboard Mapping** — see §2 above for what's remappable.
+
+---
+
+## 4. Connecting outboard MIDI gear
+
+GBG III's **MIDI Destination** and **MIDI Source** pickers (under Use MIDI) list whatever your
+Mac or iPad already sees as MIDI ports — physical USB-MIDI interfaces, virtual/IAC ports,
+Bluetooth MIDI devices, or Network MIDI sessions. GBG III draws no distinction between these:
+if your device already shows up in your Mac's Audio MIDI Setup or your iPad's Bluetooth
 settings, it'll show up here too, listed by whatever name that device gives itself. There's no
 separate in-app Bluetooth pairing screen — pair the device at the system level first.
 
-- **MIDI Destination** is where Graph sends pitch/note data to — an external synth, a
-  Eurorack MIDI-to-CV interface, etc.
-- **MIDI Source** is where Graph listens for incoming MIDI from — an external controller, or
-  Seq's own live output (see §2).
+- **MIDI Destination** is where GBG III sends pitch/note data to — an external synth, a
+  Eurorack MIDI-to-CV interface, or (on the same Mac) Seq.
+- **MIDI Source** is where GBG III listens for incoming MIDI from — an external controller, or
+  Seq's own live output.
+- **Use internal synth** — GBG III's own built-in sound. Turn this off once your outboard gear
+  is working and you'd rather hear only that.
 
 ### Enabling MPE
 
 **Use MPE** turns on MIDI Polyphonic Expression — each voice (Drone/X/Y/Z) gets its own MIDI
 channel with independent pitch bend, rather than sharing a smaller set of fixed channels. Turn
-this on only if your receiving gear actually understands MPE; Graph sends standard MPE
+this on only if your receiving gear actually understands MPE; GBG III sends standard MPE
 configuration and per-channel pitch bend either way, but a receiver that doesn't understand MPE
 will just see several ordinary channels each bending independently, which may or may not be
 what you want.
@@ -176,7 +169,7 @@ useful if your receiver is only listening for your three main voices.
 
 ### Pitch bend range
 
-Graph declares its pitch bend range to the receiver automatically (±12 semitones without MPE,
+GBG III declares its pitch bend range to the receiver automatically (±12 semitones without MPE,
 ±24 semitones with it) using the standard MIDI RPN 0 message. Well-behaved gear picks this up
 on its own. **Real analog/modular gear often doesn't** — if notes sound in the wrong octave or
 with a squashed/exaggerated bend, you'll likely need to set your receiving instrument's own
@@ -199,4 +192,4 @@ instrument's actual response matches. **Stop** returns to normal playing.
 
 ---
 
-*Feedback on this manual, or on Graph/Seq themselves, welcome — [contact info / link].*
+*Feedback on this manual, or on GBG III itself, welcome — [contact info / link].*
