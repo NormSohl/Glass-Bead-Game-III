@@ -37,10 +37,8 @@ struct ControlView: View {
                 })
                 .tint(tintcolor)
                 .foregroundStyle(.white)
-                // Applies to diamond rendering everywhere on the graph, not just the flat
-                // Z-independent view - GraphView ANDs this into TetradView's own showTetrads
-                // param too, so it also hides the tetrad diamonds on whichever Z plane is
-                // current when the 3rd moving tone is on.
+                // Hides the tetrad diamonds on whichever Z plane is current - not the grid
+                // itself, which "Filter Grid to Z" below controls separately.
 
                 Toggle(isOn: $settings.showDissonance, label:{
                     Text("Dissonance Field")
@@ -48,29 +46,11 @@ struct ControlView: View {
                 .tint(tintcolor)
                 .foregroundStyle(.white)
 
-                Toggle(isOn: $settings.showTetrads, label:{
-                    Text("3rd Moving Tone")
-                })
-                .tint(tintcolor)
-                .foregroundStyle(.white)
-                // Norm: turning this on should start at the 1:1 (unison) plane every time, so
-                // the display reads as unchanged at the moment it switches on (unison's tetrad
-                // slice is identical to the default 2D view) - it only switches layers once the
-                // slider is actually moved off of that plane, never just from toggling on.
-                .onChange(of: settings.showTetrads) {
-                    if settings.showTetrads {
-                        settings.zFrequency = settings.rootFrequency
-                    }
-                }
-
                 Toggle(isOn: $settings.filterGraphLines, label:{
                     Text("Filter Grid to Z")
                 })
                 .tint(tintcolor)
                 .foregroundStyle(.white)
-                // Meaningless without the 3rd moving tone active - there's no Z-layer to filter
-                // the grid down to otherwise.
-                .disabled(!settings.showTetrads)
 
                 Toggle("Note X", isOn: $settings.playNoteX)
                     .tint(tintcolor)
@@ -334,29 +314,35 @@ struct ControlView: View {
         }
     }
 
+    // Diamond/Triangle's 0.75 scale (not the exact 1/sqrt(2) ~ 0.7071 that would inscribe a
+    // 45-degree-rotated square exactly, and not the 0.73 this used before) - found via a live
+    // debugger session that selecting either one crashed the app outright (reproduced with zero
+    // UI interaction at all, just launching with this rotation+scale as the *default* - not
+    // about Picker/.onChange, timing, or publish count, all suspected and ruled out first).
+    // AppKit's Auto Layout engine hit `Assertion failed: (!isnan(minY))` in
+    // _nsis_frameInEngine, and bisecting the scale value directly (rebuild + relaunch per
+    // value) found a narrow crashing band roughly between 0.73 and 0.75 - some numerical edge
+    // case internal to Auto Layout's own constraint solving at that specific rotated+scaled
+    // size, not a bug in this app's own geometry math. 0.75 sits safely outside it, confirmed
+    // repeatedly; .clipped() (see ContentView's graphSquare) contains the resulting slightly
+    // larger overflow regardless of exactly which safe value is used here.
+    private static let diamondTriangleScale = 0.75
+
     func setView() {
-        // square graph
         switch settings.selectedGraphShape {
         case .square:
-            settings.viewRotation = 0.0 // rotation in degrees
-            settings.viewScale = 1.0 // scaling 0.0 equals no change. negative and positive are possible .73 is good for 45 degree rotation
-            settings.viewOffsetX = 0.0 // horizontal offset
-            settings.viewOffsetY = 0.0 // Vertical offset, inverted. negative numbers to go up
-            settings.contentMode = .fit
-            
+            settings.graphTransform = GraphViewTransform()
+
         case .diamond:
-            settings.viewRotation = -45.0 // rotation in degrees
-            settings.viewScale = 0.73 // scaling 0.0 equals no change. negative and positive are possible .73 is good for 45 degree rotation
-            settings.viewOffsetX = 0.0 // horizontal offset
-            settings.viewOffsetY = 0.0 // Vertical offset, inverted. negative numbers to go up
-            settings.contentMode = .fit
-            
+            settings.graphTransform = GraphViewTransform(rotation: -45.0, scale: Self.diamondTriangleScale)
+
         case .triangle:
-            settings.viewRotation = 45.0 // rotation in degrees
-            settings.viewScale = 0.73 // scaling 0.0 equals no change. negative and positive are possible .73 is good for 45 degree rotation
-            settings.viewOffsetX = 0.0 // horizontal offset
-            settings.viewOffsetY = -400 // Vertical offset, inverted. negative numbers to go up
-            settings.contentMode = .fill
+            // offsetY was a hardcoded -400 (raw pixels), tuned for one specific window size and
+            // wrong on any other - most visibly on the iPad's very different screen, where it
+            // badly overflowed into the ControlColumn next to it. -0.4 (40% of the square's own
+            // current side, wherever that ends up) reproduces the same proportion this was
+            // presumably tuned against, but stays correct across window/screen sizes.
+            settings.graphTransform = GraphViewTransform(rotation: 45.0, scale: Self.diamondTriangleScale, offsetY: -0.4)
         }
     }
 }

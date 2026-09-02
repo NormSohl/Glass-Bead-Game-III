@@ -20,21 +20,16 @@ class AppSettings: ObservableObject{
     @Published var showDiamonds: Bool = true
     @Published var showSettings: Bool = false // settings panel is a popover now, freeing the right edge for the Z slider
     @Published var showDissonance: Bool = false // opt-in: true per-pixel resolution, recomputes (cached) on toggle/limit/resize
-    // Default view, not opt-in: at Z=unison (its own default) this looks identical to the old
-    // 2D Diamonds default, so this is a pure superset - Diamonds itself stays available via its
-    // own toggle if turned back on after switching this off (see DiamondView's showDiamonds &&
-    // !showTetrads gating).
-    @Published var showTetrads: Bool = true
-    // Default when the 3rd moving tone is on: the background grid only shows the scale degrees
-    // that actually pair with the current Z (see Tetrads.elementsPairing) instead of every scale
+    // Default when Z sits at unison: the background grid only shows the scale degrees that
+    // actually pair with the current Z (see Tetrads.elementsPairing) instead of every scale
     // degree regardless of Z - the grid was staying dense/uniform even as the diamonds themselves
     // thinned out at off-root Z layers, which read as clutter rather than structure. Toggle stays
     // available to revert to the full unfiltered grid.
     @Published var filterGraphLines: Bool = true
     @Published var selectedLimit: Limit = Limit.eleven
-    // Norm: with the 3rd moving tone on by default, Z sits at unison (= the drone's own pitch)
-    // until touched, so playing the drone too just doubles a tone already sounding - off by
-    // default now that Z covers it; still available via its own toggle. This is the only copy
+    // Norm: Z always sits at unison (= the drone's own pitch) until touched, so playing the
+    // drone too just doubles a tone already sounding - off by default since Z always covers it;
+    // still available via its own toggle. This is the only copy
     // of the drone's enabled state - Sound.enableDrone reads straight through sound.settings
     // (wired below in init()) rather than keeping a separately-defaulted copy.
     @Published var playDrone: Bool = false
@@ -144,14 +139,13 @@ class AppSettings: ObservableObject{
     // combine into range
     @Published var rangeNormalized: Double = 0.0  // initialized in the init function
     
-    // support for rotated views - replaced by UI
-    
-    // square graph: default. should really zero these out at init and let the UI set the appropriate values, even for defaults
-    @Published var viewRotation: Double = 0.0 // rotation in degrees
-    @Published var viewScale: Double = 1.0 // scaling 1.0 equals no change. negative and positive are possible .73 is good for 45 degree rotation
-    @Published var viewOffsetX: Double = 0.0 // horizontal offset
-    @Published var viewOffsetY: Double = 0.0 // Vertical offset, inverted. negative numbers to go up
-    @Published var contentMode: ContentMode = .fit
+    // support for rotated views - replaced by UI. One @Published struct, not five separate
+    // @Published fields, so the five values ControlView's setView() sets per shape always
+    // change together as one atomic snapshot rather than five independent publishes - not just
+    // tidiness, see GraphViewTransform's own comment for a real crash this was chased through
+    // while tracking down (and ultimately unrelated to, see setView()'s comment for the actual
+    // cause).
+    @Published var graphTransform = GraphViewTransform()
     @Published var border: Double = 40
     
     // MIDI data
@@ -213,6 +207,20 @@ enum Limit: String, CaseIterable, Identifiable {
 enum GraphShape: String, CaseIterable, Identifiable {
     case square, diamond, triangle
     var id: Self {self}
+}
+
+// The graph square's rotation/scale/offset, set atomically per GraphShape by ControlView's
+// setView() - see AppSettings.graphTransform's own comment for why this is one struct instead
+// of separate @Published fields.
+struct GraphViewTransform: Equatable {
+    var rotation: Double = 0.0 // degrees
+    // 1.0 = no change. See ControlView.setView()'s own comment for why Diamond/Triangle use
+    // 0.75, not the exact 1/sqrt(2) ~ 0.7071 a 45-degree inscribed-square fit would want.
+    var scale: Double = 1.0
+    // Fractions of the square's own side (ContentView multiplies by graphSquareHeight), not raw
+    // pixels - a fixed pixel offset tuned for one window/screen size is wrong on any other.
+    var offsetX: Double = 0.0
+    var offsetY: Double = 0.0 // inverted - negative numbers go up
 }
 
 enum ControlsSide: String, Codable, CaseIterable, Identifiable {

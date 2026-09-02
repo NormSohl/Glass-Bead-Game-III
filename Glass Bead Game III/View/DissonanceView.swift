@@ -6,9 +6,8 @@
 //
 //  Renders the roughness/dissonance field (see GBGCore's Dissonance.swift for the math)
 //  as a background layer under the grid/diamonds: for every point on the graph, how rough
-//  would the root+X+Y triad - root+X+Y+Z, while the 3rd Moving Tone is on - sound if you
-//  played there? The diamonds mark the exact, precise consonances; this fills in what's
-//  happening in between them.
+//  would the root+X+Y+Z tetrad sound if you played there? The diamonds mark the exact,
+//  precise consonances; this fills in what's happening in between them.
 //
 //  Half-pixel resolution while settings.zDragActive is true (Norm: "2x pixel to save time") -
 //  one roughness value per 2x2 screen pixel block, upscaled by context.draw's own
@@ -107,10 +106,10 @@ struct DissonanceView: View {
         if showDissonance {
             Canvas { context, size in
                 guard let limit = limitMap[settings.selectedLimit], limit > 0 else { return }
-                // Z only actually exists as a live 4th voice while the 3rd Moving Tone is on
-                // (see ZSliderView, only mounted then) - so the field only folds it into the
-                // roughness math in that mode, matching what's really sounding.
-                let zFrequency: Double? = settings.showTetrads ? settings.zFrequency : nil
+                // Dissonance.roughnessGrid accepts an optional Z for its own more general
+                // 2-or-3-voice API, but Z is always live here (ZSliderView is always mounted),
+                // so this is never actually nil.
+                let zFrequency: Double? = settings.zFrequency
                 let isDragging = settings.zDragActive
                 let canvasWidth = max(1, Int(size.width.rounded()))
                 // Half the per-axis pixel count (Norm: "2x pixel to save time") while a drag
@@ -268,10 +267,10 @@ struct DissonanceView: View {
 
     // Builds the field as a single RGBA8 bitmap, one pixel per grid cell - straight (not
     // premultiplied) alpha, matching how the bytes are written below. row 0 of `grid` is the
-    // lowest pitch (bottom of the graph, same convention as Graph/DiamondView/HitTestView),
-    // so it's written into the LAST image row here - the image's own row 0 is its top when
-    // drawn normally, so this is the explicit flip (see the header comment on why this isn't
-    // left to a context transform instead).
+    // lowest pitch (bottom of the graph, same convention as Graph/HitTestView), so it's written
+    // into the LAST image row here - the image's own row 0 is its top when drawn normally, so
+    // this is the explicit flip (see the header comment on why this isn't left to a context
+    // transform instead).
     private static func makeRoughnessImage(grid: [[Double]], maxRoughness: Double, resolution: Int) -> CGImage? {
         var pixels = [UInt8](repeating: 0, count: resolution * resolution * 4)
         pixels.withUnsafeMutableBufferPointer { buffer in

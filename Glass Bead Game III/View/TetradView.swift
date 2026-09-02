@@ -4,22 +4,19 @@
 //
 //  Renders the depth-slider feature's tetrad layers: the (at most two) Z layers bracketing the
 //  current Z slider position, cross-faded by the weight from TetradLayers.bracketingLayers.
-//  Opt-in via the 3rd Moving Tone toggle, and also gated by the Diamonds toggle (GraphView ANDs
-//  the two together into this view's showTetrads param) - Diamonds means "all diamonds, on any
-//  plane," not just the flat 2D view it started out as.
+//  Gated by the Diamonds toggle - "Diamonds" means "all diamonds, on any plane," not just a
+//  flat 2D view.
 //
 //  Color scheme, per Norm (2026-08-28, revised after adding the third moving tone): with three
-//  moving tones now in play, the drone/root is dropped from the color calculation entirely -
+//  moving tones in play, the drone/root is dropped from the color calculation entirely -
 //  movingToneUnisonCount (0/1/3, see Tetrads.swift) drives it instead of the old six-pair
 //  dissonanceCount. Red when all three moving tones coincide (X=Y=Z, regardless of root), white
-//  when exactly two of the three do, yellow - gradient by size, DiamondView's exact formula -
-//  when none do. (2 is structurally impossible, same as the old scheme's 4/5 gap.)
+//  when exactly two of the three do, yellow - gradient by size - when none do. (2 is
+//  structurally impossible, same as the old scheme's 4/5 gap.)
 //
-//  Size/geometry mirror DiamondView exactly, so a tetrad layer at weight 1.0 (Z sitting exactly
-//  on a scale value) lines up with the equivalent 2D diamond - matching the verified
-//  reduction-to-2D behavior in TetradsTests. Colors intentionally differ from DiamondView's own
-//  (which still colors by the six-pair dissonanceCount, including the drone) since the two views
-//  are never shown at once - Tetrad Layers fully replaces Diamonds when the 3rd moving tone is on.
+//  A tetrad layer at weight 1.0 (Z sitting exactly on a scale value) reduces to the same
+//  geometry a flat 2D diamond would have at that position - see GBGCore's
+//  TetradsTests.testTetradsReduceToDiamondsWhenZIsAtUnison for the verified math.
 
 import SwiftUI
 import GBGCore
@@ -28,10 +25,10 @@ struct TetradView: View {
     let tetradLayers: TetradLayers
     let scale: Scale
     @ObservedObject var settings: AppSettings
-    let showTetrads: Bool
+    let showDiamonds: Bool
 
     var body: some View {
-        if showTetrads {
+        if showDiamonds {
             Canvas { context, size in
                 let zRatio = settings.zFrequency / settings.rootFrequency
                 // Rounded to the same precision TetradLayers groups its Z keys at
@@ -64,9 +61,9 @@ struct TetradView: View {
                 var toDraw: [(tetrad: TetradElement, weight: Double, size: Double)] = []
                 for layer in activeLayers {
                     for tetrad in layer.tetrads {
-                        // Same base sizing as DiamondView - Norm: size should stay put during a
-                        // cross-fade, only opacity fades (see the fill/stroke calls below), so a
-                        // fading-in tetrad reads as "becoming visible" rather than "growing."
+                        // Norm: size should stay put during a cross-fade, only opacity fades
+                        // (see the fill/stroke calls below), so a fading-in tetrad reads as
+                        // "becoming visible" rather than "growing."
                         var tetradSize = (size.width / 35) * tetrad.sizeNormalized * 0.85
                         if tetradSize < 4 { tetradSize = 4 }
                         toDraw.append((tetrad, layer.weight, tetradSize))
@@ -132,15 +129,11 @@ struct TetradView: View {
         switch movingToneUnisonCount {
         case 3: return unisonColor // X = Y = Z, drone excluded
         // Black, not white - Norm: white read as too loud for a tier that isn't the map's most
-        // important point (that's red, above). Matches DiamondView's original scheme before an
-        // earlier fix changed ITS analogous tier from black to light gray specifically because
-        // black blended into the Dissonance Field's own zero-roughness black - the same risk
-        // applies here if the field is ever on at the same time as the 3rd moving tone (rare:
-        // Diamonds/DissonanceField and 3rd-moving-tone-off is the field's usual pairing), but the
-        // stroke below stays gray regardless of fill, so the diamond's outline still reads even
-        // against a black field.
+        // important point (that's red, above). Black risks blending into the Dissonance Field's
+        // own zero-roughness black when that's on too, but the stroke below stays gray
+        // regardless of fill, so the diamond's outline still reads even against a black field.
         case 1: return Color(red: 0.0, green: 0.0, blue: 0.0) // exactly two of the three coincide
-        default: // 0: none of the three coincide - DiamondView's exact yellow-gradient-by-size formula
+        default: // 0: none of the three coincide - yellow, gradient by size
             var shade = sizeNormalized
             if shade > 0.6 { shade = 1.0 }
             if shade <= 0.6 { shade = shade * 1.5 }

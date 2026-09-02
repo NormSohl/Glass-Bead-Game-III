@@ -13,14 +13,13 @@ struct ContentView: View {
     @StateObject private var settings = AppSettings()
     @StateObject private var recordingState: RecordingState
 
-    // Scale/Diamonds/TetradLayers only depend on the scale's shape (limit, highest/lowest
-    // ratio) - not on Z. They're cached here and recomputed only via onChange(of:
-    // settings.selectedLimit) below, rather than as plain `let`s in body: settings.zFrequency
-    // now publishes on every Z-slider touch-move frame, and recomputing Tetrads (the basis of
-    // tetradLayers) from scratch on every frame would be the "hundreds of ms at worst" cost
-    // from the design notes running many times a second instead of once per limit change.
+    // Scale/TetradLayers only depend on the scale's shape (limit, highest/lowest ratio) - not
+    // on Z. They're cached here and recomputed only via onChange(of: settings.selectedLimit)
+    // below, rather than as plain `let`s in body: settings.zFrequency now publishes on every
+    // Z-slider touch-move frame, and recomputing Tetrads (the basis of tetradLayers) from
+    // scratch on every frame would be the "hundreds of ms at worst" cost from the design notes
+    // running many times a second instead of once per limit change.
     @State private var scale: Scale
-    @State private var diamonds: Diamonds
     @State private var tetradLayers: TetradLayers
 
     // The graph square's own rendered height, captured via GeometryReader below - the square
@@ -34,6 +33,13 @@ struct ContentView: View {
     // mapping.
     @State private var graphSquareHeight: CGFloat = 0
 
+    // graphSquareHeight, clamped to always be finite and non-negative before it's ever
+    // multiplied into anything - see graphSquare's own offset comment for why this exists (a
+    // crash, not just defensive style).
+    private var safeGraphSquareHeight: CGFloat {
+        graphSquareHeight.isFinite && graphSquareHeight > 0 ? graphSquareHeight : 0
+    }
+
     init() {
         let initialSettings = AppSettings()
         _settings = StateObject(wrappedValue: initialSettings)
@@ -43,7 +49,6 @@ struct ContentView: View {
             highestRatio: initialSettings.highestRatio,
             lowestRatio: initialSettings.lowestRatio)
         _scale = State(initialValue: initialScale)
-        _diamonds = State(initialValue: Diamonds(scale: initialScale))
         _tetradLayers = State(initialValue: TetradLayers(scale: initialScale))
     }
 
@@ -53,7 +58,6 @@ struct ContentView: View {
             highestRatio: settings.highestRatio,
             lowestRatio: settings.lowestRatio)
         scale = newScale
-        diamonds = Diamonds(scale: newScale)
         tetradLayers = TetradLayers(scale: newScale)
     }
 
@@ -85,13 +89,11 @@ struct ContentView: View {
         }
         .frame (minWidth: 800, minHeight: 500)
         #if os(macOS)
-        // Locks the window to always resize both axes together, at whatever ratio currently has
-        // no dead space (see idealWindowSize) - dragging just one edge would otherwise leave
-        // black borders, since the Z-slider is fixed-point-size, not proportional, so only a
-        // plain resizable window (no ratio lock) can go out of sync with the square graph's own
-        // aspect. Recomputed whenever the Z-slider (3rd moving tone) shows/hides, since that
-        // changes the content's natural ratio.
-        .background(WindowAspectLockView(aspectSize: idealWindowSize(thirdToneShown: settings.showTetrads)))
+        // Locks the window to always resize both axes together, at whatever ratio has no dead
+        // space (see idealWindowSize) - dragging just one edge would otherwise leave black
+        // borders, since the Z-slider is fixed-point-size, not proportional, so only a plain
+        // resizable window (no ratio lock) can go out of sync with the square graph's own aspect.
+        .background(WindowAspectLockView(aspectSize: idealWindowSize()))
         // Keyboard access to Portamento/Pedal, per Norm - "third party pedals can be configured
         // to work with them" (many cheap USB foot pedals emulate a plain keystroke). See
         // KeyCommandMonitor's own header comment for the toggle-vs-momentary distinction.
@@ -216,39 +218,63 @@ struct ContentView: View {
         ZStack(){
             Color.black.ignoresSafeArea(.all)
             GraphView(scale: scale,
-                      diamonds: diamonds,
                       tetradLayers: tetradLayers,
                       settings: settings,
                       recordingState: recordingState
             )
-            .rotationEffect(.degrees(settings.viewRotation))
-            .animation(.easeIn, value: settings.viewRotation)
-            .scaleEffect(CGSize(width: settings.viewScale, height: settings.viewScale))
-            .offset(x: settings.viewOffsetX, y: settings.viewOffsetY)
+            .rotationEffect(.degrees(settings.graphTransform.rotation))
+            .animation(.easeIn, value: settings.graphTransform.rotation)
+            .scaleEffect(CGSize(width: settings.graphTransform.scale, height: settings.graphTransform.scale))
+            // graphSquareHeight is one render frame behind (see its own declaration above) -
+            // fine in practice, matching how zSlider already tolerates the same lag for its own
+            // sizing. Routed through safeGraphSquareHeight, not the raw @State, as a defensive
+            // guard against a non-finite height reaching .offset() - macOS's own
+            // .windowResizability(.contentSize) measures this view with an unconstrained/
+            // extreme proposed size on at least one pass, and a GeometryReader caught in that
+            // pass could in principle report one.
+            .offset(x: settings.graphTransform.offsetX * safeGraphSquareHeight, y: settings.graphTransform.offsetY * safeGraphSquareHeight)
         }
-        .aspectRatio(1/1, contentMode: settings.contentMode)
+        // Always .fit, not tied to GraphShape at all (Triangle used to set this to .fill) -
+        // this outer frame is what graphSquareHeight (below) measures, and .clipped() only
+        // affects rendering, not layout size, so a .fill content mode here made that
+        // measurement pick up the oversized, unclipped .fill layout size instead of the
+        // visually-clipped square. That inflated graphSquareHeight fed into the Z-slider's own
+        // height and never shrank back down after leaving Triangle - Norm: "Square view is
+        // supposed to return scale to normal view, but remains too large" after visiting
+        // Triangle. Triangle's own extra content still happens - it comes from GraphView's own
+        // rotation+scale above, not from this outer aspectRatio - so this frame can stay a
+        // stable, shape-independent .fit without losing that effect.
+        .aspectRatio(1/1, contentMode: .fit)
+        // Diamond's own 0.73 scale (vs the exact 1/sqrt(2) ~ 0.7071 that would inscribe a
+        // rotated square exactly) and Triangle's own rotation+scale combination both push
+        // content past this frame's own bounds by design - clipped so any of that spills onto
+        // nothing beyond this square, rather than bleeding into whatever's next to it (the
+        // iPad's ControlColumn, or the Z-slider).
+        .clipped()
         .layoutPriority(1)
         .background(
             GeometryReader { proxy in
+                // Guarded here at the source, not just where it's consumed (safeGraphSquareHeight)
+                // - macOS's .windowResizability(.contentSize) can measure this view with an
+                // unconstrained/extreme proposed size on at least one pass, and this
+                // GeometryReader caught in that pass can report a non-finite height. zSlider's
+                // own .frame(height:) reads graphSquareHeight directly, not through the safe
+                // wrapper, so a non-finite value stored here would reach AppKit's layout engine
+                // from there too - better to never store one at all.
                 Color.clear
-                    .onAppear { graphSquareHeight = proxy.size.height }
-                    .onChange(of: proxy.size.height) { graphSquareHeight = proxy.size.height }
+                    .onAppear { if proxy.size.height.isFinite { graphSquareHeight = proxy.size.height } }
+                    .onChange(of: proxy.size.height) { if proxy.size.height.isFinite { graphSquareHeight = proxy.size.height } }
             }
         )
     }
 
     // Z: its own touch zone, not overlapping the graph - a separate DragGesture here tracks
-    // its own touch independently of the graph's, so both can be held at once. Hidden entirely
-    // while the 3rd moving tone is off - Norm: nothing for it to control then (no tetrad view
-    // to drive), so no point showing a control surface for it. Height explicitly matched to
-    // the graph square's own rendered height (see graphSquareHeight above) rather than left to
-    // fill whatever the row's full height happens to be.
-    @ViewBuilder
+    // its own touch independently of the graph's, so both can be held at once. Height
+    // explicitly matched to the graph square's own rendered height (see graphSquareHeight
+    // above) rather than left to fill whatever the row's full height happens to be.
     private var zSlider: some View {
-        if settings.showTetrads {
-            ZSliderView(scale: scale, settings: settings, graphSquareSize: graphSquareHeight, recordingState: recordingState)
-                .frame(width: 70, height: graphSquareHeight > 0 ? graphSquareHeight : nil)
-        }
+        ZSliderView(scale: scale, settings: settings, graphSquareSize: graphSquareHeight, recordingState: recordingState)
+            .frame(width: 70, height: graphSquareHeight > 0 ? graphSquareHeight : nil)
     }
 }
 

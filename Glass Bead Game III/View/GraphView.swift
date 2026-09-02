@@ -10,7 +10,6 @@ import GBGCore
 
 struct GraphView: View {
     let scale: Scale
-    let diamonds:Diamonds
     let tetradLayers: TetradLayers
     @ObservedObject var settings: AppSettings
     @ObservedObject var recordingState: RecordingState
@@ -38,21 +37,10 @@ struct GraphView: View {
                     DissonanceView(scale: scale, settings: settings, showDissonance: settings.showDissonance)
                     // graph
                     Graph(scale: scale, tetradLayers: tetradLayers, settings: settings)
-                    // Tetrad Layers is the generalization Diamonds reduces to at Z=unison, not
-                    // an independent thing to compare against it - so it takes over entirely
-                    // (DiamondView doesn't draw at all) rather than the two overlapping, which
-                    // showed as a smaller tetrad diamond nested inside a larger, unrelated,
-                    // Z-independent 2D diamond at the same position. Diamonds itself (Norm)
-                    // means "all diamonds, on any plane" though, so it's ANDed into TetradView's
-                    // gate too rather than only ever disabling DiamondView.
-                    DiamondView(diamonds: diamonds,
-                                showDiamonds: settings.showDiamonds && !settings.showTetrads,
-                                scale: scale,
-                                showDissonanceField: settings.showDissonance)
                     TetradView(tetradLayers: tetradLayers,
                                scale: scale,
                                settings: settings,
-                               showTetrads: settings.showTetrads && settings.showDiamonds)
+                               showDiamonds: settings.showDiamonds)
 
                     HitTestView(scale:scale, settings: settings, recordingState: recordingState)
                 }.border(.white)
@@ -116,10 +104,10 @@ struct Graph: View {
                 context.stroke(path, with: .color(.gray.opacity(weight)))
             }
 
-            // With the 3rd moving tone on, filter the grid down to just the scale degrees that
-            // actually pair with the current Z (Tetrads.elementsPairing) instead of showing every
-            // scale degree regardless of Z - matches the diamonds themselves thinning out at
-            // off-root Z layers. At Z=unison this is always the full scale unfiltered (see
+            // Filter the grid down to just the scale degrees that actually pair with the
+            // current Z (Tetrads.elementsPairing) instead of showing every scale degree
+            // regardless of Z - matches the diamonds themselves thinning out at off-root Z
+            // layers. At Z=unison this is always the full scale unfiltered (see
             // elementsPairing's own doc comment), so the default view is untouched either way.
             //
             // Weighted by the same bracketing-Z-keys TetradView's diamonds cross-fade between
@@ -128,7 +116,7 @@ struct Graph: View {
             // weight, so it fades in/out through a slide exactly like the diamonds do, rather
             // than snapping on/off abruptly. A line valid at both keys is drawn twice, once per
             // key's weight - alpha stacks, same as two overlapping diamonds would.
-            if settings.showTetrads && settings.filterGraphLines {
+            if settings.filterGraphLines {
                 let zValueNormalized = Tetrads.rounded(log2(settings.zFrequency / settings.rootFrequency))
                 let zKeys: [(key: Double, weight: Double)] = settings.snap
                     ? tetradLayers.nearestZKey(to: zValueNormalized).map { [(key: $0, weight: 1.0)] } ?? []

@@ -18,7 +18,6 @@
 		06824BFC2B886963002E9661 /* DissonanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF52B886962002E9661 /* DissonanceView.swift */; };
 		06824BFD2B886963002E9661 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF62B886962002E9661 /* ContentView.swift */; };
 		06824BFE2B886963002E9661 /* HitTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF72B886962002E9661 /* HitTestView.swift */; };
-		06824BFF2B886963002E9661 /* DiamondView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF82B886962002E9661 /* DiamondView.swift */; };
 		06824C012B886963002E9661 /* GraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BFA2B886963002E9661 /* GraphView.swift */; };
 		06824C022B886963002E9661 /* ControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BFB2B886963002E9661 /* ControlView.swift */; };
 		06D0626C2BAA9A9000C68262 /* ControlData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062682BAA9A9000C68262 /* ControlData.swift */; };
@@ -54,7 +53,6 @@
 		06824BF52B886962002E9661 /* DissonanceView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DissonanceView.swift; sourceTree = "<group>"; };
 		06824BF62B886962002E9661 /* ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		06824BF72B886962002E9661 /* HitTestView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HitTestView.swift; sourceTree = "<group>"; };
-		06824BF82B886962002E9661 /* DiamondView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DiamondView.swift; sourceTree = "<group>"; };
 		06824BFA2B886963002E9661 /* GraphView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GraphView.swift; sourceTree = "<group>"; };
 		06824BFB2B886963002E9661 /* ControlView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControlView.swift; sourceTree = "<group>"; };
 		06D062312BAA953300C68262 /* Overview.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Overview.md; sourceTree = "<group>"; };
@@ -155,7 +153,6 @@
 			children = (
 				06824BF62B886962002E9661 /* ContentView.swift */,
 				06824BFB2B886963002E9661 /* ControlView.swift */,
-				06824BF82B886962002E9661 /* DiamondView.swift */,
 				06824BF52B886962002E9661 /* DissonanceView.swift */,
 				06824BFA2B886963002E9661 /* GraphView.swift */,
 				06824BF72B886962002E9661 /* HitTestView.swift */,
@@ -349,7 +346,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				06824BFF2B886963002E9661 /* DiamondView.swift in Sources */,
 				06D0626C2BAA9A9000C68262 /* ControlData.swift in Sources */,
 				CA9DFB93682D7900B1F2C29C /* RecordingState.swift in Sources */,
 				06824BDE2B881E3C002E9661 /* Glass_Bead_Game_IIIApp.swift in Sources */,

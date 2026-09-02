@@ -35,11 +35,9 @@ struct GlassBeadGameIIIApp: App {
         // plain generous defaultSize left a gap, since windowResizability only bounds later
         // manual resizes, it doesn't shrink an oversized initial size down to fit. So this
         // computes the actual content size ContentView's own layout would produce at the
-        // screen's available height (square graph + ZSliderView's fixed 70pt, when shown),
-        // rather than guessing a width. Launch always starts with the 3rd moving tone ON
-        // (AppSettings' own default), so this uses that ratio - see ContentView's
-        // WindowAspectLockView for the version that also accounts for it live.
-        .defaultSize(idealWindowSize(thirdToneShown: true))
+        // screen's available height (square graph + ZSliderView's fixed 70pt), rather than
+        // guessing a width.
+        .defaultSize(idealWindowSize())
     }
 }
 
@@ -48,9 +46,9 @@ import AppKit
 
 // Shared by both the launch-time defaultSize above and ContentView's live aspect-ratio lock, so
 // the two can never drift apart into two different "correct" sizes.
-func idealWindowSize(thirdToneShown: Bool) -> CGSize {
+func idealWindowSize() -> CGSize {
     let titleBarAllowance: CGFloat = 28
-    let zSliderWidth: CGFloat = thirdToneShown ? 70 : 0
+    let zSliderWidth: CGFloat = 70
 
     let screenHeight = NSScreen.main?.visibleFrame.height ?? 1000
     let graphHeight = screenHeight - titleBarAllowance
@@ -59,7 +57,7 @@ func idealWindowSize(thirdToneShown: Bool) -> CGSize {
     return CGSize(width: width, height: height)
 }
 #else
-func idealWindowSize(thirdToneShown: Bool) -> CGSize {
+func idealWindowSize() -> CGSize {
     CGSize(width: 800, height: 552)
 }
 #endif
