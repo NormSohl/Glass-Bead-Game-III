@@ -95,8 +95,28 @@ public class ScorePlayer {
         isPlaying = true
     }
 
+    /// Stops playback immediately, silencing every voice right away rather than leaving
+    /// whatever amplitude was last applied frozen in `triad` - advance() no-ops entirely once
+    /// isPlaying is false (see its own guard, top of this file), so nothing would otherwise
+    /// ever ramp a mid-note amplitude back down to zero, leaving that voice audibly stuck.
     public func stop() {
         isPlaying = false
+        appliedDroneAmplitude = 0
+        appliedXAmplitude = 0
+        appliedYAmplitude = 0
+        appliedZAmplitude = 0
+        triad.setTriadRootAmplitude(amplitude: 0)
+        triad.setTriadXAmplitude(amplitude: 0)
+        triad.setTriadYAmplitude(amplitude: 0)
+        triad.setTriadZAmplitude(amplitude: 0)
+        currentDroneNote = nil
+        currentXNote = nil
+        currentYNote = nil
+        currentZNote = nil
+        currentDroneFrequency = nil
+        currentXFrequency = nil
+        currentYFrequency = nil
+        currentZFrequency = nil
     }
 
     /// Advances playback by exactly one sample, pushing this sample's pitch/amplitude for each
