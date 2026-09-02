@@ -7,7 +7,9 @@
 
 import SwiftUI
 import GBGCore
+#if os(macOS)
 import AppKit
+#endif
 
 // Deliberately module-scope rather than @State on HitTestView: an earlier attempt to
 // keep this as view state caused inconsistent behavior. Left as-is until that can be
@@ -27,6 +29,7 @@ var height = 0.0
 // handler's own isSound guard (mirroring the real DragGesture's own guard) to stay a no-op
 // whenever a touch is already in progress - safe even if the real DragGesture also ends up
 // firing normally for the same click, which is the common case once the window is key.
+#if os(macOS)
 private struct FirstClickCatcher: NSViewRepresentable {
     let onFirstClick: (CGPoint, Bool) -> Void
 
@@ -78,6 +81,7 @@ private struct FirstClickCatcher: NSViewRepresentable {
         }
     }
 }
+#endif
 
 struct HitTestView: View {
     // manage debug trace in hitTest
@@ -170,7 +174,9 @@ struct HitTestView: View {
                 lineWidth: 3
             )
         }
+        #if os(macOS)
         .background(FirstClickCatcher(onFirstClick: handleFirstClick))
+        #endif
         // only needed for mouse input, so that crosshair is updated on hover
         .onContinuousHover { phase in
             if hitTestTrace {print("HitTestView: onContinuousHover")}

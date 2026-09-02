@@ -114,6 +114,13 @@ struct ContentView: View {
         // KeyCommandMonitor's own header comment for the toggle-vs-momentary distinction.
         .background(KeyCommandMonitor(settings: settings))
         #endif
+        #if os(iOS)
+        // Apple Pencil Pro squeeze -> Pedal toggle, for live performance: the graphic-entry
+        // hand already holds the pencil, so this is a free gesture on that same hand rather
+        // than competing with the touch surface. See PencilSqueezeMonitor's own comment for
+        // the iPad Settings caveat that can silently swallow this.
+        .background(PencilSqueezeMonitor(settings: settings))
+        #endif
         .onChange(of: settings.selectedLimit) {
             rebuildScaleDependentState()
         }
@@ -439,6 +446,56 @@ private struct WindowAspectLockView: NSViewRepresentable {
             } else {
                 return NSSize(width: frameSize.height * ratio, height: frameSize.height)
             }
+        }
+    }
+}
+#endif
+
+#if os(iOS)
+import UIKit
+
+// Bridges Apple Pencil Pro's squeeze gesture into a single settings.pedal toggle - the iOS
+// analog of KeyCommandMonitor's own NSEvent-bridging trick above, just via
+// UIPencilInteraction instead. Fires once per squeeze, on .ended rather than .began, so a
+// squeeze reads as one clean toggle - matching how D/K/G/H already toggle rather than hold.
+//
+// iOS 17.5+, Apple Pencil Pro only - older Pencils have no squeeze gesture at all. Also
+// depends on a *device-global* preference: Settings > Apple Pencil > Squeeze on the iPad
+// itself. If that's set to "Run Shortcut," the system intercepts the gesture before this
+// app's delegate ever sees it - any other choice (e.g. the default "Show Contextual
+// Palette") lets it through. Not something this code can override or detect.
+private struct PencilSqueezeMonitor: UIViewRepresentable {
+    @ObservedObject var settings: AppSettings
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(settings: settings)
+    }
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        if #available(iOS 17.5, *) {
+            let interaction = UIPencilInteraction()
+            interaction.delegate = context.coordinator
+            view.addInteraction(interaction)
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        context.coordinator.settings = settings
+    }
+
+    final class Coordinator: NSObject, UIPencilInteractionDelegate {
+        var settings: AppSettings
+
+        init(settings: AppSettings) {
+            self.settings = settings
+        }
+
+        @available(iOS 17.5, *)
+        func pencilInteraction(_ interaction: UIPencilInteraction, didReceiveSqueeze squeeze: UIPencilInteraction.Squeeze) {
+            guard squeeze.phase == .ended else { return }
+            settings.pedal.toggle()
         }
     }
 }

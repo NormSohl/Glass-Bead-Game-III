@@ -7,6 +7,7 @@
 //  ContentView's KeyCommandMonitor for where the mapping actually gets applied live.
 //
 
+#if os(macOS)
 import SwiftUI
 import AppKit
 
@@ -143,3 +144,4 @@ struct KeyMappingView: View {
         settings.isCapturingKeyBinding = false
     }
 }
+#endif
