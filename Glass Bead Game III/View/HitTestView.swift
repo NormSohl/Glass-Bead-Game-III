@@ -56,7 +56,19 @@ struct HitTestView: View {
                 // settings change while a voice is already playing. Norm found this via a MIDI
                 // capture: X/Y pitch bend kept re-arriving on a fixed stale value continuously
                 // while nothing was actually being touched.
-                if xHit.frequency != settings.xFrequency {
+                //
+                // The isDrag guard matters independently of that: this whole closure re-runs on
+                // ANY settings change (e.g. Z-slider dragging, which is a totally separate touch
+                // zone but shares this same AppSettings object), and hoverLocation keeps tracking
+                // wherever the mouse cursor currently sits even when nothing's being touched (see
+                // onContinuousHover below - that's deliberate, for the crosshair hover-preview).
+                // Without this guard, X/Y's actual pitch would get silently overwritten by
+                // whatever the mouse happens to be hovering over while dragging Z, since X/Y are
+                // now audible during Z-only touches (Norm's own recent change) instead of muted
+                // the way they used to be while graphTouchCount was 0 - crosshairPoint.x below
+                // still uses the live hover position unconditionally, so the on-screen preview
+                // keeps working exactly as before; only the audible/exported pitch is gated.
+                if isDrag, xHit.frequency != settings.xFrequency {
                     sound.setXPitch(frequency: xHit.frequency)
                     settings.xFrequency = xHit.frequency
                 }
@@ -70,7 +82,7 @@ struct HitTestView: View {
                 yCrosshair = scale.convertScaleValueToScreenUnits(normalizedValue: yNormalized, screenSize: size.height)
             } else {
                 let yHit = pitchHitTest(scale: scale, screenLocation: hoverLocation.y, graphSize: size.height, rootFrequency: rootFrequency, snapped: snapped)
-                if yHit.frequency != settings.yFrequency {
+                if isDrag, yHit.frequency != settings.yFrequency {
                     sound.setYPitch(frequency: yHit.frequency)
                     settings.yFrequency = yHit.frequency
                 }
@@ -133,7 +145,14 @@ struct HitTestView: View {
             .onEnded { _ in
                 //hoverLocation = .zero  // don't think this is needed.
                 isDrag = false
-                isShift = false
+                // Resting state should reflect the Snapping toggle (matching the "hack" in the
+                // plain gesture's onChanged below), not hardcode snapped=true - hardcoding this
+                // to false used to make the crosshair visibly snap to the nearest diamond for a
+                // frame right on release, even mid-Portamento with Snapping off, since the very
+                // next hover-preview render would then compute a snapped hit-test. isDrag=false
+                // (above) already freezes the actual audible pitch by that point (see the X/Y
+                // write guards above), so this was a display-only glitch, not an audible one.
+                isShift = !settings.snap
                 sound.endGraphTouch(pedal: settings.pedal)
                 recordingState.endGraphTouch()
                 if !settings.pedal {
@@ -167,7 +186,9 @@ struct HitTestView: View {
                 .onEnded { _ in
                     //hoverLocation = .zero  // this has been causing occasional bad values leaking into drag gestures. Don't think it is actually needed.
                     isDrag = false
-                    isShift = false
+                    // See the shift-modifier gesture's own onEnded, just above #endif, for why
+                    // this reflects settings.snap rather than hardcoding false.
+                    isShift = !settings.snap
                     // if pedal is true, sound keeps going until the pedal itself is released
                     sound.endGraphTouch(pedal: settings.pedal)
                     recordingState.endGraphTouch()
