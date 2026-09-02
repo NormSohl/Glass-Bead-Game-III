@@ -14,6 +14,16 @@
 //  values HitTestView/ZSliderView already publish continuously every touch-move frame
 //  (settings.xFrequency/yFrequency/zFrequency), it never drives playback itself.
 //
+//  The timer itself is a DispatchSourceTimer, not Foundation's RunLoop-based Timer - Norm found
+//  the original 80Hz target (chosen against the live-record plan's ~60-100Hz "plenty for vibrato/
+//  slides" reasoning) was only actually achieving ~76Hz in a real capture, and 300Hz (closer to
+//  what's needed to resolve real musical timing, not just smooth pitch curves) pushes well past
+//  where a plain RunLoop Timer stays reliable - GCD's dispatch timers are scheduled off the
+//  kernel's own clock rather than RunLoop turns, and hold up at much higher frequencies with less
+//  jitter. Still targets the main queue deliberately (not a background queue) - settings.x/y/
+//  zFrequency are @Published on AppSettings, main-thread-only state; a background-queue timer
+//  reading them alongside HitTestView writing them on the main thread would be a real data race.
+//
 //  Drone has no live-touch pitch interaction today (just a fixed reference tone + on/off toggle),
 //  so dronePart is always left empty here - nothing to capture. An empty Part is a valid,
 //  gracefully-handled document, not an error (see SeqDocument/Part).
@@ -22,9 +32,9 @@
 import Foundation
 import GBGCore
 
-/// How often the sampling timer ticks while armed - within the plan's ~60-100Hz target. A plain
-/// Timer, not a real-time thread; see this file's header note on why that's fine here.
-private let recordingSampleHz: Double = 80
+/// How often the sampling timer ticks while armed - 300Hz, adequate to resolve real musical
+/// timing (not just smooth pitch curves, which the original 80Hz target was tuned for).
+private let recordingSampleHz: Double = 300
 
 final class RecordingState: ObservableObject {
     @Published private(set) var isRecording = false
@@ -39,7 +49,7 @@ final class RecordingState: ObservableObject {
     private var sampleRate: Double { max(1, sampleRateProvider()) }
 
     private var recordingStart: Date?
-    private var timer: Timer?
+    private var timer: DispatchSourceTimer?
 
     /// One voice's in-progress touch-gesture - nil when that voice isn't currently being
     /// captured (not touched, or touched but recording isn't armed). `referenceFrequency` is
@@ -178,15 +188,20 @@ final class RecordingState: ObservableObject {
 
     private func startTimer() {
         stopTimer()
-        let newTimer = Timer(timeInterval: 1.0 / recordingSampleHz, repeats: true) { [weak self] _ in
+        let newTimer = DispatchSource.makeTimerSource(queue: .main)
+        let intervalSeconds = 1.0 / recordingSampleHz
+        // leeway 0 - a recording session is short (seconds, not hours), so the usual
+        // battery-saving reason to allow slack doesn't apply here; precision matters more.
+        newTimer.schedule(deadline: .now() + intervalSeconds, repeating: intervalSeconds, leeway: .nanoseconds(0))
+        newTimer.setEventHandler { [weak self] in
             self?.tick()
         }
-        RunLoop.main.add(newTimer, forMode: .common)
+        newTimer.resume()
         timer = newTimer
     }
 
     private func stopTimer() {
-        timer?.invalidate()
+        timer?.cancel()
         timer = nil
     }
 
