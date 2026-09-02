@@ -121,10 +121,7 @@ graph entirely while a tone continues, or start a new touch replacing an already
   the sound stop naturally.
 - On iPad, Pencil squeeze and the on-screen button are both **toggles** instead — squeeze once
   to engage, again to release, since there's no natural physical "hold" gesture for a squeeze.
-  (Checked this against the code directly - squeeze does drive Pedal, not Portamento. If you
-  saw something that felt like Portamento engaging when you squeezed, let me know what you were
-  doing at the time and I'll dig into it - but as written today, squeeze only ever touches
-  Pedal.)
+  Squeeze only ever drives Pedal, never Portamento.
 - A standard MIDI sustain pedal works too, with no setup on GBG III's side: connect it through
   whatever's set as your **MIDI Source** (see §4), and any incoming sustain-pedal message drives
   Pedal automatically, held-down/released just like Space bar - on any MIDI channel, not tied to
