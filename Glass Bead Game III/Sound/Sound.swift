@@ -274,6 +274,18 @@ class Sound {
     /// (in the app target), not in GBGSound's Midi class, which reports events generically -
     /// see the standalone-sequencer plan's step 3 notes on keeping that layer low-level.
     func handleIncomingMidi(channel: Int, kind: Midi.MidiInputEvent.Kind) {
+        // CC64 (Sustain Pedal) - standard convention is >=64 down, <64 up, and it isn't scoped
+        // to any one voice's channel the way note-on/pitch-bend are (a real pedal sends it on
+        // whatever channel its controller is set to, often channel 1 regardless of which
+        // channels X/Y/Z/root actually use) - so this is handled before the per-voice/root
+        // routing below, on any incoming channel. Mirrors the Space-bar key command (the
+        // primary, always-available path - see ContentView) rather than replacing it:
+        // AppSettings.pedal is the single source of truth either way, so a pedal and the
+        // keyboard can be used interchangeably without conflict.
+        if case .controlChange(let controller, let value) = kind, controller == 64 {
+            settings?.pedal = value >= 64
+            return
+        }
         if isRootChannel(channel) {
             handleIncomingDroneMidi(kind: kind)
             return
@@ -289,6 +301,8 @@ class Sound {
         case .pitchBend(let value):
             guard let note = lastIncomingNote[voice] else { return }
             updateExternalDrivePitch(voice: voice, frequency: frequencyForIncoming(note: note, pitchBend: value))
+        case .controlChange:
+            break
         }
     }
 
@@ -381,6 +395,8 @@ class Sound {
         case .pitchBend(let value):
             guard let note = lastIncomingDroneNote else { return }
             updateExternalDroneDrivePitch(frequency: frequencyForIncoming(note: note, pitchBend: value))
+        case .controlChange:
+            break
         }
     }
 

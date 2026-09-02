@@ -68,7 +68,6 @@ public class Note:HasLength{
         }
     }
     
-    // TODO: Returns the length of the note based on its start time and end time
     func getLengthInSamples()->Int{
         let length = endTime - startTime
         return length

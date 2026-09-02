@@ -125,6 +125,7 @@ public class Midi{
             case noteOn(note: Int, velocity: Int)
             case noteOff(note: Int)
             case pitchBend(value: Int)
+            case controlChange(controller: Int, value: Int)
         }
         public let channel: Int // 1...16
         public let kind: Kind
@@ -554,10 +555,11 @@ public class Midi{
     }
 
     // Decodes each packet in the list into a MidiInputEvent and dispatches it via onEvent, on
-    // the main queue - this block runs on CoreMIDI's own receive thread, not main. Only the
-    // three message types this app's own output side cares about are decoded (note on/off,
-    // pitch bend); anything else (CC, aftertouch, program change...) is silently ignored, same
-    // "keep it generic, don't overreach" spirit as the rest of this input path.
+    // the main queue - this block runs on CoreMIDI's own receive thread, not main. Note on/off,
+    // pitch bend, and control change are decoded (control change generically - any controller
+    // number/value, e.g. CC64 sustain pedal - with no built-in "CC64 means pedal" interpretation,
+    // same "report raw, let the app target interpret" split as the rest of this input path);
+    // anything else (aftertouch, program change...) is silently ignored.
     private func handleIncomingPacketList(_ packetListPointer: UnsafePointer<MIDIPacketList>){
         var packet = packetListPointer.pointee.packet
         let numPackets = packetListPointer.pointee.numPackets
@@ -579,6 +581,8 @@ public class Midi{
             case channelVoiceMessages.pitchBendChange:
                 let value = Int(packet.data.2) << 7 | Int(packet.data.1)
                 event = MidiInputEvent(channel: channel, kind: .pitchBend(value: value))
+            case channelVoiceMessages.controlChange:
+                event = MidiInputEvent(channel: channel, kind: .controlChange(controller: Int(packet.data.1), value: Int(packet.data.2)))
             default:
                 event = nil
             }
