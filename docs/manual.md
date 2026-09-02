@@ -34,7 +34,7 @@ a map of that space — every visible intersection is a specific, exact interval
 root. Play by moving through the map instead of pressing fixed keys.
 
 For the theory behind it — why just intonation, how the lattice is built, what the diamonds and
-scale limits mean mathematically — see [link to paper — TBD].
+scale limits mean mathematically — see [MapTone](https://www.sohl.com/maptone/).
 
 On first launch, GBG III asks for nothing — no microphone permission, no Bluetooth pairing
 prompt. It doesn't touch the microphone (its "recording" feature captures your touch/pen
