@@ -80,10 +80,6 @@ Z-slider. If squeeze doesn't seem to do anything, check **Settings → Apple Pen
 on the iPad itself: if it's set to "Run Shortcut," iPadOS intercepts the gesture before GBG III
 ever sees it. Any other setting works.
 
-*[TBD: how close to the screen does the pencil need to be for squeeze to register? This is an
-iPadOS hardware/gesture-detection detail outside GBG III's own code, so it needs testing rather
-than a code answer - worth confirming by hand before publishing.]*
-
 ### The on-screen controls
 
 Drone, Portamento, Pedal, Panic, and Settings are also always reachable as buttons — in the
