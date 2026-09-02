@@ -193,6 +193,22 @@ struct ContentView: View {
                 .help("Sequencer - show or hide the piano-roll editor and transport controls")
             }
             ToolbarItem(placement: .primaryAction) {
+                // Panic - manual escape hatch for a voice stuck sounding (a touch/pedal/
+                // external-MIDI-drive bookkeeping bug leaving something on indefinitely,
+                // e.g. the activeTouchCount desync beginExternalDrive used to allow). Norm
+                // asked for this directly after hitting a hang during Seq segmented playback.
+                // Deliberately its own destructive-looking color (unlike the other toggle
+                // buttons, which stay plain) - this isn't a mode toggle, it's a "stop
+                // everything now" action, worth visually standing out.
+                Button {
+                    sound.panic()
+                } label: {
+                    Image(systemName: "exclamationmark.octagon.fill")
+                }
+                .tint(.red)
+                .help("Panic - force-silence every voice if something is stuck sounding")
+            }
+            ToolbarItem(placement: .primaryAction) {
                 Button {
                     settings.showSettings = true
                 } label: {

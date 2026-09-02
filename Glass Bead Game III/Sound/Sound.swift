@@ -39,15 +39,6 @@ class Sound {
     // or releasing one finger while the other is still held would wrongly silence everything.
     private var activeTouchCount = 0
 
-    // Graph-only touch count, separate from activeTouchCount above - Norm: touching just the
-    // Z-slider was also sounding X/Y, at whatever frequency they'd last been left at rather than
-    // anything actually chosen in that touch. X/Y only sound while the graph itself is touched.
-    // Z used to follow its own equivalent zSliderTouchCount the same way, but Norm wants Z
-    // (when enabled) to always sound as part of the chord whenever the graph is touched too,
-    // at whatever pitch it's currently set to (1/1 by default, until the Z-slider is actually
-    // dragged) - so Z now follows activeTouchCount instead, the same "any touch" rule drone
-    // already used, just with its own enable flag and pitch source. See applyZVoiceEnables.
-    private var graphTouchCount = 0
 
     func initSound(){
         midi.initMidi()
@@ -77,18 +68,27 @@ class Sound {
     // response to an unrelated zone's touch was the bug: a pedal-sustained voice must only ever
     // be touched by its own zone's begin/end, or the pedal being released, never by another
     // zone's activity. Each begin/end below now only calls the group(s) it actually owns.
+    // X/Y follow "is anything being touched" (activeTouchCount), same rule Z/drone already
+    // use below - not graphTouchCount specifically. Norm: while the Z-slider is being dragged
+    // (graph itself untouched), X and Y should still be heard at whatever pitch they were most
+    // recently set to, not go silent just because the graph zone specifically isn't held. This
+    // used to be graphTouchCount-gated, deliberately isolated from Z's own touch (see this
+    // file's git history for the pedal-cutout bug that isolation originally fixed) - now that
+    // beginZTouch/endZTouch call this function too (below), a plain activeTouchCount check
+    // gets the same pedal-safety property for free: those functions still skip recomputing
+    // anything while pedal is held, exactly like beginGraphTouch/endGraphTouch already do.
     private func applyGraphVoiceEnables(){
-        audio.triad.enableTriadXTone(enable: enableX && (graphTouchCount > 0 || xExternallyDriven))
-        audio.triad.enableTriadYTone(enable: enableY && (graphTouchCount > 0 || yExternallyDriven))
-        midi.xMidiEnable = enableX && (graphTouchCount > 0 || xExternallyDriven)
-        midi.yMidiEnable = enableY && (graphTouchCount > 0 || yExternallyDriven)
+        audio.triad.enableTriadXTone(enable: enableX && (activeTouchCount > 0 || xExternallyDriven))
+        audio.triad.enableTriadYTone(enable: enableY && (activeTouchCount > 0 || yExternallyDriven))
+        midi.xMidiEnable = enableX && (activeTouchCount > 0 || xExternallyDriven)
+        midi.yMidiEnable = enableY && (activeTouchCount > 0 || yExternallyDriven)
     }
 
-    // Unlike X/Y (applyGraphVoiceEnables, gated on graphTouchCount specifically), Z follows
-    // "is anything being touched" - Norm wants Z, when enabled, to always sound whenever the
-    // graph is touched, at 1/1 by default or whatever the Z-slider was last dragged to, not
-    // only while the Z-slider itself is actively held. Called from every zone's begin/end
-    // below, same as applyDroneVoiceEnable, for that reason.
+    // Z follows "is anything being touched" - Norm wants Z, when enabled, to always sound
+    // whenever the graph is touched, at 1/1 by default or whatever the Z-slider was last
+    // dragged to, not only while the Z-slider itself is actively held. Called from every
+    // zone's begin/end below, same as applyDroneVoiceEnable and (now) applyGraphVoiceEnables
+    // above, for that reason.
     private func applyZVoiceEnables(){
         audio.triad.enableTriadZTone(enable: enableZ && activeTouchCount > 0)
         midi.zMidiEnable = enableZ && activeTouchCount > 0
@@ -118,7 +118,6 @@ class Sound {
     /// currently held - the shared engine itself starts only on the overall 0->1 transition,
     /// so an already-active Z-slider touch doesn't get redundantly restarted.
     func beginGraphTouch(amp: Float) {
-        graphTouchCount += 1
         activeTouchCount += 1
         applyGraphVoiceEnables()
         applyZVoiceEnables()
@@ -131,7 +130,6 @@ class Sound {
     /// pedal itself is released), re-evaluates Z/drone the same way, and stops the shared
     /// engine only once every zone has ended.
     func endGraphTouch(pedal: Bool) {
-        graphTouchCount = max(0, graphTouchCount - 1)
         activeTouchCount = max(0, activeTouchCount - 1)
         if !pedal {
             applyGraphVoiceEnables()
@@ -141,14 +139,16 @@ class Sound {
         }
     }
 
-    /// Z-slider touch begin/end. Never touches X/Y's own enable state - a pedal-sustained
-    /// graph note must keep sounding untouched while the Z-slider is used, and only become
-    /// editable again by touching the graph itself (beginGraphTouch above) or by the pedal
-    /// being released. Still touches Z/drone even though Z now follows activeTouchCount rather
-    /// than a Z-slider-specific count - a lone Z-slider touch is still a touch, and still
-    /// needs to start the shared engine on the 0->1 transition.
+    /// Z-slider touch begin/end. Touches all three groups, same as beginGraphTouch/
+    /// endGraphTouch - X/Y now follow activeTouchCount (see applyGraphVoiceEnables' own
+    /// comment), so a Z-only touch legitimately affects them too: X/Y should be heard at
+    /// their most recent pitch while Z is being changed, even though the graph itself isn't
+    /// touched. Pedal safety carries over unchanged - endZTouch skips recomputing anything
+    /// while pedal is held, exactly like endGraphTouch does, so a pedal-sustained voice still
+    /// can't be silenced by Z-slider activity.
     func beginZTouch(amp: Float) {
         activeTouchCount += 1
+        applyGraphVoiceEnables()
         applyZVoiceEnables()
         applyDroneVoiceEnable()
         if activeTouchCount == 1 { startEngine(amp: amp) }
@@ -157,6 +157,7 @@ class Sound {
     func endZTouch(pedal: Bool) {
         activeTouchCount = max(0, activeTouchCount - 1)
         if !pedal {
+            applyGraphVoiceEnables()
             applyZVoiceEnables()
             applyDroneVoiceEnable()
             if activeTouchCount == 0 { stopEngine() }
@@ -186,6 +187,28 @@ class Sound {
     /// whatever was ONLY still sounding because of the pedal).
     func releasePedal() {
         guard activeTouchCount == 0 else { return }
+        applyGraphVoiceEnables()
+        applyZVoiceEnables()
+        applyDroneVoiceEnable()
+        stopEngine()
+    }
+
+    /// Emergency stop: forces every voice silent and every touch/pedal/external-MIDI-drive
+    /// bookkeeping flag back to zero, regardless of what got them stuck in the first place -
+    /// the manual escape hatch for whatever the state-tracking bugs this is meant to guard
+    /// against haven't been found and fixed yet (see beginExternalDrive/beginExternalDroneDrive
+    /// for one real example: an unmatched extra note-on used to desync activeTouchCount
+    /// permanently). Safe to call at any time, touched or not.
+    func panic() {
+        activeTouchCount = 0
+        xExternallyDriven = false
+        yExternallyDriven = false
+        zExternallyDriven = false
+        droneExternallyDriven = false
+        lastIncomingNote.removeAll()
+        lastIncomingDroneNote = nil
+        settings?.externallyDrivenVoices.removeAll()
+        settings?.pedal = false
         applyGraphVoiceEnables()
         applyZVoiceEnables()
         applyDroneVoiceEnable()
@@ -307,6 +330,23 @@ class Sound {
     }
 
     private func beginExternalDrive(voice: SequencerVoice, frequency: Double) {
+        // A note-on for a voice that's already externally driven (e.g. a second note-on with
+        // no intervening note-off - possible if a sender's own note tracking desyncs, as Seq's
+        // polling-based MIDI-out can if a note shorter than its poll interval gets skipped)
+        // must not double-count activeTouchCount: the matching single note-off would then only
+        // decrement it back to 1, never reaching 0, leaving the engine stuck on indefinitely -
+        // a real hang, not just a redundant call. Treat it as a pitch update instead, the same
+        // way already-driven voices are handled everywhere else in this file.
+        let alreadyDriven: Bool
+        switch voice {
+        case .x: alreadyDriven = xExternallyDriven
+        case .y: alreadyDriven = yExternallyDriven
+        case .z: alreadyDriven = zExternallyDriven
+        }
+        guard !alreadyDriven else {
+            updateExternalDrivePitch(voice: voice, frequency: frequency)
+            return
+        }
         switch voice {
         case .x:
             xExternallyDriven = true
@@ -401,6 +441,12 @@ class Sound {
     }
 
     private func beginExternalDroneDrive(frequency: Double) {
+        // Same re-entry guard as beginExternalDrive above, and for the same reason - an
+        // unmatched extra note-on must not double-count activeTouchCount.
+        guard !droneExternallyDriven else {
+            updateExternalDroneDrivePitch(frequency: frequency)
+            return
+        }
         droneExternallyDriven = true
         audio.triad.setTriadRootPitch(frequency: frequency)
         midi.setMidiRootPitch(frequency: frequency)
