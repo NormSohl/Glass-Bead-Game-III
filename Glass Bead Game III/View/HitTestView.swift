@@ -7,11 +7,77 @@
 
 import SwiftUI
 import GBGCore
+import AppKit
 
 // Deliberately module-scope rather than @State on HitTestView: an earlier attempt to
 // keep this as view state caused inconsistent behavior. Left as-is until that can be
 // re-verified interactively (needs eyes on the running app, not just a clean build).
 var height = 0.0
+
+// Catches the window-activating click that AppKit otherwise swallows for focus alone: by
+// default NSView.acceptsFirstMouse(for:) returns false, so when the window isn't key, the
+// first click just brings it to front and is never delivered as a real mouseDown to the view
+// underneath - a note placed with that first click was silently lost, requiring a second
+// click. A local NSEvent monitor sidesteps that window-activation gate entirely (same
+// technique already proven for scroll-wheel zoom in Seq/PianoRollView.swift - a local monitor
+// sees matching events at the app level regardless of how the window's own view hierarchy
+// would otherwise have handled them). Deliberately not conditioned on window.isKeyWindow -
+// it's unclear whether that flag has already flipped true by the time a local monitor's
+// handler runs, so this always calls the shared onFirstClick handler and relies on that
+// handler's own isSound guard (mirroring the real DragGesture's own guard) to stay a no-op
+// whenever a touch is already in progress - safe even if the real DragGesture also ends up
+// firing normally for the same click, which is the common case once the window is key.
+private struct FirstClickCatcher: NSViewRepresentable {
+    let onFirstClick: (CGPoint, Bool) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = FlippedNSView()
+        context.coordinator.start(view: view, onFirstClick: onFirstClick)
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        context.coordinator.onFirstClick = onFirstClick
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
+        coordinator.stop()
+    }
+
+    // isFlipped = true so this view's own coordinate space is top-left origin, matching
+    // SwiftUI's convention directly (plain NSViews are bottom-left origin by default) - the
+    // caught location can then be treated exactly like a DragGesture's own value.location,
+    // including the same height-flip HitTestView's other handlers already apply to it.
+    final class FlippedNSView: NSView {
+        override var isFlipped: Bool { true }
+    }
+
+    final class Coordinator {
+        var onFirstClick: ((CGPoint, Bool) -> Void)?
+        private weak var view: NSView?
+        private var monitor: Any?
+
+        func start(view: NSView, onFirstClick: @escaping (CGPoint, Bool) -> Void) {
+            self.view = view
+            self.onFirstClick = onFirstClick
+            monitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
+                guard let self, let view = self.view else { return event }
+                let locationInView = view.convert(event.locationInWindow, from: nil)
+                if view.bounds.contains(locationInView) {
+                    self.onFirstClick?(locationInView, event.modifierFlags.contains(.shift))
+                }
+                return event
+            }
+        }
+
+        func stop() {
+            if let monitor { NSEvent.removeMonitor(monitor) }
+            monitor = nil
+        }
+    }
+}
 
 struct HitTestView: View {
     // manage debug trace in hitTest
@@ -36,14 +102,13 @@ struct HitTestView: View {
             let rootFrequency = settings.rootFrequency
             let snapped = !isShift
 
-            // x: touch-driven, unless the sequencer or incoming MIDI is currently driving this
-            // axis (playback, scrub, a piano-roll handle drag on an X note, or an external MIDI
-            // note-on - see AppSettings.sequencerDrivenVoices/externallyDrivenVoices and
-            // Sound.handleIncomingMidi). When driven, the crosshair is drawn from whatever was
+            // x: touch-driven, unless incoming MIDI (Seq, or any other controller) is currently
+            // driving this axis - see AppSettings.externallyDrivenVoices and
+            // Sound.handleIncomingMidi. When driven, the crosshair is drawn from whatever was
             // already written into settings.xFrequency instead of from hoverLocation, and
             // touching the graph has no effect on it (the DragGesture below skips the write
             // too) - whichever source is driving owns this axis's output until it's done.
-            if settings.sequencerDrivenVoices.contains(.x) || settings.externallyDrivenVoices.contains(.x) {
+            if settings.externallyDrivenVoices.contains(.x) {
                 let xNormalized = log2(settings.xFrequency / rootFrequency)
                 crosshairPoint.x = scale.convertScaleValueToScreenUnits(normalizedValue: xNormalized, screenSize: size.width)
             } else {
@@ -77,7 +142,7 @@ struct HitTestView: View {
 
             // y: same pattern as x, above.
             let yCrosshair: Double
-            if settings.sequencerDrivenVoices.contains(.y) || settings.externallyDrivenVoices.contains(.y) {
+            if settings.externallyDrivenVoices.contains(.y) {
                 let yNormalized = log2(settings.yFrequency / rootFrequency)
                 yCrosshair = scale.convertScaleValueToScreenUnits(normalizedValue: yNormalized, screenSize: size.height)
             } else {
@@ -105,7 +170,7 @@ struct HitTestView: View {
                 lineWidth: 3
             )
         }
-        
+        .background(FirstClickCatcher(onFirstClick: handleFirstClick))
         // only needed for mouse input, so that crosshair is updated on hover
         .onContinuousHover { phase in
             if hitTestTrace {print("HitTestView: onContinuousHover")}
@@ -201,5 +266,28 @@ struct HitTestView: View {
 #if os(iOS)
         .defersSystemGestures(on: .all)
 #endif
+    }
+
+    // Mirrors exactly what a real DragGesture's onChanged does to start a touch (both the
+    // shift-modifier and plain gestures above) - called from FirstClickCatcher for a click
+    // that might otherwise have been swallowed for window focus alone. The isSound guard makes
+    // this safe to call even when the real gesture also ends up firing normally for the same
+    // click (the common case once the window is already key): whichever runs first wins, the
+    // other just sees isSound already true and does nothing further.
+    private func handleFirstClick(_ location: CGPoint, shiftHeld: Bool) {
+        guard !isSound else { return }
+        hoverLocation = location
+        hoverLocation.y = height - hoverLocation.y
+        isDrag = true
+        if shiftHeld {
+            isShift = true
+        } else {
+            // Same "hack to duplicate the effect of shift-down with UI" as the plain
+            // DragGesture's own onChanged.
+            isShift = !settings.snap
+        }
+        sound.beginGraphTouch(amp: 1)
+        recordingState.beginGraphTouch()
+        isSound = true
     }
 }
