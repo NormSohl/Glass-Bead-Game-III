@@ -92,6 +92,21 @@ struct TransportView: View {
                     Label("Open", systemImage: "square.and.arrow.up")
                 }
 
+                // Panic - manual escape hatch for a voice stuck sounding, e.g. via a note
+                // shorter than pollPlayback's ~30Hz interval getting skipped entirely on the
+                // way out to Graph or an external synth (see SequencerState.panic's own doc
+                // comment). Deliberately its own destructive-looking color, unlike the plain
+                // tintColor the other buttons share - this is a "stop everything now" action,
+                // not a mode toggle, worth standing out.
+                Button {
+                    sequencer.panic()
+                } label: {
+                    Image(systemName: "exclamationmark.octagon.fill")
+                        .font(.title2)
+                }
+                .tint(.red)
+                .help("Panic - force-silence every voice (internal synth and both MIDI outputs) if something is stuck sounding")
+
                 Spacer()
             }
 

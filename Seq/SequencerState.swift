@@ -110,6 +110,13 @@ final class SequencerState: ObservableObject {
     // Hand-rolled pan/zoom for the piano roll, matching Graph's own PianoRollView.
     @Published var offsetSamples: Int = 0
     @Published var pixelsPerSecond: Double = 120
+    // Multiplies the piano roll's pitch axis, which otherwise always auto-fits the whole scale
+    // range to the canvas height with no independent zoom - see PianoRollCoordinates.swift's
+    // pianoRollFrequencyToScreenY. 1.0 is the original auto-fit; >1 zooms in vertically, same
+    // "scale the axis, anchor stays put" model pixelsPerSecond already uses horizontally (no
+    // separate vertical pan yet - zooming in pushes the top of the range off-canvas, matching
+    // how horizontal zoom already pushes later time off the right edge with no auto-pan).
+    @Published var verticalZoomFactor: Double = 1.0
 
     // Bumped after every mutation to Part/Note contents (a placed note, a handle drag) so
     // PianoRollView's Canvas redraws - Part/Note are plain classes with no Combine publishing.
@@ -396,6 +403,30 @@ final class SequencerState: ObservableObject {
         audio.stopAudio()
         flushGraphMidiOutput()
         flushSynthMidiOutput()
+        drivenDroneFrequency = nil
+        drivenDroneAmplitude = nil
+    }
+
+    /// Emergency stop: silences the internal synth immediately (via stop()/endScrub(), which
+    /// mute the mixer and - since ScorePlayer.stop() was fixed alongside this - hard-zero its
+    /// amplitudes rather than leaving them frozen mid-note) and broadcasts a MIDI note-off on
+    /// every channel either output could possibly be using - not just whatever this session's
+    /// own graphMidiSoundingNote/synthMidiSoundingNote tracking currently believes is sounding.
+    /// That per-voice tracking is exactly what can desync (pollPlayback runs at a fixed ~30Hz -
+    /// see startPlayheadPolling - so a note shorter than one poll interval can be skipped
+    /// entirely: a fresh note-on then fires for whatever note the next poll happens to land on,
+    /// with no note-off ever sent for the one that got skipped), so a real panic can't rely on
+    /// it - it has to hit every channel directly regardless of what's tracked.
+    func panic() {
+        if isPlaying { stop() }
+        if isScrubbing { endScrub() }
+        audio.stopAudio()
+        for voice in PartVoice.allCases {
+            graphMidiOut.noteOff(channel: GraphMidiChannel.forVoice(voice), note: graphMidiFixedNote)
+            synthMidiOut.noteOff(channel: synthChannel(for: voice), note: graphMidiFixedNote)
+        }
+        graphMidiSoundingNote.removeAll()
+        synthMidiSoundingNote.removeAll()
         drivenDroneFrequency = nil
         drivenDroneAmplitude = nil
     }

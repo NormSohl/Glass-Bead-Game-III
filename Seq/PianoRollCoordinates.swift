@@ -18,15 +18,18 @@ func pianoRollScreenXToSample(x: Double, offsetSamples: Int, pixelsPerSecond: Do
     offsetSamples + Int((x / pixelsPerSecond * sampleRate).rounded())
 }
 
-func pianoRollFrequencyToScreenY(frequency: Double, rootFrequency: Double, scale: Scale, canvasHeight: Double) -> Double {
+func pianoRollFrequencyToScreenY(frequency: Double, rootFrequency: Double, scale: Scale, canvasHeight: Double, verticalZoomFactor: Double = 1.0) -> Double {
     let normalizedValue = log2(frequency / rootFrequency)
-    let raw = scale.convertScaleValueToScreenUnits(normalizedValue: normalizedValue, screenSize: canvasHeight)
+    // Feeding a taller virtual screenSize (canvasHeight * verticalZoomFactor) into Scale's own
+    // auto-fit math is what makes this zoomable at all - Scale itself has no zoom concept, it
+    // just maps the whole scale range to whatever screenSize it's given.
+    let raw = scale.convertScaleValueToScreenUnits(normalizedValue: normalizedValue, screenSize: canvasHeight * verticalZoomFactor)
     return canvasHeight - raw // bottom-up: up == higher pitch, matching Graph's own views
 }
 
-func pianoRollScreenYToFrequency(y: Double, rootFrequency: Double, scale: Scale, canvasHeight: Double) -> Double {
+func pianoRollScreenYToFrequency(y: Double, rootFrequency: Double, scale: Scale, canvasHeight: Double, verticalZoomFactor: Double = 1.0) -> Double {
     let flippedY = canvasHeight - y
-    let normalizedValue = scale.convertScreenUnitsToScaleValue(screenLocation: flippedY, screenSize: canvasHeight)
+    let normalizedValue = scale.convertScreenUnitsToScaleValue(screenLocation: flippedY, screenSize: canvasHeight * verticalZoomFactor)
     return rootFrequency * pow(2, normalizedValue)
 }
 

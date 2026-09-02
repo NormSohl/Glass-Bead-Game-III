@@ -12,6 +12,59 @@
 
 import SwiftUI
 import GBGCore
+import AppKit
+
+// A plain NSView placed via .background() sits behind the Canvas's own AppKit backing view in
+// z-order - AppKit's hitTest for a scrollWheel event finds whichever view is frontmost at that
+// point first, so a background view's own scrollWheel(with:) override never actually fires; the
+// Canvas's backing view silently absorbs the event above it. A local NSEvent monitor sidesteps
+// view-hierarchy hit-testing entirely - it sees matching events at the app level regardless of
+// which view AppKit would otherwise have routed them to - so that's what this uses instead, with
+// its own explicit bounds check (the monitor fires for scroll anywhere in the window, not just
+// this view) so it only reacts while the cursor is actually over the piano roll.
+private struct ScrollWheelZoomCatcher: NSViewRepresentable {
+    let onScroll: (CGFloat) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        context.coordinator.start(view: view, onScroll: onScroll)
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        context.coordinator.onScroll = onScroll
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
+        coordinator.stop()
+    }
+
+    final class Coordinator {
+        var onScroll: ((CGFloat) -> Void)?
+        private weak var view: NSView?
+        private var monitor: Any?
+
+        func start(view: NSView, onScroll: @escaping (CGFloat) -> Void) {
+            self.view = view
+            self.onScroll = onScroll
+            monitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+                guard let self, let view = self.view else { return event }
+                let locationInView = view.convert(event.locationInWindow, from: nil)
+                if view.bounds.contains(locationInView) {
+                    self.onScroll?(event.scrollingDeltaY)
+                }
+                return event
+            }
+        }
+
+        func stop() {
+            if let monitor { NSEvent.removeMonitor(monitor) }
+            monitor = nil
+        }
+    }
+}
 
 // Same reasoning as Graph's own PianoRollView: mutating this from inside the Canvas closure as
 // @State caused inconsistent behavior in other views in this codebase, so this follows the same
@@ -19,7 +72,17 @@ import GBGCore
 var pianoRollCanvasSize: CGSize = .zero
 
 private let handleHitRadius: Double = 20
-private let sampledCurvePoints = 24
+// Partline curve-sampling density: points per screen pixel of a note's own width, not a flat
+// per-note count - a fixed count (24, this used to be) gives wildly different effective time
+// resolution depending on note duration: fine for a short segmented piece, but on a long
+// as-is recorded note (many seconds), 24 points smooths real recorded-contour detail (visible
+// vibrato/slides in the underlying data) into invisibility, while a short note right next to
+// it renders that same density of detail proportionally much more finely - so the two could
+// look like different "smoothness" even when sampled from equally detailed source data. One
+// point every ~3px reads as a continuous curve on screen and scales with both duration and zoom.
+private let curveSamplesPerPixel: Double = 1.0 / 3.0
+private let minCurveSamplePoints = 8
+private let maxCurveSamplePoints = 2000
 // Radius for the transition-picker indicator at each note's midpoint - same treatment as the
 // start/end handles above, just its own constant since the two are visually distinct markers.
 private let transitionIndicatorHitRadius: Double = 12
@@ -79,6 +142,7 @@ struct PianoRollView: View {
                 drawPlayhead(context: context, size: size)
             }
             .background(Color.black)
+            .background(ScrollWheelZoomCatcher(onScroll: handleScrollZoom))
             .gesture(dragGesture)
             .simultaneousGesture(magnificationGesture)
 
@@ -101,7 +165,7 @@ struct PianoRollView: View {
         for element in scale.scale {
             let y = pianoRollFrequencyToScreenY(
                 frequency: settings.rootFrequency * element.value,
-                rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: size.height)
+                rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: size.height, verticalZoomFactor: sequencer.verticalZoomFactor)
             path.move(to: CGPoint(x: 0, y: y))
             path.addLine(to: CGPoint(x: size.width, y: y))
         }
@@ -156,13 +220,17 @@ struct PianoRollView: View {
             let color = voiceColors[voice] ?? .white
 
             for note in part.notes where note.amplitude > 0 {
+                let noteDurationSeconds = Double(note.endTime - note.startTime) / sequencer.sampleRate
+                let notePixelWidth = noteDurationSeconds * sequencer.pixelsPerSecond
+                let sampledCurvePoints = min(maxCurveSamplePoints, max(minCurveSamplePoints, Int(notePixelWidth * curveSamplesPerPixel)))
+
                 var path = Path()
                 for step in 0...sampledCurvePoints {
                     let percent = Double(step) / Double(sampledCurvePoints)
                     let sample = note.startTime + Int(Double(note.endTime - note.startTime) * percent)
                     let frequency = note.getCurrentFrequency(percentComplete: percent)
                     let x = pianoRollSampleToScreenX(sample: sample, offsetSamples: sequencer.offsetSamples, pixelsPerSecond: sequencer.pixelsPerSecond, sampleRate: sequencer.sampleRate)
-                    let y = pianoRollFrequencyToScreenY(frequency: frequency, rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: size.height)
+                    let y = pianoRollFrequencyToScreenY(frequency: frequency, rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: size.height, verticalZoomFactor: sequencer.verticalZoomFactor)
                     if step == 0 { path.move(to: CGPoint(x: x, y: y)) } else { path.addLine(to: CGPoint(x: x, y: y)) }
                 }
                 context.stroke(path, with: .color(color), lineWidth: 3)
@@ -201,7 +269,7 @@ struct PianoRollView: View {
         let sample = edge == .start ? note.startTime : note.endTime
         let frequency = edge == .start ? note.startFrequency : note.endFrequency
         let x = pianoRollSampleToScreenX(sample: sample, offsetSamples: sequencer.offsetSamples, pixelsPerSecond: sequencer.pixelsPerSecond, sampleRate: sequencer.sampleRate)
-        let y = pianoRollFrequencyToScreenY(frequency: frequency, rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: canvasSize.height)
+        let y = pianoRollFrequencyToScreenY(frequency: frequency, rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: canvasSize.height, verticalZoomFactor: sequencer.verticalZoomFactor)
         return CGPoint(x: x, y: y)
     }
 
@@ -212,7 +280,7 @@ struct PianoRollView: View {
         let sample = (note.startTime + note.endTime) / 2
         let frequency = (note.startFrequency + note.endFrequency) / 2
         let x = pianoRollSampleToScreenX(sample: sample, offsetSamples: sequencer.offsetSamples, pixelsPerSecond: sequencer.pixelsPerSecond, sampleRate: sequencer.sampleRate)
-        let y = pianoRollFrequencyToScreenY(frequency: frequency, rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: canvasSize.height)
+        let y = pianoRollFrequencyToScreenY(frequency: frequency, rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: canvasSize.height, verticalZoomFactor: sequencer.verticalZoomFactor)
         return CGPoint(x: x, y: y)
     }
 
@@ -290,7 +358,7 @@ struct PianoRollView: View {
 
                 if sequencer.isPlacingNote {
                     let sample = pianoRollScreenXToSample(x: value.location.x, offsetSamples: sequencer.offsetSamples, pixelsPerSecond: sequencer.pixelsPerSecond, sampleRate: sequencer.sampleRate)
-                    let frequency = pianoRollScreenYToFrequency(y: value.location.y, rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: pianoRollCanvasSize.height)
+                    let frequency = pianoRollScreenYToFrequency(y: value.location.y, rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: pianoRollCanvasSize.height, verticalZoomFactor: sequencer.verticalZoomFactor)
                     sequencer.placeNote(atTime: max(0, sample), frequency: frequency)
                 } else if let target = hitTestTransitionIndicator(at: value.location) {
                     // Step 4: a tap on a note's own transition-picker indicator opens its menu
@@ -309,13 +377,25 @@ struct PianoRollView: View {
         MagnificationGesture()
             .onChanged { value in
                 sequencer.pixelsPerSecond = min(max(sequencer.pixelsPerSecond * value, 20), 800)
+                sequencer.verticalZoomFactor = min(max(sequencer.verticalZoomFactor * value, 0.3), 10)
             }
+    }
+
+    // Scroll-wheel zoom (Step: mouse-only Mac support) - MagnificationGesture only fires from a
+    // trackpad's pinch gesture, nothing for a plain mouse, which is what this app is actually
+    // being tested with on this Mac. Same pixelsPerSecond clamp as the pinch path above, just a
+    // different input source driving it. SwiftUI has no cross-platform scroll-wheel gesture, so
+    // this drops to a small NSViewRepresentable to catch NSEvent.scrollWheel directly.
+    private func handleScrollZoom(deltaY: CGFloat) {
+        let factor = 1 + (deltaY * 0.01)
+        sequencer.pixelsPerSecond = min(max(sequencer.pixelsPerSecond * factor, 20), 800)
+        sequencer.verticalZoomFactor = min(max(sequencer.verticalZoomFactor * factor, 0.3), 10)
     }
 
     private func applyHandleDrag(_ handle: DraggingHandle, to location: CGPoint) {
         let part = sequencer.part(for: handle.voice)
         var newTime = pianoRollScreenXToSample(x: location.x, offsetSamples: sequencer.offsetSamples, pixelsPerSecond: sequencer.pixelsPerSecond, sampleRate: sequencer.sampleRate)
-        let newFrequency = pianoRollScreenYToFrequency(y: location.y, rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: pianoRollCanvasSize.height)
+        let newFrequency = pianoRollScreenYToFrequency(y: location.y, rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: pianoRollCanvasSize.height, verticalZoomFactor: sequencer.verticalZoomFactor)
 
         // Step 4: snap to the nearest beat-grid line when a confident tempo grid exists and the
         // drag landed within snapTimeThresholdPixels of it - mirrors PitchHitTest.swift's own
