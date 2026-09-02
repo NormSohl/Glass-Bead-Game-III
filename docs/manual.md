@@ -24,13 +24,25 @@ GBG III is free software. It doesn't require an account, doesn't ask you to sign
 has no in-app purchases or payments of any kind, and doesn't track or transmit your data
 anywhere — it makes no network connections at all.
 
-tbd: What is the purpose of this app? explain about drones and moving tones, briefly, clearly, and link to the paper live on my website for more details.
+### What GBG III is
+
+GBG III is a touch- and pen-driven instrument for playing in just intonation — tuning built
+directly from whole-number frequency ratios, rather than the equal-tempered 12 notes a piano
+or guitar gives you. A sustained **drone** holds a reference pitch; up to three **moving
+tones** (X, Y, and Z) are voices you position freely around that drone, and the graph itself is
+a map of that space — every visible intersection is a specific, exact interval away from the
+root. Play by moving through the map instead of pressing fixed keys.
+
+For the theory behind it — why just intonation, how the lattice is built, what the diamonds and
+scale limits mean mathematically — see [link to paper — TBD].
 
 On first launch, GBG III asks for nothing — no microphone permission, no Bluetooth pairing
 prompt. It doesn't touch the microphone (its "recording" feature captures your touch/pen
 gestures, not audio - see the Seq manual), and MIDI access needs no permission prompt on either
 platform. Audio output is on by default - if you don't hear anything, check your device's
 volume before anything else. You can start playing immediately.
+
+---
 
 ## 2. Playing GBG III live
 
@@ -51,9 +63,12 @@ cheap keypad that emulates one) for the same shortcuts. Defaults:
 |---|---|
 | Drone (toggle) | D, K |
 | Portamento (toggle) | G, H |
-tbd: mention pedal toggle 
 | Portamento (hold) | Shift |
 | Pedal (hold) | Space, F, J |
+
+There's no separate *toggle* key for Pedal — the keyboard only offers the hold behavior above,
+matching a real damper pedal. To toggle Pedal on and leave it on, use the on-screen button (or,
+on iPad, Pencil squeeze — see below).
 
 All of these are remappable — see **Keyboard Mapping** under Settings.
 
@@ -63,14 +78,22 @@ On iPad with an Apple Pencil Pro, squeezing the pencil toggles the Pedal — a g
 same hand already holding the pencil, so it doesn't compete with your other hand's work on the
 Z-slider. If squeeze doesn't seem to do anything, check **Settings → Apple Pencil → Squeeze**
 on the iPad itself: if it's set to "Run Shortcut," iPadOS intercepts the gesture before GBG III
-ever sees it. Any other setting works. tbd: how close to the screen does the pen need to be to use squeeze?
+ever sees it. Any other setting works.
+
+*[TBD: how close to the screen does the pencil need to be for squeeze to register? This is an
+iPadOS hardware/gesture-detection detail outside GBG III's own code, so it needs testing rather
+than a code answer - worth confirming by hand before publishing.]*
 
 ### The on-screen controls
 
 Drone, Portamento, Pedal, Panic, and Settings are also always reachable as buttons — in the
 window's title bar on Mac, or as a column beside the graph on iPad (on whichever side isn't
-currently hosting the Z-slider — see **Z-Slider Side** under Settings). Useful any time you'd
-rather tap than remember a key, or on iPad without a keyboard connected. tbd: mention handedness controls.
+currently hosting the Z-slider). Useful any time you'd rather tap than remember a key, or on
+iPad without a keyboard connected.
+
+On iPad, this button column and the Z-slider always sit on opposite sides of the graph, so
+whichever hand isn't holding the pencil has both within reach. **Z-Slider Side** under
+Settings (Left or Right) flips both together, to match whichever hand you actually play with.
 
 ### Portamento — gliding between pitches
 
@@ -96,8 +119,16 @@ graph entirely while a tone continues, or start a new touch replacing an already
 
 - On Mac, Pedal is **held** (Space, F, or J) — press and hold like a real pedal, release to let
   the sound stop naturally.
--tbd: this is wrong. squeeze is for Portemento.  On iPad, Pencil squeeze and the on-screen button are both **toggles** instead — squeeze once
-  to engage, again to release, since there's no natural physical "hold" gesture for a squeeze. tbd: a midi pedal is supported by default.
+- On iPad, Pencil squeeze and the on-screen button are both **toggles** instead — squeeze once
+  to engage, again to release, since there's no natural physical "hold" gesture for a squeeze.
+  (Checked this against the code directly - squeeze does drive Pedal, not Portamento. If you
+  saw something that felt like Portamento engaging when you squeezed, let me know what you were
+  doing at the time and I'll dig into it - but as written today, squeeze only ever touches
+  Pedal.)
+- A standard MIDI sustain pedal works too, with no setup on GBG III's side: connect it through
+  whatever's set as your **MIDI Source** (see §4), and any incoming sustain-pedal message drives
+  Pedal automatically, held-down/released just like Space bar - on any MIDI channel, not tied to
+  X/Y/Z's own channels.
 
 ### Panic
 
@@ -154,6 +185,14 @@ separate in-app Bluetooth pairing screen — pair the device at the system level
   Seq's own live output.
 - **Use internal synth** — GBG III's own built-in sound. Turn this off once your outboard gear
   is working and you'd rather hear only that.
+
+### Sustain pedal
+
+A standard MIDI sustain pedal (or any controller sending the sustain-pedal message, CC64) works
+as soon as it's reachable through your chosen **MIDI Source** - no separate setting to turn on.
+It drives Pedal exactly like the Space bar: pedal down engages sustain, pedal up releases it. It
+isn't tied to X/Y/Z's own MIDI channels - a pedal sends this on whatever channel it's configured
+for (often channel 1 by default), and GBG III watches for it on any incoming channel.
 
 ### Enabling MPE
 
