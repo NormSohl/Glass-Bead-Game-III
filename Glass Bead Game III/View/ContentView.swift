@@ -490,9 +490,12 @@ private struct ControlColumn: View {
     let recordingState: RecordingState
 
     var body: some View {
+        // Anchored to the top, not centered - cheap insurance against a resting palm: Norm's
+        // drawing hand rests its palm/wrist trailing the pencil tip, generally mid-to-lower on
+        // the canvas, so pushing the buttons as high as they'll go is free distance from that
+        // even before confirming whether it's a real problem (see the palm-rejection memory
+        // notes for the actual fix if it turns out not to be enough on its own).
         VStack(spacing: 24) {
-            Spacer(minLength: 0)
-
             button("circle.hexagongrid.fill", active: settings.playDrone, label: "Drone") {
                 settings.playDrone.toggle()
             }
