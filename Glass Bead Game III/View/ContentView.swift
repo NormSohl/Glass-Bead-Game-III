@@ -133,9 +133,13 @@ struct ContentView: View {
                     // .tint() doesn't actually recolor a plain icon-only macOS toolbar button
                     // (confirmed live - a real click toggled the state with zero visible change)
                     // - foregroundStyle on the glyph itself is what actually works for an SF
-                    // Symbol here.
+                    // Symbol here. TetradView.uiAccentColor, not .accentColor - accentColor
+                    // follows the user's own System Settings accent color choice, which on
+                    // Norm's Mac is orange, clashing with the yellow diamonds; this fixed, toned-
+                    // down blue (also matching the graph's own border below) is complementary to
+                    // yellow and independent of whatever the system accent happens to be set to.
                     Image(systemName: "circle.hexagongrid.fill")
-                        .foregroundStyle(settings.playDrone ? Color.accentColor : Color.primary)
+                        .foregroundStyle(settings.playDrone ? TetradView.uiAccentColor : Color.primary)
                 }
                 .help("Drone (D or K) - the sustained reference tone")
             }
@@ -159,7 +163,7 @@ struct ContentView: View {
                     // snapped == settings.snap directly. Lighting up on settings.snap==true
                     // would show the icon as "on" exactly when Portamento is actually off.
                     Image(systemName: "scribble")
-                        .foregroundStyle(!settings.snap ? Color.accentColor : Color.primary)
+                        .foregroundStyle(!settings.snap ? TetradView.uiAccentColor : Color.primary)
                 }
                 .help("Portamento (G or H) - drag continuously between pitches instead of snapping to scale degrees")
             }
@@ -173,7 +177,7 @@ struct ContentView: View {
                     settings.pedal.toggle()
                 } label: {
                     Image(systemName: "infinity")
-                        .foregroundStyle(settings.pedal ? Color.accentColor : Color.primary)
+                        .foregroundStyle(settings.pedal ? TetradView.uiAccentColor : Color.primary)
                 }
                 .help("Pedal (Space, held) - sustain: keep the current notes sounding after you release them")
             }
@@ -239,13 +243,16 @@ private struct KeyCommandMonitor: NSViewRepresentable {
     final class Coordinator {
         var settings: AppSettings
         private var monitor: Any?
-        // Portamento's own toggle value (settings.snap) right before Option was pressed for
-        // momentary portamento (see .flagsChanged below) - nil whenever Option isn't currently
+        // Portamento's own toggle value (settings.snap) right before Shift was pressed for
+        // momentary portamento (see .flagsChanged below) - nil whenever Shift isn't currently
         // being held for this purpose. Restored on release rather than just forcing snap back
-        // to true, so a G/H toggle that was already active before the Option press survives it
-        // (holding Option only means "force portamento on for as long as I hold it," not
-        // "portamento is off the moment I let go").
-        private var snapBeforeOptionHeld: Bool?
+        // to true, so a G/H toggle that was already active before the Shift press survives it
+        // (holding Shift only means "force portamento on for as long as I hold it," not
+        // "portamento is off the moment I let go"). Option was tried first (physically next to
+        // Space on Norm's keyboard) but didn't actually work live - switched to Shift instead,
+        // which also matches HitTestView's own separate pre-existing shift-held-while-dragging
+        // behavior conceptually, even though that's a different code path.
+        private var snapBeforeShiftHeld: Bool?
 
         init(settings: AppSettings) {
             self.settings = settings
@@ -294,13 +301,15 @@ private struct KeyCommandMonitor: NSViewRepresentable {
                         if !event.isARepeat { self.settings.playDrone.toggle() }
                         return nil
                     }
-                    // Any other bare keypress (no Cmd/Control/Option - those are real menu/
-                    // system shortcuts like Cmd+Q, left alone here) has nothing to do in this
-                    // app - no text field, no other key command - so it would otherwise fall
-                    // through unconsumed to the same "no responder handled this" system beep
-                    // fixed above for the keys this view does recognize. Norm: accidental key
-                    // hits shouldn't beep during a performance. Swallowed, not acted on.
-                    if event.modifierFlags.intersection([.command, .control, .option]).isEmpty {
+                    // Any other bare keypress (no Cmd/Control - those are real menu/system
+                    // shortcuts like Cmd+Q, left alone here) has nothing to do in this app - no
+                    // text field, no other key command - so it would otherwise fall through
+                    // unconsumed to the same "no responder handled this" system beep fixed above
+                    // for the keys this view does recognize. Norm: accidental key hits shouldn't
+                    // beep during a performance. Swallowed, not acted on. Shift excluded too,
+                    // same reason Option was before the momentary-Portamento key moved to Shift -
+                    // it's meaningful now (see .flagsChanged below), not a stray key.
+                    if event.modifierFlags.intersection([.command, .control, .shift]).isEmpty {
                         return nil
                     }
                 case .keyUp:
@@ -309,23 +318,22 @@ private struct KeyCommandMonitor: NSViewRepresentable {
                         return nil
                     }
                 case .flagsChanged:
-                    // Option, held on its own - momentary Portamento, mirroring how Space
-                    // already works for Pedal (and physically sitting right next to it on
-                    // Norm's own keyboard). Deliberately separate from G/H's existing discrete
-                    // toggle rather than replacing it - both stay available side by side. Pure
-                    // modifier keys never generate keyDown/keyUp at all, only flagsChanged (with
-                    // no isARepeat concept - it just reports the current modifier set each time
-                    // any modifier changes), so this needs its own case rather than fitting into
-                    // the keyDown/keyUp handling above. Guarded by snapBeforeOptionHeld so a
-                    // flagsChanged fired by some *other* modifier changing while Option stays
-                    // held doesn't re-trigger the capture/restore logic.
-                    let optionHeld = event.modifierFlags.contains(.option)
-                    if optionHeld, self.snapBeforeOptionHeld == nil {
-                        self.snapBeforeOptionHeld = self.settings.snap
+                    // Shift, held on its own - momentary Portamento, mirroring how Space already
+                    // works for Pedal. Deliberately separate from G/H's existing discrete toggle
+                    // rather than replacing it - both stay available side by side. Pure modifier
+                    // keys never generate keyDown/keyUp at all, only flagsChanged (with no
+                    // isARepeat concept - it just reports the current modifier set each time any
+                    // modifier changes), so this needs its own case rather than fitting into the
+                    // keyDown/keyUp handling above. Guarded by snapBeforeShiftHeld so a
+                    // flagsChanged fired by some *other* modifier changing while Shift stays held
+                    // doesn't re-trigger the capture/restore logic.
+                    let shiftHeld = event.modifierFlags.contains(.shift)
+                    if shiftHeld, self.snapBeforeShiftHeld == nil {
+                        self.snapBeforeShiftHeld = self.settings.snap
                         self.settings.snap = false
-                    } else if !optionHeld, let previousSnap = self.snapBeforeOptionHeld {
+                    } else if !shiftHeld, let previousSnap = self.snapBeforeShiftHeld {
                         self.settings.snap = previousSnap
-                        self.snapBeforeOptionHeld = nil
+                        self.snapBeforeShiftHeld = nil
                     }
                 default:
                     break
