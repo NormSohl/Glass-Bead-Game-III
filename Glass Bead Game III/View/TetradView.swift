@@ -116,9 +116,17 @@ struct TetradView: View {
         }
     }
 
-    // Shared with ZSliderView's touch marker - the red unison diamond (X = Y = Z) tracks
-    // wherever Z currently sits, so the slider's own cursor is colored to match what it drives.
+    // Shared with ZSliderView's own diamond-list coloring (its central/unison diamond, and its
+    // dissonance==3.0 case, both use this same red - see that file's own comment).
     static let unisonColor = Color(red: 0.8, green: 0.3, blue: 0.3)
+
+    // Same toning as unisonColor above - a dominant channel under 1.0 with the other two raised
+    // (not 0), rather than a pure saturated primary - applied to blue instead of red. Used by
+    // ContentView's toolbar active-state color, which used to clash with the yellow diamonds (a
+    // pure .accentColor, which follows the user's own System Settings accent choice - orange on
+    // Norm's Mac). GraphView's own border was briefly this same blue too, then white instead -
+    // Norm: the blue read as too cold there specifically, plain blue was fine for the toolbar.
+    static let uiAccentColor = Color(red: 0.3, green: 0.3, blue: 0.8)
 
     private static func color(forMovingToneUnisonCount movingToneUnisonCount: Int, sizeNormalized: Double) -> Color {
         switch movingToneUnisonCount {

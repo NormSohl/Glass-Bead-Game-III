@@ -55,7 +55,7 @@ struct GraphView: View {
                                showTetrads: settings.showTetrads && settings.showDiamonds)
 
                     HitTestView(scale:scale, settings: settings, recordingState: recordingState)
-                }.border(.orange)
+                }.border(.white)
 
                 // right border
                 Ticks(border: settings.border, alignment: .trailing, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized)
