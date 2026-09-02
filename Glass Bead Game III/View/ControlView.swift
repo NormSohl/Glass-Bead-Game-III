@@ -19,6 +19,7 @@ struct ControlView: View {
     // to present. Mirrors Seq/TransportView.swift's own SeqDocumentFile pattern exactly.
     @State private var isExporting = false
     @State private var exportFile: GraphRecordingFile?
+    @State private var showKeyMapping = false
 
     var body: some View {
         ZStack{
@@ -111,6 +112,21 @@ struct ControlView: View {
                     .disabled(recordingState.isRecording || !recordingState.hasAnyNotes)
                 }
                 .foregroundStyle(.white)
+
+                // Reachable from here rather than the main toolbar, matching Live Recording
+                // above - this is a "look at this occasionally," not a "reach for every session"
+                // control.
+                Button {
+                    showKeyMapping = true
+                } label: {
+                    Label("Keyboard Mapping…", systemImage: "keyboard")
+                }
+                .buttonStyle(.bordered)
+                .tint(tintcolor)
+                .foregroundStyle(.white)
+                .popover(isPresented: $showKeyMapping) {
+                    KeyMappingView(settings: settings)
+                }
 
                 Divider()
 #if os(iOS)

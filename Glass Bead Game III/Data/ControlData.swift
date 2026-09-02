@@ -53,6 +53,20 @@ class AppSettings: ObservableObject{
             if !pedal { sound.releasePedal() }
         }
     }
+    // Loaded once at init from UserDefaults (see KeyMapping.swift) and saved back on every
+    // change - deliberately persisted, unlike every other property on this class, since a
+    // keyboard remap is a real customization worth keeping across launches, not a session
+    // toggle. Read by ContentView's KeyCommandMonitor; written by KeyMappingView.
+    @Published var keyMapping: KeyMapping = KeyMapping.loadFromDefaults() {
+        didSet { keyMapping.saveToDefaults() }
+    }
+    // Not persisted, purely transient UI state - true only while KeyMappingView's own capture
+    // monitor is actively listening for the next keypress to bind. ContentView's
+    // KeyCommandMonitor checks this first and no-ops entirely while it's true, so a key that's
+    // already bound to something (e.g. pressing D while trying to bind a new key elsewhere)
+    // doesn't also fire its existing action as a side effect of being captured, and so there's
+    // no ambiguity about which of the two active local NSEvent monitors sees a given key first.
+    @Published var isCapturingKeyBinding: Bool = false
     @Published var useSynth: Bool = true
     @Published var useMIDI: Bool = true
     @Published var useMIDI_MPE: Bool = true

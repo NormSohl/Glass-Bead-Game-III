@@ -243,16 +243,20 @@ private struct KeyCommandMonitor: NSViewRepresentable {
     final class Coordinator {
         var settings: AppSettings
         private var monitor: Any?
-        // Portamento's own toggle value (settings.snap) right before Shift was pressed for
-        // momentary portamento (see .flagsChanged below) - nil whenever Shift isn't currently
-        // being held for this purpose. Restored on release rather than just forcing snap back
-        // to true, so a G/H toggle that was already active before the Shift press survives it
-        // (holding Shift only means "force portamento on for as long as I hold it," not
-        // "portamento is off the moment I let go"). Option was tried first (physically next to
-        // Space on Norm's keyboard) but didn't actually work live - switched to Shift instead,
-        // which also matches HitTestView's own separate pre-existing shift-held-while-dragging
-        // behavior conceptually, even though that's a different code path.
-        private var snapBeforeShiftHeld: Bool?
+        // portamentoMomentary's own "before" value - settings.snap right before some token
+        // bound to it was pressed, nil whenever nothing bound to it is currently held. Restored
+        // on release rather than just forcing snap back to true, so a portamentoToggle press
+        // that already happened before this press survives it (holding the momentary binding
+        // only means "force portamento on for as long as I hold it," not "portamento is off the
+        // moment I let go"). Keyed by KeyAction rather than a single Bool since in principle
+        // more than one bound token could be held in an overlapping press, though that's an
+        // edge case this doesn't try to handle precisely (matches the pre-remap code's own
+        // simplicity for Pedal's multiple keys - see applyKeyUp below).
+        private var snapBeforeMomentaryPortamento: Bool?
+        // Which of the four modifier tokens are currently held - flagsChanged reports the
+        // CURRENT full modifier set on every call, not a delta, so this is diffed against each
+        // new event to find what actually changed (see .flagsChanged below).
+        private var heldModifierTokens: Set<KeyToken> = []
 
         init(settings: AppSettings) {
             self.settings = settings
@@ -262,84 +266,121 @@ private struct KeyCommandMonitor: NSViewRepresentable {
             guard monitor == nil else { return }
             monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { [weak self] event in
                 guard let self else { return event }
+                // Stand down entirely while KeyMappingView's own capture monitor is listening
+                // for a new binding - see AppSettings.isCapturingKeyBinding's own comment.
+                guard !self.settings.isCapturingKeyBinding else { return event }
                 switch event.type {
                 case .keyDown:
-                    // Space (key code 49) or F/J - Pedal, momentary: down while held, matching a
-                    // real damper pedal's own physical behavior. F/J are additional keys for the
-                    // same momentary press/release (not a toggle - that wouldn't fit how a pedal
-                    // actually behaves), Norm's own choice, sitting at the home-row index-finger
-                    // position either hand can reach without retraining.
-                    if event.keyCode == 49 || event.charactersIgnoringModifiers?.lowercased() == "f" || event.charactersIgnoringModifiers?.lowercased() == "j" {
-                        self.settings.pedal = true
-                        return nil
-                    }
-                    // "G"/"H" (Glide) - Portamento, a discrete toggle rather than momentary,
-                    // since it isn't physically a pedal. isARepeat filters out the auto-repeat
-                    // keyDown stream macOS sends while a key stays held, which would otherwise
-                    // flip the toggle many times a second instead of once per press. Norm plays
-                    // left-handed - G and D sit under a right-hander's left hand at rest on the
-                    // home row (G is the left index finger's stretch key, D its middle finger's
-                    // home key), so H and K mirror them at the same finger positions under the
-                    // *right* hand instead (A-S-D-F-G | H-J-K-L-; mirrors position-for-position
-                    // around the F/J gap: G<->H, D<->K) - either hand can reach its own pair
-                    // without retraining a specific handedness.
-                    // isARepeat only gates the toggle itself, not consuming the event - gating
-                    // both together (the original bug here) let every repeated keyDown while
-                    // the key stayed held fall through unconsumed, past the end of this switch,
-                    // straight into macOS's own "no responder handled this key" system beep -
-                    // audible proof the event wasn't actually being swallowed. Any matching
-                    // character is now always consumed (return nil unconditionally), whether or
-                    // not this particular keyDown is the one that actually toggles anything.
-                    let character = event.charactersIgnoringModifiers?.lowercased()
-                    if character == "g" || character == "h" {
-                        if !event.isARepeat { self.settings.snap.toggle() }
-                        return nil
-                    }
-                    // "D"/"K" - Drone, same discrete-toggle treatment and mirroring as
-                    // Portamento above (not physically a pedal either).
-                    if character == "d" || character == "k" {
-                        if !event.isARepeat { self.settings.playDrone.toggle() }
+                    // Space doesn't reliably come through charactersIgnoringModifiers the same
+                    // way regular letters do, so key code 49 is checked directly as an alias for
+                    // the " " token - same special-casing the original hardcoded version had.
+                    let token: KeyToken? = event.keyCode == 49 ? " " : event.charactersIgnoringModifiers?.lowercased()
+                    if let token, let action = self.settings.keyMapping.action(for: token) {
+                        // isARepeat only gates toggle actions, not consuming the event - gating
+                        // both together used to let every repeated keyDown while a key stayed
+                        // held fall through unconsumed, straight into macOS's own "no responder
+                        // handled this key" system beep. Any matching token is now always
+                        // consumed (return nil unconditionally) regardless of repeat state.
+                        self.applyKeyDown(action, isARepeat: event.isARepeat)
                         return nil
                     }
                     // Any other bare keypress (no Cmd/Control - those are real menu/system
                     // shortcuts like Cmd+Q, left alone here) has nothing to do in this app - no
                     // text field, no other key command - so it would otherwise fall through
-                    // unconsumed to the same "no responder handled this" system beep fixed above
-                    // for the keys this view does recognize. Norm: accidental key hits shouldn't
-                    // beep during a performance. Swallowed, not acted on. Shift excluded too,
-                    // same reason Option was before the momentary-Portamento key moved to Shift -
-                    // it's meaningful now (see .flagsChanged below), not a stray key.
-                    if event.modifierFlags.intersection([.command, .control, .shift]).isEmpty {
+                    // unconsumed to the same system beep fixed above for keys that ARE mapped.
+                    // Norm: accidental key hits shouldn't beep during a performance. Bound
+                    // modifiers excluded too (same reason as the keys themselves) - computed
+                    // live from the current mapping rather than a fixed set, so remapping a
+                    // modifier onto/off of an action keeps this in sync automatically.
+                    let boundModifierFlags = self.currentlyBoundModifierFlags()
+                    if event.modifierFlags.intersection([.command, .control]).isEmpty
+                        && event.modifierFlags.intersection(boundModifierFlags).isEmpty {
                         return nil
                     }
                 case .keyUp:
-                    if event.keyCode == 49 || event.charactersIgnoringModifiers?.lowercased() == "f" || event.charactersIgnoringModifiers?.lowercased() == "j" {
-                        self.settings.pedal = false
+                    let token: KeyToken? = event.keyCode == 49 ? " " : event.charactersIgnoringModifiers?.lowercased()
+                    if let token, let action = self.settings.keyMapping.action(for: token), action.isMomentary {
+                        self.applyKeyUp(action)
                         return nil
                     }
                 case .flagsChanged:
-                    // Shift, held on its own - momentary Portamento, mirroring how Space already
-                    // works for Pedal. Deliberately separate from G/H's existing discrete toggle
-                    // rather than replacing it - both stay available side by side. Pure modifier
-                    // keys never generate keyDown/keyUp at all, only flagsChanged (with no
-                    // isARepeat concept - it just reports the current modifier set each time any
-                    // modifier changes), so this needs its own case rather than fitting into the
-                    // keyDown/keyUp handling above. Guarded by snapBeforeShiftHeld so a
-                    // flagsChanged fired by some *other* modifier changing while Shift stays held
-                    // doesn't re-trigger the capture/restore logic.
-                    let shiftHeld = event.modifierFlags.contains(.shift)
-                    if shiftHeld, self.snapBeforeShiftHeld == nil {
-                        self.snapBeforeShiftHeld = self.settings.snap
-                        self.settings.snap = false
-                    } else if !shiftHeld, let previousSnap = self.snapBeforeShiftHeld {
-                        self.settings.snap = previousSnap
-                        self.snapBeforeShiftHeld = nil
+                    // Pure modifier keys never generate keyDown/keyUp at all, only flagsChanged -
+                    // and it reports the current full modifier set each time, not a delta, so
+                    // this diffs against heldModifierTokens to find what actually changed.
+                    let newlyHeld = modifierKeyTokens.filter { self.isTokenModifierHeld($0, in: event.modifierFlags) }
+                    for token in newlyHeld.subtracting(self.heldModifierTokens) {
+                        if let action = self.settings.keyMapping.action(for: token) {
+                            self.applyKeyDown(action, isARepeat: false)
+                        }
                     }
+                    for token in self.heldModifierTokens.subtracting(newlyHeld) {
+                        if let action = self.settings.keyMapping.action(for: token), action.isMomentary {
+                            self.applyKeyUp(action)
+                        }
+                    }
+                    self.heldModifierTokens = newlyHeld
                 default:
                     break
                 }
                 return event
             }
+        }
+
+        // Momentary actions get pressed; toggle actions get toggled - except
+        // portamentoMomentary, whose "press" temporarily overrides the toggle-backed
+        // settings.snap rather than just setting a boolean, so it can restore whatever value
+        // was there before once released (see snapBeforeMomentaryPortamento's own comment).
+        private func applyKeyDown(_ action: KeyAction, isARepeat: Bool) {
+            switch action {
+            case .pedal:
+                settings.pedal = true
+            case .portamentoMomentary:
+                guard snapBeforeMomentaryPortamento == nil else { return }
+                snapBeforeMomentaryPortamento = settings.snap
+                settings.snap = false
+            case .drone:
+                if !isARepeat { settings.playDrone.toggle() }
+            case .portamentoToggle:
+                if !isARepeat { settings.snap.toggle() }
+            }
+        }
+
+        private func applyKeyUp(_ action: KeyAction) {
+            switch action {
+            case .pedal:
+                settings.pedal = false
+            case .portamentoMomentary:
+                if let previous = snapBeforeMomentaryPortamento {
+                    settings.snap = previous
+                    snapBeforeMomentaryPortamento = nil
+                }
+            case .drone, .portamentoToggle:
+                break // discrete toggles don't care about release
+            }
+        }
+
+        private func isTokenModifierHeld(_ token: KeyToken, in flags: NSEvent.ModifierFlags) -> Bool {
+            switch token {
+            case "shift": return flags.contains(.shift)
+            case "option": return flags.contains(.option)
+            case "control": return flags.contains(.control)
+            case "command": return flags.contains(.command)
+            default: return false
+            }
+        }
+
+        private func currentlyBoundModifierFlags() -> NSEvent.ModifierFlags {
+            var flags: NSEvent.ModifierFlags = []
+            for token in modifierKeyTokens where settings.keyMapping.action(for: token) != nil {
+                switch token {
+                case "shift": flags.insert(.shift)
+                case "option": flags.insert(.option)
+                case "control": flags.insert(.control)
+                case "command": flags.insert(.command)
+                default: break
+                }
+            }
+            return flags
         }
 
         deinit {

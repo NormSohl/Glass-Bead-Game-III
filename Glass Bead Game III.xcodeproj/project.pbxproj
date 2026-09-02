@@ -23,6 +23,8 @@
 		06824C022B886963002E9661 /* ControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BFB2B886963002E9661 /* ControlView.swift */; };
 		06D0626C2BAA9A9000C68262 /* ControlData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062682BAA9A9000C68262 /* ControlData.swift */; };
 		CA9DFB93682D7900B1F2C29C /* RecordingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBCBBD744B6C27D6A0A04EC /* RecordingState.swift */; };
+		0F37A5CF92CA650B1D6E4E38 /* KeyMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70FAC6DCA6094545F1B5FFF3 /* KeyMapping.swift */; };
+		8948E67C5DBAEC3899D80AE1 /* KeyMappingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778271CF9DA6CEB34CCEC947 /* KeyMappingView.swift */; };
 		06D062702BAA9C4E00C68262 /* Sound.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D0626F2BAA9C4E00C68262 /* Sound.swift */; };
 		EE645A5026D54B47871B55B4 /* ScoreCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290A597C9AA1404D82BB59FA /* ScoreCapture.swift */; };
 		8CFA26E61CFF41F3AE63BE38 /* TetradView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6DF75EF1C024FBCA782C7AE /* TetradView.swift */; };
@@ -58,6 +60,8 @@
 		290A597C9AA1404D82BB59FA /* ScoreCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreCapture.swift; sourceTree = "<group>"; };
 		06D062682BAA9A9000C68262 /* ControlData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControlData.swift; sourceTree = "<group>"; };
 		6FBCBBD744B6C27D6A0A04EC /* RecordingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingState.swift; sourceTree = "<group>"; };
+		70FAC6DCA6094545F1B5FFF3 /* KeyMapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyMapping.swift; sourceTree = "<group>"; };
+		778271CF9DA6CEB34CCEC947 /* KeyMappingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyMappingView.swift; sourceTree = "<group>"; };
 		06D0626F2BAA9C4E00C68262 /* Sound.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sound.swift; sourceTree = "<group>"; };
 		D6DF75EF1C024FBCA782C7AE /* TetradView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TetradView.swift; sourceTree = "<group>"; };
 		969C76870C734BBD95B79A2E /* Seq.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Seq.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -157,6 +161,7 @@
 				4A8E917E593A42A893FBEA9C /* PitchHitTest.swift */,
 				792C3694A73A41E196B16CA2 /* ZSliderView.swift */,
 				D6DF75EF1C024FBCA782C7AE /* TetradView.swift */,
+				778271CF9DA6CEB34CCEC947 /* KeyMappingView.swift */,
 			);
 			name = View;
 			path = "Glass Bead Game III/View";
@@ -203,6 +208,7 @@
 			children = (
 				06D062682BAA9A9000C68262 /* ControlData.swift */,
 				6FBCBBD744B6C27D6A0A04EC /* RecordingState.swift */,
+				70FAC6DCA6094545F1B5FFF3 /* KeyMapping.swift */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -355,6 +361,8 @@
 				A38475822A7D41D583CA3B43 /* ZSliderView.swift in Sources */,
 				8CFA26E61CFF41F3AE63BE38 /* TetradView.swift in Sources */,
 				EE645A5026D54B47871B55B4 /* ScoreCapture.swift in Sources */,
+				0F37A5CF92CA650B1D6E4E38 /* KeyMapping.swift in Sources */,
+				8948E67C5DBAEC3899D80AE1 /* KeyMappingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
