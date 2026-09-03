@@ -22,6 +22,7 @@
 		4F2A84F6F62AC5B7BE29C791 /* GraphSquareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E903D696C4E843EF518EE59 /* GraphSquareView.swift */; };
 		06824C022B886963002E9661 /* ControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BFB2B886963002E9661 /* ControlView.swift */; };
 		06D0626C2BAA9A9000C68262 /* ControlData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062682BAA9A9000C68262 /* ControlData.swift */; };
+		317B1BA8A34162AA9B38DE5C /* GraphScaleState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DDCC95CF1A81170C4DE41F /* GraphScaleState.swift */; };
 		CA9DFB93682D7900B1F2C29C /* RecordingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBCBBD744B6C27D6A0A04EC /* RecordingState.swift */; };
 		0F37A5CF92CA650B1D6E4E38 /* KeyMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70FAC6DCA6094545F1B5FFF3 /* KeyMapping.swift */; };
 		55B90A60C8BB801656E8503C /* KeyActionDispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 749E855D9A9BC73A4907BF54 /* KeyActionDispatcher.swift */; };
@@ -61,6 +62,7 @@
 		06D062312BAA953300C68262 /* Overview.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Overview.md; sourceTree = "<group>"; };
 		290A597C9AA1404D82BB59FA /* ScoreCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreCapture.swift; sourceTree = "<group>"; };
 		06D062682BAA9A9000C68262 /* ControlData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControlData.swift; sourceTree = "<group>"; };
+		E5DDCC95CF1A81170C4DE41F /* GraphScaleState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphScaleState.swift; sourceTree = "<group>"; };
 		6FBCBBD744B6C27D6A0A04EC /* RecordingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingState.swift; sourceTree = "<group>"; };
 		70FAC6DCA6094545F1B5FFF3 /* KeyMapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyMapping.swift; sourceTree = "<group>"; };
 		749E855D9A9BC73A4907BF54 /* KeyActionDispatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyActionDispatcher.swift; sourceTree = "<group>"; };
@@ -212,6 +214,7 @@
 			isa = PBXGroup;
 			children = (
 				06D062682BAA9A9000C68262 /* ControlData.swift */,
+				E5DDCC95CF1A81170C4DE41F /* GraphScaleState.swift */,
 				6FBCBBD744B6C27D6A0A04EC /* RecordingState.swift */,
 				70FAC6DCA6094545F1B5FFF3 /* KeyMapping.swift */,
 				749E855D9A9BC73A4907BF54 /* KeyActionDispatcher.swift */,
@@ -353,6 +356,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				06D0626C2BAA9A9000C68262 /* ControlData.swift in Sources */,
+				317B1BA8A34162AA9B38DE5C /* GraphScaleState.swift in Sources */,
 				CA9DFB93682D7900B1F2C29C /* RecordingState.swift in Sources */,
 				06824BDE2B881E3C002E9661 /* Glass_Bead_Game_IIIApp.swift in Sources */,
 				06824BFD2B886963002E9661 /* ContentView.swift in Sources */,

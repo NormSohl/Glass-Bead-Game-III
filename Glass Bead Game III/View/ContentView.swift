@@ -11,17 +11,18 @@ import GBGCore
 import GBGSound
 
 struct ContentView: View {
-    @StateObject private var settings = AppSettings()
-    @StateObject private var recordingState: RecordingState
+    // Wraps the shared, process-wide instances (Glass_Bead_Game_IIIApp.swift) rather than
+    // constructing its own - see GraphScaleState.swift's own header comment for why: the
+    // external-display audience window needs to reach the exact same settings/recordingState/
+    // scale/tetradLayers ContentView uses, from outside any view's own lifetime.
+    @ObservedObject private var settings: AppSettings = appSettings
+    @ObservedObject private var recordingState: RecordingState = appRecordingState
+    @ObservedObject private var graphScale: GraphScaleState = graphScaleState
 
-    // Scale/TetradLayers only depend on the scale's shape (limit, highest/lowest ratio) - not
-    // on Z. They're cached here and recomputed only via onChange(of: settings.selectedLimit)
-    // below, rather than as plain `let`s in body: settings.zFrequency now publishes on every
-    // Z-slider touch-move frame, and recomputing Tetrads (the basis of tetradLayers) from
-    // scratch on every frame would be the "hundreds of ms at worst" cost from the design notes
-    // running many times a second instead of once per limit change.
-    @State private var scale: Scale
-    @State private var tetradLayers: TetradLayers
+    // Thin pass-throughs so the rest of this file's existing `scale`/`tetradLayers` references
+    // don't all need rewriting to `graphScale.scale`/`graphScale.tetradLayers`.
+    private var scale: Scale { graphScale.scale }
+    private var tetradLayers: TetradLayers { graphScale.tetradLayers }
 
     // The graph square's own rendered height, captured via GeometryReader below - the square
     // (aspectRatio 1/1, contentMode .fit) ends up shorter than the row's full available height
@@ -39,27 +40,6 @@ struct ContentView: View {
     // crash, not just defensive style).
     private var safeGraphSquareHeight: CGFloat {
         graphSquareHeight.isFinite && graphSquareHeight > 0 ? graphSquareHeight : 0
-    }
-
-    init() {
-        let initialSettings = AppSettings()
-        _settings = StateObject(wrappedValue: initialSettings)
-        _recordingState = StateObject(wrappedValue: RecordingState(settings: initialSettings, sampleRateProvider: { sound.audio.sampleRate }))
-        let initialScale = Scale(
-            limit: limitMap[initialSettings.selectedLimit] ?? 1,
-            highestRatio: initialSettings.highestRatio,
-            lowestRatio: initialSettings.lowestRatio)
-        _scale = State(initialValue: initialScale)
-        _tetradLayers = State(initialValue: TetradLayers(scale: initialScale))
-    }
-
-    private func rebuildScaleDependentState() {
-        let newScale = Scale(
-            limit: limitMap[settings.selectedLimit] ?? 1,
-            highestRatio: settings.highestRatio,
-            lowestRatio: settings.lowestRatio)
-        scale = newScale
-        tetradLayers = TetradLayers(scale: newScale)
     }
 
     var body: some View {
@@ -153,7 +133,7 @@ struct ContentView: View {
         .background(KeyboardMonitor(settings: settings, recordingState: recordingState))
         #endif
         .onChange(of: settings.selectedLimit) {
-            rebuildScaleDependentState()
+            graphScale.rebuild(for: settings)
         }
         // macOS only - .toolbar has nowhere to attach without a NavigationStack, which this
         // app deliberately doesn't have (would cost a permanent nav-bar strip of vertical

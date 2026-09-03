@@ -10,6 +10,16 @@ import SwiftUI
 // utility class for the app
 var sound = Sound() // sound is a generic class that wraps both the audio out and midi out classes
 
+// Process-wide shared state (like `sound` above), not owned by any one window - needed for the
+// external-display audience window (Stage 2+ of that feature), whose UIWindowSceneDelegate is
+// instantiated by UIKit itself when a scene connects, entirely outside the SwiftUI view tree,
+// so it can't reach anything via .environmentObject or a view's own init. ContentView now wraps
+// these same instances rather than constructing its own - see GraphScaleState.swift's own
+// header comment for the fuller reasoning.
+var appSettings = AppSettings()
+var appRecordingState = RecordingState(settings: appSettings, sampleRateProvider: { sound.audio.sampleRate })
+var graphScaleState = GraphScaleState(settings: appSettings)
+
 @main
 struct GlassBeadGameIIIApp: App {
     
