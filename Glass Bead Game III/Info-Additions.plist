@@ -15,5 +15,27 @@
 	<array>
 		<string>_apple-midi._udp</string>
 	</array>
+	<!-- Stage 4a of external-display support: multi-scene must be on before an external-display
+	     scene role can ever be offered a connection. This default-role entry alone changes
+	     nothing about how the app launches or behaves - SwiftUI's own WindowGroup stays in
+	     charge, no custom delegate named yet. Expressed here (not via INFOPLIST_KEY_* build
+	     settings, which auto-generated this same dict until now) because a nested array/dict
+	     like this can't be written as a flat build setting - same reason NSBonjourServices above
+	     needed this file at all. -->
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<true/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneConfigurationName</key>
+					<string>Default Configuration</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
 </dict>
 </plist>
