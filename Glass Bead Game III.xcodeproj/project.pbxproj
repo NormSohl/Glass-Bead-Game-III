@@ -20,6 +20,7 @@
 		06824BFE2B886963002E9661 /* HitTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF72B886962002E9661 /* HitTestView.swift */; };
 		06824C012B886963002E9661 /* GraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BFA2B886963002E9661 /* GraphView.swift */; };
 		4F2A84F6F62AC5B7BE29C791 /* GraphSquareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E903D696C4E843EF518EE59 /* GraphSquareView.swift */; };
+		57C87FAE324C4F7CB281F922 /* AudienceGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11652339D95D45C69024E258 /* AudienceGraphView.swift */; };
 		06824C022B886963002E9661 /* ControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BFB2B886963002E9661 /* ControlView.swift */; };
 		06D0626C2BAA9A9000C68262 /* ControlData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062682BAA9A9000C68262 /* ControlData.swift */; };
 		317B1BA8A34162AA9B38DE5C /* GraphScaleState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DDCC95CF1A81170C4DE41F /* GraphScaleState.swift */; };
@@ -58,6 +59,7 @@
 		06824BF72B886962002E9661 /* HitTestView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HitTestView.swift; sourceTree = "<group>"; };
 		06824BFA2B886963002E9661 /* GraphView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GraphView.swift; sourceTree = "<group>"; };
 		7E903D696C4E843EF518EE59 /* GraphSquareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphSquareView.swift; sourceTree = "<group>"; };
+		11652339D95D45C69024E258 /* AudienceGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudienceGraphView.swift; sourceTree = "<group>"; };
 		06824BFB2B886963002E9661 /* ControlView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControlView.swift; sourceTree = "<group>"; };
 		06D062312BAA953300C68262 /* Overview.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Overview.md; sourceTree = "<group>"; };
 		290A597C9AA1404D82BB59FA /* ScoreCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreCapture.swift; sourceTree = "<group>"; };
@@ -163,6 +165,7 @@
 				06824BF52B886962002E9661 /* DissonanceView.swift */,
 				06824BFA2B886963002E9661 /* GraphView.swift */,
 				7E903D696C4E843EF518EE59 /* GraphSquareView.swift */,
+				11652339D95D45C69024E258 /* AudienceGraphView.swift */,
 				06824BF72B886962002E9661 /* HitTestView.swift */,
 				0634BD0F2B8A8912001E3644 /* TickView.swift */,
 				4A8E917E593A42A893FBEA9C /* PitchHitTest.swift */,
@@ -366,6 +369,7 @@
 				06824C022B886963002E9661 /* ControlView.swift in Sources */,
 				06824C012B886963002E9661 /* GraphView.swift in Sources */,
 				4F2A84F6F62AC5B7BE29C791 /* GraphSquareView.swift in Sources */,
+				57C87FAE324C4F7CB281F922 /* AudienceGraphView.swift in Sources */,
 				0634BD102B8A8912001E3644 /* TickView.swift in Sources */,
 				4D9981F43229467D80A3D2BF /* PitchHitTest.swift in Sources */,
 				A38475822A7D41D583CA3B43 /* ZSliderView.swift in Sources */,
