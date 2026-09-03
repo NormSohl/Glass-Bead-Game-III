@@ -40,18 +40,20 @@ since they serve different purposes:
 
 The most direct path, when both apps can reach each other over MIDI (same Mac, USB, or Network
 MIDI/RTP-MIDI - see below): no Record/Save in GBG III, no Open in Seq, just play and watch the
-notes appear.
+notes appear in the piano roll as you play them.
 
 1. In GBG III's Settings, set **MIDI Destination** to **Seq** (it shows up in that picker like
    any other MIDI destination, since Seq advertises itself the same way GBG III does) and make
    sure **Use Midi** is on.
 2. In Seq's transport bar, tap **Capture**. It stays armed (shown as **Stop**) until you tap it
-   again - play as long as you like across it.
+   again - play as long as you like across it. This stops playback if it was running, since the
+   two can't happen at once.
 3. Play in GBG III. X/Y/Z are captured continuously, the same detail level as GBG III's own
-   Record feature (drone isn't - there's no touch gesture driving it, same as Record).
-4. Tap **Stop** in Seq. The captured performance loads into the piano roll immediately, raw and
-   unsegmented - nothing to open, nothing to save first. Apply **Segment** (see below) whenever
-   you're ready, or leave it as-is and segment/edit some other time.
+   Record feature (drone isn't - there's no touch gesture driving it, same as Record) - and the
+   piano roll draws each note as you play it, live, not only once you stop.
+4. Tap **Stop** in Seq when you're done. What's already in the piano roll *is* the captured
+   performance, raw and unsegmented - nothing to open, nothing to save first. Apply **Segment**
+   (see below) whenever you're ready, or leave it as-is and segment/edit some other time.
 
 Connecting over USB or Network MIDI works the same way once the connection itself exists - pair
 the iPad and Mac in **Audio MIDI Setup**'s Network MIDI panel (or plug in over USB), and GBG
