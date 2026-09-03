@@ -12,14 +12,23 @@
 //  connection, a USB-connected iPad, and a Network MIDI (RTP-MIDI) session all show up and
 //  behave identically here - this file has no transport-specific code, and needs none.
 //
-//  Mirrors Glass Bead Game III/Data/RecordingState.swift closely (the same ActiveGesture/
-//  insertRecordedNote/backfilled-rest pattern), just driven by incoming MIDI note-on/pitch-bend/
-//  note-off instead of local touch begin/end plus a 300Hz settings poll - the sample rate at
-//  which pitch-bend actually arrives here is whatever Graph's own touch-move rate is (Graph
-//  sends a MIDI pitch-bend update on every settings.xFrequency/yFrequency/zFrequency change,
-//  i.e. every touch-move frame, not throttled - see AppSettings/Sound.setXPitch in Graph). X/Y/Z
-//  only, same as Graph's own recorder - drone has no live-touch pitch interaction to capture
-//  there either.
+//  Writes directly into SequencerState's own xPart/yPart/zPart - the same Part instances
+//  PianoRollView already renders and ScorePlayer already reads - rather than a separate staging
+//  copy merged in afterward. Norm: "I want to see recording in Seq in real time, not after
+//  stopping recording" - every incoming pitch-bend sample updates the in-progress note in place
+//  (via the same insertRecordedNote path finalizing already used, just called continuously
+//  instead of once at note-off), so the piano roll shows the gesture growing exactly as it's
+//  played, not only once capture stops. SequencerState.toggleLiveCapture() stops playback before
+//  arming capture - the same "stop first" guard loadDocument already has - so this and
+//  ScorePlayer.advance() (audio-render-thread) never touch these Parts at the same time.
+//
+//  Mirrors Glass Bead Game III/Data/RecordingState.swift's own ActiveGesture/gesture-cursor
+//  pattern, just driven by incoming MIDI note-on/pitch-bend/note-off instead of local touch
+//  begin/end plus a 300Hz settings poll - the rate at which pitch-bend actually arrives here is
+//  whatever Graph's own touch-move rate is (Graph sends a MIDI pitch-bend update on every
+//  settings.xFrequency/yFrequency/zFrequency change, i.e. every touch-move frame, not throttled -
+//  see AppSettings/Sound.setXPitch in Graph). X/Y/Z only, same as Graph's own recorder - drone
+//  has no live-touch pitch interaction to capture there either.
 //
 //  Known limitation, inherited from GraphMidiChannel's own established precedent
 //  (SequencerState.swift): assumes Graph is using its default MPE channel assignment (2/3/4 for
@@ -35,13 +44,17 @@ import GBGSound
 final class LiveCaptureState: ObservableObject {
     @Published private(set) var isCapturing = false
 
-    private(set) var xPart = Part(name: "x")
-    private(set) var yPart = Part(name: "y")
-    private(set) var zPart = Part(name: "z")
+    private let xPart: Part
+    private let yPart: Part
+    private let zPart: Part
 
     private let midi: SeqMidiOut
     private let sampleRateProvider: () -> Double
     private var sampleRate: Double { max(1, sampleRateProvider()) }
+
+    // Called after every mutation to xPart/yPart/zPart, so SequencerState can bump
+    // scoreRevision and the piano roll redraws live - see this file's own header comment.
+    var onUpdate: (() -> Void)?
 
     private var captureStart: Date?
 
@@ -66,34 +79,31 @@ final class LiveCaptureState: ObservableObject {
     // exists (Part's own "always tile contiguously" invariant).
     private var cursors: [CapturedVoice: Int] = [.x: 0, .y: 0, .z: 0]
 
-    init(midi: SeqMidiOut, sampleRateProvider: @escaping () -> Double) {
+    init(midi: SeqMidiOut, xPart: Part, yPart: Part, zPart: Part, sampleRateProvider: @escaping () -> Double) {
         self.midi = midi
+        self.xPart = xPart
+        self.yPart = yPart
+        self.zPart = zPart
         self.sampleRateProvider = sampleRateProvider
         midi.onEvent = { [weak self] event in self?.handle(event) }
-    }
-
-    var hasAnyNotes: Bool {
-        [xPart, yPart, zPart].contains { $0.notes.contains { $0.amplitude > 0 } }
-    }
-
-    /// Drone is always empty here, matching RecordingState's own convention - a valid,
-    /// gracefully-handled document, not an error.
-    func exportDocument() -> SeqDocument {
-        SeqDocument(dronePart: Part(name: "drone"), xPart: xPart, yPart: yPart, zPart: zPart)
     }
 
     func toggleCapturing() {
         isCapturing ? stop() : start()
     }
 
+    /// Clears x/y/z and starts fresh, matching Graph's own Record button - drone is left
+    /// untouched (never captured, see this file's header comment), so anything already there
+    /// (e.g. from a prior import) survives.
     private func start() {
-        xPart = Part(name: "x")
-        yPart = Part(name: "y")
-        zPart = Part(name: "z")
+        xPart.notes.removeAll()
+        yPart.notes.removeAll()
+        zPart.notes.removeAll()
         activeGestures = [:]
         cursors = [.x: 0, .y: 0, .z: 0]
         captureStart = Date()
         isCapturing = true
+        onUpdate?()
     }
 
     /// Immediately finalizes whatever's in progress, same as RecordingState.stopRecording -
@@ -152,6 +162,8 @@ final class LiveCaptureState: ObservableObject {
             part(for: voice).insertNote(startTime: cursor, endTime: startTime, startFrequency: frequency, endFrequency: frequency, amplitude: 0)
         }
         activeGestures[voice] = ActiveGesture(referenceFrequency: frequency, startSampleTime: startTime, samples: [0])
+        writeLiveNote(voice) // visible immediately, not only once the first pitch-bend sample arrives
+        onUpdate?()
     }
 
     private func appendSample(_ voice: CapturedVoice, frequency: Double) {
@@ -159,19 +171,47 @@ final class LiveCaptureState: ObservableObject {
         let cents = 1200 * log2(frequency / gesture.referenceFrequency)
         gesture.samples.append(cents)
         activeGestures[voice] = gesture
+        writeLiveNote(voice)
+        onUpdate?()
+    }
+
+    /// Writes (or overwrites) the in-progress gesture's note to reflect exactly what's been
+    /// captured so far, ending at "now" - the same insertRecordedNote finalization path
+    /// finalizeGesture uses below, just run on every sample instead of once at note-off. This
+    /// is the entire mechanism behind seeing the note grow live: each call re-carves the same
+    /// still-growing time span via Part's own insertNote/clearRange, exactly as if a person were
+    /// repeatedly replacing a note with a slightly longer one.
+    private func writeLiveNote(_ voice: CapturedVoice) {
+        guard let gesture = activeGestures[voice] else { return }
+        let endTime = max(currentSampleTime(), gesture.startSampleTime + 1)
+        part(for: voice).insertRecordedNote(
+            startTime: gesture.startSampleTime, endTime: endTime,
+            startFrequency: gesture.referenceFrequency, endFrequency: gesture.referenceFrequency,
+            amplitude: 1,
+            recordedPitchBend: gesture.samples)
     }
 
     private func finalizeGesture(_ voice: CapturedVoice) {
         guard let gesture = activeGestures[voice] else { return }
         activeGestures[voice] = nil
         let endTime = currentSampleTime()
-        guard endTime > gesture.startSampleTime else { return } // degenerate (e.g. instant tap) - drop
+        guard endTime > gesture.startSampleTime else {
+            // Degenerate (e.g. an instant tap) - writeLiveNote already left a 1-sample note
+            // behind for this gesture; turn it back to silence rather than leaving a stray
+            // audible blip, matching RecordingState's own "drop degenerate gestures" behavior.
+            let placeholderEnd = gesture.startSampleTime + 1
+            part(for: voice).insertNote(startTime: gesture.startSampleTime, endTime: placeholderEnd, startFrequency: gesture.referenceFrequency, endFrequency: gesture.referenceFrequency, amplitude: 0)
+            cursors[voice] = placeholderEnd
+            onUpdate?()
+            return
+        }
         part(for: voice).insertRecordedNote(
             startTime: gesture.startSampleTime, endTime: endTime,
             startFrequency: gesture.referenceFrequency, endFrequency: gesture.referenceFrequency,
             amplitude: 1,
             recordedPitchBend: gesture.samples)
         cursors[voice] = endTime
+        onUpdate?()
     }
 
     private func currentSampleTime() -> Int {

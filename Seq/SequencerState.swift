@@ -77,22 +77,22 @@ final class SequencerState: ObservableObject {
     private let graphMidiOut = SeqMidiOut()
 
     // Live capture (Graph -> Seq, over the same graphMidiOut connection object but the reverse
-    // direction) - see LiveCaptureState.swift. Public so TransportView can observe it directly
-    // as its own ObservedObject (SwiftUI won't re-render on a nested object's own @Published
-    // changes otherwise).
+    // direction) - see LiveCaptureState.swift. Writes directly into this class's own xPart/
+    // yPart/zPart (passed in at construction below) rather than a separate copy merged in
+    // afterward, so the piano roll shows a gesture growing as it's played - Norm: "I want to see
+    // recording in Seq in real time, not after stopping recording." Public so TransportView can
+    // observe it directly as its own ObservedObject (SwiftUI won't re-render on a nested
+    // object's own @Published changes otherwise).
     private(set) var liveCapture: LiveCaptureState!
 
-    /// Starts/stops live capture, and - the actual "go direct into Seq" point of this feature -
-    /// loads the captured performance the moment capture stops, no Save/Open file round trip
-    /// needed. Doesn't pass a scale (loadDocument's own default) - a live MIDI stream carries no
-    /// scale metadata the way a .mid file's custom meta-event does, so currentScale is left
-    /// exactly as it already was rather than silently guessing or resetting it.
+    /// Starts/stops live capture. Stops playback first if it's running - the same guard
+    /// loadDocument already has, needed here too since capture writes into these same Part
+    /// instances and ScorePlayer.advance() reads them from the audio render thread; the two
+    /// must never run at once. No document to load afterward - liveCapture already wrote
+    /// straight into xPart/yPart/zPart while it ran.
     func toggleLiveCapture() {
-        let wasCapturing = liveCapture.isCapturing
+        if isPlaying { stop() }
         liveCapture.toggleCapturing()
-        if wasCapturing {
-            loadDocument(liveCapture.exportDocument())
-        }
     }
     @Published var graphOutputEnabled: Bool = false
     @Published var graphDestinationIndex: Int = 0 {
@@ -210,7 +210,10 @@ final class SequencerState: ObservableObject {
         // that picker is the entire UI this needs on Graph's side, already built and already
         // generic (lists whatever CoreMIDI sees, same-Mac/USB/Network MIDI alike).
         graphMidiOut.initMidiInput(name: "Seq")
-        liveCapture = LiveCaptureState(midi: graphMidiOut, sampleRateProvider: { [weak self] in self?.sampleRate ?? 44100 })
+        liveCapture = LiveCaptureState(midi: graphMidiOut, xPart: xPart, yPart: yPart, zPart: zPart, sampleRateProvider: { [weak self] in self?.sampleRate ?? 44100 })
+        // Bumps scoreRevision on every mutation liveCapture makes to xPart/yPart/zPart while
+        // capturing, so the piano roll redraws live instead of only once capture stops.
+        liveCapture.onUpdate = { [weak self] in self?.scoreRevision += 1 }
         synthMidiOut.initMidi()
     }
 
