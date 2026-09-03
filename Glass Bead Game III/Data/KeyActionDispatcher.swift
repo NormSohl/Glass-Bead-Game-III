@@ -12,6 +12,11 @@ import Foundation
 
 final class KeyActionDispatcher {
     var settings: AppSettings
+    // Live-recording start/stop and save also go through here (recordToggle/save below) - same
+    // single dispatch point Drone/Portamento/Pedal already use, so a physical/Bluetooth keyboard
+    // (or a cheap footswitch/keypad emulating one) can drive recording exactly like it drives
+    // everything else, remappable through the same Keyboard Mapping UI.
+    var recordingState: RecordingState
 
     // portamentoMomentary's own "before" value - settings.snap right before some token bound
     // to it was pressed, nil whenever nothing bound to it is currently held. Restored on
@@ -20,8 +25,9 @@ final class KeyActionDispatcher {
     // KeyCommandMonitor for the fuller history of this behavior.
     private var snapBeforeMomentaryPortamento: Bool?
 
-    init(settings: AppSettings) {
+    init(settings: AppSettings, recordingState: RecordingState) {
         self.settings = settings
+        self.recordingState = recordingState
     }
 
     // Momentary actions get pressed; toggle actions get toggled - except portamentoMomentary,
@@ -39,6 +45,10 @@ final class KeyActionDispatcher {
             if !isARepeat { settings.playDrone.toggle() }
         case .portamentoToggle:
             if !isARepeat { settings.snap.toggle() }
+        case .recordToggle:
+            if !isARepeat { recordingState.toggleRecording() }
+        case .save:
+            if !isARepeat { recordingState.requestSave() }
         }
     }
 
@@ -51,8 +61,8 @@ final class KeyActionDispatcher {
                 settings.snap = previous
                 snapBeforeMomentaryPortamento = nil
             }
-        case .drone, .portamentoToggle:
-            break // discrete toggles don't care about release
+        case .drone, .portamentoToggle, .recordToggle, .save:
+            break // discrete toggles/triggers don't care about release
         }
     }
 }

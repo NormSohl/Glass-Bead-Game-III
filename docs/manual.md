@@ -65,10 +65,17 @@ cheap keypad that emulates one) for the same shortcuts. Defaults:
 | Portamento (toggle) | G, H |
 | Portamento (hold) | Shift |
 | Pedal (hold) | Space, F, J |
+| Live Recording (start/stop) | R |
+| Save Live Recording | S |
 
 There's no separate *toggle* key for Pedal — the keyboard only offers the hold behavior above,
 matching a real damper pedal. To toggle Pedal on and leave it on, use the on-screen button (or,
 on iPad, Pencil squeeze — see below).
+
+Record and Save work from the keyboard no matter what's on screen — you don't need Settings
+open first. A small message briefly appears at the top of the graph confirming what just
+happened ("Recording", "Stopped — 4 notes", "Saved"), since these two in particular have no
+other on-screen change to notice otherwise.
 
 All of these are remappable — see **Keyboard Mapping** under Settings.
 
@@ -158,7 +165,9 @@ occasionally rather than mid-phrase.
   column) to whichever side suits your grip - set this once for how you actually hold the
   device/pencil.
 - **Live Recording** — captures a performance to hand off to Seq for review/editing. See the
-  separate Seq manual for the full recording/import workflow.
+  separate Seq manual for the full recording/import workflow. Record and Save (§2's keyboard
+  table) work the same whether or not this panel is open — reach for this panel itself mainly
+  to check the Record/Stop state at a glance, or to remap the keys.
 - **Keyboard Mapping** — see §2 above for what's remappable.
 
 ---

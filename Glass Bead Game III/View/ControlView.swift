@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import UniformTypeIdentifiers
 import GBGCore
 import GBGSound
 
@@ -14,11 +13,10 @@ struct ControlView: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject var recordingState: RecordingState
 
-    // Save (Step 3 of the live-record plan) - exportFile is populated right before isExporting
-    // is set true, since .fileExporter needs a real (non-nil) document at the moment it's asked
-    // to present. Mirrors Seq/TransportView.swift's own SeqDocumentFile pattern exactly.
-    @State private var isExporting = false
-    @State private var exportFile: GraphRecordingFile?
+    // Save (Step 3 of the live-record plan) - the actual encode + panel-presentation now live on
+    // RecordingState/ContentView (see RecordingState.requestSave() and ContentView's own
+    // .fileExporter), so a keyboard shortcut can trigger the identical save panel without this
+    // popover being open at all. This button just requests it.
     @State private var showKeyMapping = false
 
     var body: some View {
@@ -85,14 +83,7 @@ struct ControlView: View {
                     .tint(recordingState.isRecording ? .red : tintcolor)
 
                     Button {
-                        let scale = MIDIScaleDefinition(
-                            limit: limitMap[settings.selectedLimit] ?? 5,
-                            highestRatio: settings.highestRatio,
-                            lowestRatio: settings.lowestRatio,
-                            rootFrequency: settings.rootFrequency)
-                        let data = SeqMIDICodec.encode(document: recordingState.exportDocument(), scale: scale, sampleRate: sound.audio.sampleRate)
-                        exportFile = GraphRecordingFile(data: data)
-                        isExporting = true
+                        recordingState.requestSave()
                     } label: {
                         Label("Save", systemImage: "square.and.arrow.down")
                     }
@@ -316,10 +307,6 @@ struct ControlView: View {
             }.padding([.leading,.trailing,.top], 20)
             }
         }
-        .fileExporter(isPresented: $isExporting, document: exportFile, contentType: .midi, defaultFilename: "Live Recording") { _ in
-            // Nothing else to do either way - the document was already captured at the moment
-            // Save was pressed, so a cancelled/failed export just leaves recordingState as-is.
-        }
     }
 
     // Diamond/Triangle's 0.75 scale (not the exact 1/sqrt(2) ~ 0.7071 that would inscribe a
@@ -352,34 +339,6 @@ struct ControlView: View {
             // presumably tuned against, but stays correct across window/screen sizes.
             settings.graphTransform = GraphViewTransform(rotation: 45.0, scale: Self.diamondTriangleScale, offsetY: -0.4)
         }
-    }
-}
-
-/// Thin FileDocument wrapper around an already-encoded Standard MIDI File for .fileExporter -
-/// SeqMIDICodec.encode (GBGCore) does the actual document->bytes work before this is even
-/// constructed, so this just carries bytes to disk, the same role SeqDocumentFile plays in
-/// Seq/TransportView.swift for Seq's own save/load (that one lives in the Seq target, which
-/// Graph doesn't depend on, so this is Graph's own copy rather than a shared one). Graph only
-/// ever writes through this today - init(configuration:) exists solely for FileDocument
-/// conformance, not because Graph reads recordings back (Seq's Open does that, Stage 3).
-struct GraphRecordingFile: FileDocument {
-    static var readableContentTypes: [UTType] { [.midi] }
-
-    var data: Data
-
-    init(data: Data) {
-        self.data = data
-    }
-
-    init(configuration: ReadConfiguration) throws {
-        guard let contents = configuration.file.regularFileContents else {
-            throw CocoaError(.fileReadCorruptFile)
-        }
-        data = contents
-    }
-
-    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        FileWrapper(regularFileWithContents: data)
     }
 }
 

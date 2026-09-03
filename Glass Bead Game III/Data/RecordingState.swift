@@ -39,6 +39,20 @@ private let recordingSampleHz: Double = 300
 final class RecordingState: ObservableObject {
     @Published private(set) var isRecording = false
 
+    // Set by requestSave() below, observed by ContentView's .fileExporter - the single source
+    // of truth for "the save panel should be showing right now," reachable from both the
+    // Settings-popover Save button (ControlView) and a keyboard shortcut (KeyActionDispatcher),
+    // neither of which can otherwise reach a `.fileExporter` living on ContentView itself (a
+    // popover's own content view can't present a panel while the popover is closed - the whole
+    // reason a keyboard-triggered save needs this to live somewhere always-present).
+    @Published private(set) var pendingExportData: Data?
+
+    // A short-lived status string for ContentView's feedback banner - Norm: reachable feedback
+    // for actions (recording start/stop, save) that would otherwise happen silently, especially
+    // now they're keyboard-triggerable from outside Settings with no other visible confirmation.
+    @Published private(set) var feedbackMessage: String?
+    private var feedbackClearWorkItem: DispatchWorkItem?
+
     private(set) var dronePart = Part(name: "drone")
     private(set) var xPart = Part(name: "x")
     private(set) var yPart = Part(name: "y")
@@ -109,6 +123,7 @@ final class RecordingState: ObservableObject {
         recordingStart = Date()
         isRecording = true
         startTimer()
+        showFeedback("Recording")
     }
 
     /// Immediately finalizes whatever's in progress (per voice, whatever samples exist so far)
@@ -121,6 +136,51 @@ final class RecordingState: ObservableObject {
         stopTimer()
         isRecording = false
         recordingStart = nil
+        let noteCount = [dronePart, xPart, yPart, zPart].reduce(0) { $0 + $1.notes.filter { $0.amplitude > 0 }.count }
+        showFeedback(noteCount > 0 ? "Stopped — \(noteCount) note\(noteCount == 1 ? "" : "s")" : "Stopped — nothing captured")
+    }
+
+    // MARK: - Save (keyboard-triggerable, outside Settings - see pendingExportData's own comment)
+
+    /// Builds the export data and hands it to ContentView's .fileExporter via pendingExportData -
+    /// the same encode step the Settings-popover Save button used to do inline, now shared so a
+    /// keyboard shortcut can trigger the identical save panel without opening Settings first.
+    func requestSave() {
+        guard !isRecording, hasAnyNotes else {
+            showFeedback("Nothing to save")
+            return
+        }
+        let scale = MIDIScaleDefinition(
+            limit: limitMap[settings.selectedLimit] ?? 5,
+            highestRatio: settings.highestRatio,
+            lowestRatio: settings.lowestRatio,
+            rootFrequency: settings.rootFrequency)
+        pendingExportData = SeqMIDICodec.encode(document: exportDocument(), scale: scale, sampleRate: sampleRate)
+    }
+
+    /// Called from .fileExporter's isPresented binding once the panel dismisses (success,
+    /// failure, or cancel alike) - resets pendingExportData so a later requestSave() can
+    /// re-trigger the panel.
+    func clearPendingExport() {
+        pendingExportData = nil
+    }
+
+    /// Called from .fileExporter's own completion closure - separate from clearPendingExport()
+    /// since that fires on cancel too (no feedback wanted there), while this only fires with an
+    /// actual result.
+    func reportSaveResult(_ result: Result<URL, Error>) {
+        switch result {
+        case .success: showFeedback("Saved")
+        case .failure: showFeedback("Save failed")
+        }
+    }
+
+    private func showFeedback(_ message: String, forSeconds seconds: Double = 1.6) {
+        feedbackClearWorkItem?.cancel()
+        feedbackMessage = message
+        let workItem = DispatchWorkItem { [weak self] in self?.feedbackMessage = nil }
+        feedbackClearWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: workItem)
     }
 
     // MARK: - Touch lifecycle hooks

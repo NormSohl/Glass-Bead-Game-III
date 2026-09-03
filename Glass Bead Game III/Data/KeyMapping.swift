@@ -13,7 +13,7 @@
 import Foundation
 
 enum KeyAction: String, CaseIterable, Codable {
-    case drone, portamentoToggle, portamentoMomentary, pedal
+    case drone, portamentoToggle, portamentoMomentary, pedal, recordToggle, save
 
     var displayName: String {
         switch self {
@@ -21,6 +21,8 @@ enum KeyAction: String, CaseIterable, Codable {
         case .portamentoToggle: return "Portamento (toggle)"
         case .portamentoMomentary: return "Portamento (hold)"
         case .pedal: return "Pedal (hold)"
+        case .recordToggle: return "Live Recording (start/stop)"
+        case .save: return "Save Live Recording"
         }
     }
 
@@ -60,6 +62,8 @@ struct KeyMapping: Codable, Equatable {
         KeyAction.portamentoToggle.rawValue: ["g", "h"],
         KeyAction.portamentoMomentary.rawValue: ["shift"],
         KeyAction.pedal.rawValue: [" ", "f", "j"],
+        KeyAction.recordToggle.rawValue: ["r"],
+        KeyAction.save.rawValue: ["s"],
     ])
 
     func tokens(for action: KeyAction) -> Set<KeyToken> {
@@ -99,7 +103,26 @@ extension KeyMapping {
               let decoded = try? JSONDecoder().decode(KeyMapping.self, from: data) else {
             return .defaultMapping
         }
-        return decoded
+        return decoded.mergingNewDefaults()
+    }
+
+    /// Fills in an action's own default token(s) only when a saved mapping predates that action
+    /// entirely (no entry at all, not even an empty one) - lets a KeyAction added after someone
+    /// already has a customized, persisted mapping reach them with its default key(s) instead of
+    /// silently having none bound until they notice and rebind it by hand. Never touches an
+    /// action already present in the saved mapping (including one deliberately emptied out), and
+    /// never assigns a default token already bound to something else in the saved mapping - that
+    /// would change an existing binding's behavior, which adding an unrelated new action should
+    /// never do.
+    private func mergingNewDefaults() -> KeyMapping {
+        var merged = self
+        for action in KeyAction.allCases where bindings[action.rawValue] == nil {
+            let defaults = KeyMapping.defaultMapping.tokens(for: action).filter { merged.action(for: $0) == nil }
+            if !defaults.isEmpty {
+                merged.bindings[action.rawValue] = defaults
+            }
+        }
+        return merged
     }
 
     func saveToDefaults() {
