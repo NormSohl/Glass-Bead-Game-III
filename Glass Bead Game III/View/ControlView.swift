@@ -68,10 +68,12 @@ struct ControlView: View {
 
                 // Live recording capture (step 3 of the live-record plan) - arms/disarms
                 // continuous pitch-contour capture from graph touches (see RecordingState), and
-                // saves whatever's captured as a raw SeqDocument for Seq to later import and
-                // segment. Placed here alongside the other transport-adjacent controls rather
-                // than the main toolbar, matching where MIDI Destination/Verify Pitch Bend Range
-                // already live below.
+                // saves whatever's captured as a Standard MIDI File (SeqMIDICodec, GBGCore) for
+                // Seq to later import and segment - a real .mid any DAW can also open, not just
+                // Seq, with the current scale/root carried in a custom meta-event Seq reads and
+                // a stock reader safely skips. Placed here alongside the other transport-adjacent
+                // controls rather than the main toolbar, matching where MIDI Destination/Verify
+                // Pitch Bend Range already live below.
                 Text("Live Recording").bold().foregroundStyle(.white)
                 HStack {
                     Button {
@@ -83,7 +85,13 @@ struct ControlView: View {
                     .tint(recordingState.isRecording ? .red : tintcolor)
 
                     Button {
-                        exportFile = GraphRecordingFile(document: recordingState.exportDocument())
+                        let scale = MIDIScaleDefinition(
+                            limit: limitMap[settings.selectedLimit] ?? 5,
+                            highestRatio: settings.highestRatio,
+                            lowestRatio: settings.lowestRatio,
+                            rootFrequency: settings.rootFrequency)
+                        let data = SeqMIDICodec.encode(document: recordingState.exportDocument(), scale: scale, sampleRate: sound.audio.sampleRate)
+                        exportFile = GraphRecordingFile(data: data)
                         isExporting = true
                     } label: {
                         Label("Save", systemImage: "square.and.arrow.down")
@@ -308,7 +316,7 @@ struct ControlView: View {
             }.padding([.leading,.trailing,.top], 20)
             }
         }
-        .fileExporter(isPresented: $isExporting, document: exportFile, contentType: .json, defaultFilename: "Live Recording") { _ in
+        .fileExporter(isPresented: $isExporting, document: exportFile, contentType: .midi, defaultFilename: "Live Recording") { _ in
             // Nothing else to do either way - the document was already captured at the moment
             // Save was pressed, so a cancelled/failed export just leaves recordingState as-is.
         }
@@ -347,31 +355,31 @@ struct ControlView: View {
     }
 }
 
-/// Thin FileDocument wrapper around SeqDocument for .fileExporter, so Graph can save a live
-/// recording using the same JSON persistence Seq's own save/load already uses - mirrors
-/// Seq/TransportView.swift's SeqDocumentFile exactly (that one lives in the Seq target, which
-/// Graph doesn't depend on, so this is Graph's own copy of the same thin adapter rather than a
-/// shared one - SeqDocument itself, the real content, already lives in GBGCore and needs no
-/// duplication).
+/// Thin FileDocument wrapper around an already-encoded Standard MIDI File for .fileExporter -
+/// SeqMIDICodec.encode (GBGCore) does the actual document->bytes work before this is even
+/// constructed, so this just carries bytes to disk, the same role SeqDocumentFile plays in
+/// Seq/TransportView.swift for Seq's own save/load (that one lives in the Seq target, which
+/// Graph doesn't depend on, so this is Graph's own copy rather than a shared one). Graph only
+/// ever writes through this today - init(configuration:) exists solely for FileDocument
+/// conformance, not because Graph reads recordings back (Seq's Open does that, Stage 3).
 struct GraphRecordingFile: FileDocument {
-    static var readableContentTypes: [UTType] { [.json] }
+    static var readableContentTypes: [UTType] { [.midi] }
 
-    var document: SeqDocument
+    var data: Data
 
-    init(document: SeqDocument) {
-        self.document = document
+    init(data: Data) {
+        self.data = data
     }
 
     init(configuration: ReadConfiguration) throws {
-        guard let data = configuration.file.regularFileContents else {
+        guard let contents = configuration.file.regularFileContents else {
             throw CocoaError(.fileReadCorruptFile)
         }
-        document = try JSONDecoder().decode(SeqDocument.self, from: data)
+        data = contents
     }
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        let data = try JSONEncoder().encode(document)
-        return FileWrapper(regularFileWithContents: data)
+        FileWrapper(regularFileWithContents: data)
     }
 }
 
