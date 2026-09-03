@@ -22,7 +22,12 @@ var graphScaleState = GraphScaleState(settings: appSettings)
 
 @main
 struct GlassBeadGameIIIApp: App {
-    
+    #if os(iOS)
+    // Only needed to name a delegate for the external-display scene role - see AppDelegate's own
+    // header comment. Ordinary launch and the main window are untouched by this.
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    #endif
+
     init() {
         sound.initSound()
         #if os(macOS)
