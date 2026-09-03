@@ -254,44 +254,17 @@ struct ContentView: View {
         #endif
     }
 
+    // See GraphSquareView.swift for the actual graph rendering (extracted so the
+    // external-display audience view can reuse it) - this wrapper is what's specific to the
+    // performer's own window: sizing/measuring the square for the sibling Z-slider.
     @ViewBuilder
     private var graphSquare: some View {
-        ZStack(){
-            Color.black.ignoresSafeArea(.all)
-            GraphView(scale: scale,
-                      tetradLayers: tetradLayers,
-                      settings: settings,
-                      recordingState: recordingState
-            )
-            .rotationEffect(.degrees(settings.graphTransform.rotation))
-            .animation(.easeIn, value: settings.graphTransform.rotation)
-            .scaleEffect(CGSize(width: settings.graphTransform.scale, height: settings.graphTransform.scale))
-            // graphSquareHeight is one render frame behind (see its own declaration above) -
-            // fine in practice, matching how zSlider already tolerates the same lag for its own
-            // sizing. Routed through safeGraphSquareHeight, not the raw @State, as a defensive
-            // guard against a non-finite height reaching .offset() - macOS's own
-            // .windowResizability(.contentSize) measures this view with an unconstrained/
-            // extreme proposed size on at least one pass, and a GeometryReader caught in that
-            // pass could in principle report one.
-            .offset(x: settings.graphTransform.offsetX * safeGraphSquareHeight, y: settings.graphTransform.offsetY * safeGraphSquareHeight)
-        }
-        // Always .fit, not tied to GraphShape at all (Triangle used to set this to .fill) -
-        // this outer frame is what graphSquareHeight (below) measures, and .clipped() only
-        // affects rendering, not layout size, so a .fill content mode here made that
-        // measurement pick up the oversized, unclipped .fill layout size instead of the
-        // visually-clipped square. That inflated graphSquareHeight fed into the Z-slider's own
-        // height and never shrank back down after leaving Triangle - Norm: "Square view is
-        // supposed to return scale to normal view, but remains too large" after visiting
-        // Triangle. Triangle's own extra content still happens - it comes from GraphView's own
-        // rotation+scale above, not from this outer aspectRatio - so this frame can stay a
-        // stable, shape-independent .fit without losing that effect.
-        .aspectRatio(1/1, contentMode: .fit)
-        // Diamond's own 0.73 scale (vs the exact 1/sqrt(2) ~ 0.7071 that would inscribe a
-        // rotated square exactly) and Triangle's own rotation+scale combination both push
-        // content past this frame's own bounds by design - clipped so any of that spills onto
-        // nothing beyond this square, rather than bleeding into whatever's next to it (the
-        // iPad's ControlColumn, or the Z-slider).
-        .clipped()
+        // safeGraphSquareHeight, not the raw @State, as a defensive guard against a non-finite
+        // height reaching GraphSquareView's own offset math - macOS's own
+        // .windowResizability(.contentSize) measures this view with an unconstrained/extreme
+        // proposed size on at least one pass, and a GeometryReader caught in that pass could in
+        // principle report one.
+        GraphSquareView(scale: scale, tetradLayers: tetradLayers, settings: settings, recordingState: recordingState, squareHeight: safeGraphSquareHeight)
         .layoutPriority(1)
         .background(
             GeometryReader { proxy in

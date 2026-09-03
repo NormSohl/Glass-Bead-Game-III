@@ -13,6 +13,10 @@ struct GraphView: View {
     let tetradLayers: TetradLayers
     @ObservedObject var settings: AppSettings
     @ObservedObject var recordingState: RecordingState
+    // false for a display-only audience view (AudienceGraphView) - omits HitTestView entirely,
+    // so a second screen showing this never intercepts/reacts to touches meant for the
+    // performer's own window.
+    var interactive: Bool = true
 
     var body: some View {
 
@@ -42,7 +46,9 @@ struct GraphView: View {
                                settings: settings,
                                showDiamonds: settings.showDiamonds)
 
-                    HitTestView(scale:scale, settings: settings, recordingState: recordingState)
+                    if interactive {
+                        HitTestView(scale:scale, settings: settings, recordingState: recordingState)
+                    }
                 }.border(.white)
 
                 // right border
