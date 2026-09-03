@@ -31,6 +31,7 @@
 		F4CDD0102BD145C7BD92A70B /* SeqApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F35D5C9D9E84298AE75468E /* SeqApp.swift */; };
 		11280A0FE44E4B508045F64C /* SeqSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 796BD56083BA49C1BA9CCD93 /* SeqSettings.swift */; };
 		8878126A0E2B457A823BFDAD /* SequencerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA574CC535E9488087FE433B /* SequencerState.swift */; };
+		DF063A4191F1A5726E2F314B /* LiveCaptureState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09830CF05D1A4289498E8A7B /* LiveCaptureState.swift */; };
 		1BD79A4C38D54541987EBE6C /* PianoRollCoordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60EBDB420A6441FD86D347C5 /* PianoRollCoordinates.swift */; };
 		B5350927B1EA469B8572FCAC /* PianoRollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F5DEAD64F3749BC96777619 /* PianoRollView.swift */; };
 		F360FFA894604821B07976E7 /* RootIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04CFF1117DA340028AAA74C8 /* RootIndicatorView.swift */; };
@@ -69,6 +70,7 @@
 		2C54886396D84BE08EF97D59 /* Seq.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Seq.entitlements; sourceTree = "<group>"; };
 		796BD56083BA49C1BA9CCD93 /* SeqSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeqSettings.swift; sourceTree = "<group>"; };
 		CA574CC535E9488087FE433B /* SequencerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequencerState.swift; sourceTree = "<group>"; };
+		09830CF05D1A4289498E8A7B /* LiveCaptureState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveCaptureState.swift; sourceTree = "<group>"; };
 		60EBDB420A6441FD86D347C5 /* PianoRollCoordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PianoRollCoordinates.swift; sourceTree = "<group>"; };
 		8F5DEAD64F3749BC96777619 /* PianoRollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PianoRollView.swift; sourceTree = "<group>"; };
 		04CFF1117DA340028AAA74C8 /* RootIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootIndicatorView.swift; sourceTree = "<group>"; };
@@ -123,6 +125,7 @@
 				9F35D5C9D9E84298AE75468E /* SeqApp.swift */,
 				796BD56083BA49C1BA9CCD93 /* SeqSettings.swift */,
 				CA574CC535E9488087FE433B /* SequencerState.swift */,
+				09830CF05D1A4289498E8A7B /* LiveCaptureState.swift */,
 				60EBDB420A6441FD86D347C5 /* PianoRollCoordinates.swift */,
 				8F5DEAD64F3749BC96777619 /* PianoRollView.swift */,
 				04CFF1117DA340028AAA74C8 /* RootIndicatorView.swift */,
@@ -373,6 +376,7 @@
 				F4CDD0102BD145C7BD92A70B /* SeqApp.swift in Sources */,
 				11280A0FE44E4B508045F64C /* SeqSettings.swift in Sources */,
 				8878126A0E2B457A823BFDAD /* SequencerState.swift in Sources */,
+				DF063A4191F1A5726E2F314B /* LiveCaptureState.swift in Sources */,
 				1BD79A4C38D54541987EBE6C /* PianoRollCoordinates.swift in Sources */,
 				B5350927B1EA469B8572FCAC /* PianoRollView.swift in Sources */,
 				F360FFA894604821B07976E7 /* RootIndicatorView.swift in Sources */,

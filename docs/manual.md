@@ -182,7 +182,9 @@ settings, it'll show up here too, listed by whatever name that device gives itse
 separate in-app Bluetooth pairing screen — pair the device at the system level first.
 
 - **MIDI Destination** is where GBG III sends pitch/note data to — an external synth, a
-  Eurorack MIDI-to-CV interface, or (on the same Mac) Seq.
+  Eurorack MIDI-to-CV interface, or Seq (same Mac, or over USB/Network MIDI - set this to Seq
+  and it can capture your performance live as you play, no Save/Open needed; see the Seq
+  manual's "Live capture" section).
 - **MIDI Source** is where GBG III listens for incoming MIDI from — an external controller, or
   Seq's own live output.
 - **Use internal synth** — GBG III's own built-in sound. Turn this off once your outboard gear

@@ -15,22 +15,52 @@ app, as a separate app from GBG III with its own icon.
 
 ## How GBG III and Seq talk to each other
 
-There are two separate ways GBG III and Seq connect — it's worth understanding both, since
-they serve different purposes:
+There are three separate ways GBG III and Seq connect — it's worth understanding all three,
+since they serve different purposes:
 
-1. **Live MIDI, same Mac only.** GBG III creates a virtual MIDI destination named
-   "Glass Bead Game III" that Seq automatically detects. When both apps are open on the same
-   Mac, Seq shows a **"Graph detected — Connect"** button (Seq's own on-screen name for GBG III);
-   one tap wires Seq's output straight into GBG III, so a sequence played back in Seq can sound
-   through GBG III itself (or drive GBG III's external MIDI/synth output, whatever GBG III is
-   currently set up to do). This only works when both apps are running on the *same machine* —
-   there's no wireless/network link built in.
-2. **File export/import, any device.** GBG III can save what you've played as a file; Seq can
-   open that file. This is how a performance recorded on the iPad reaches Seq on your Mac —
-   move the file over however you'd move any file (AirDrop, Files app, iCloud Drive, etc.), then
-   open it in Seq.
+1. **Seq → GBG III, live MIDI, same Mac only.** GBG III creates a virtual MIDI destination
+   named "Glass Bead Game III" that Seq automatically detects. When both apps are open on the
+   same Mac, Seq shows a **"Graph detected — Connect"** button (Seq's own on-screen name for
+   GBG III); one tap wires Seq's output straight into GBG III, so a sequence played back in Seq
+   can sound through GBG III itself (or drive GBG III's external MIDI/synth output, whatever
+   GBG III is currently set up to do). This only works when both apps are running on the *same
+   machine* — there's no wireless/network link built in.
+2. **GBG III → Seq, live MIDI, any connection CoreMIDI supports.** The reverse direction: Seq
+   can capture a performance directly as you play it in GBG III, no file needed at all. See
+   **Live capture** below — this one *does* work over USB or Network MIDI, not just same-Mac.
+3. **File export/import, any device.** GBG III can save what you've played as a file; Seq can
+   open that file. This is how a performance recorded on the iPad reaches Seq on your Mac when
+   there's no live connection between them — move the file over however you'd move any file
+   (AirDrop, Files app, iCloud Drive, etc.), then open it in Seq. Files are real Standard MIDI
+   Files (`.midi`) — any DAW can open one, though only Seq understands the extra, safely-ignored
+   metadata that carries the exact scale/tuning a performance was played in and preserves
+   Seq's own per-note editing detail losslessly.
 
-## Recording a performance in GBG III
+## Live capture — recording straight into Seq
+
+The most direct path, when both apps can reach each other over MIDI (same Mac, USB, or Network
+MIDI/RTP-MIDI - see below): no Record/Save in GBG III, no Open in Seq, just play and watch the
+notes appear.
+
+1. In GBG III's Settings, set **MIDI Destination** to **Seq** (it shows up in that picker like
+   any other MIDI destination, since Seq advertises itself the same way GBG III does) and make
+   sure **Use Midi** is on.
+2. In Seq's transport bar, tap **Capture**. It stays armed (shown as **Stop**) until you tap it
+   again - play as long as you like across it.
+3. Play in GBG III. X/Y/Z are captured continuously, the same detail level as GBG III's own
+   Record feature (drone isn't - there's no touch gesture driving it, same as Record).
+4. Tap **Stop** in Seq. The captured performance loads into the piano roll immediately, raw and
+   unsegmented - nothing to open, nothing to save first. Apply **Segment** (see below) whenever
+   you're ready, or leave it as-is and segment/edit some other time.
+
+Connecting over USB or Network MIDI works the same way once the connection itself exists - pair
+the iPad and Mac in **Audio MIDI Setup**'s Network MIDI panel (or plug in over USB), and GBG
+III's MIDI Destination picker will show Seq the same way it does on the same Mac. This one known
+limitation: Seq assumes GBG III is using its default MPE channel assignment for X/Y/Z - if GBG
+III's **Use MPE** is off, live capture won't line up (Record → Save → Open still works
+regardless, since files carry no such assumption).
+
+## Recording a performance in GBG III (for Save/Open instead of live capture)
 
 In GBG III's Settings panel, under **Live Recording**:
 
@@ -67,13 +97,22 @@ actual expressive detail, not a flattened, quantized pitch.
 If a stretch of playing never sits still long enough anywhere (a continuous glide, or a very
 short gesture), segmentation leaves it as one note rather than guessing at a split.
 
+Segmentation isn't only an import-time choice — the transport bar's own **Segment** button
+applies it to whatever's currently loaded, whenever you want. Load or capture a performance raw
+first, look at (or play) the unsegmented curve, then press **Segment** to see it split into
+discrete notes. Safe to press more than once or on already-segmented material - it only ever
+acts on genuinely un-segmented stretches, so it never re-cuts a note you've already placed or
+edited by hand.
+
 ## The Seq window
 
 Top to bottom:
 
-- **Transport bar** — play/stop, a scrub slider, a Voice picker (Drone/X/Y/Z) for where new
-  notes get placed, an **Add Note** toggle (tap the empty canvas to place a note of the current
-  duration once armed), a duration stepper, Save/Open, and **Panic**.
+- **Transport bar** — play/stop, **Capture** (live capture straight from GBG III, see above), a
+  scrub slider, a Voice picker (Drone/X/Y/Z) for where new notes get placed, an **Add Note**
+  toggle (tap the empty canvas to place a note of the current duration once armed), a duration
+  stepper, Save/Open, **Segment** (applies segmentation to whatever's currently loaded), and
+  **Panic**.
 - **Root indicator** — a thin strip showing where the drone currently sits, since the drone has
   no on-screen crosshair of its own.
 - **Piano roll** — the main editing canvas. Scale-degree gridlines run horizontally; an amber

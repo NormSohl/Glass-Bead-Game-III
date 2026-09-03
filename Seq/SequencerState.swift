@@ -28,7 +28,9 @@ enum PartVoice: Hashable, CaseIterable {
 // negotiated live between the two apps, per the standalone-sequencer plan's documented
 // limitation ("fixed to Graph's own established default channels"). If Graph's own MPE
 // defaults ever change, this needs updating to match.
-private enum GraphMidiChannel {
+// Not private - LiveCaptureState.swift reuses these same constants for the reverse (Graph->Seq)
+// direction, so the two stay governed by one definition rather than risking drift between them.
+enum GraphMidiChannel {
     static let x = 2
     static let y = 3
     static let z = 4
@@ -46,12 +48,12 @@ private enum GraphMidiChannel {
 
 // The fixed MIDI note number every send uses - matches Graph's own convention (its four voices
 // each have a fixed note field; the real interval rides entirely on pitch-bend). Middle C.
-private let graphMidiFixedNote = 60
+let graphMidiFixedNote = 60
 // Middle C's own 12-TET frequency - the reference PitchBendMath.freqToPB encodes every send
 // against, matching what Graph's own receive-side decode (PitchBendMath.
 // frequencyFromNoteAndPitchBend, called with the same fixed note above) assumes.
 private let graphMidiReferenceFrequency = 261.6255653005986
-private let graphMidiPitchBendRange = 24 // matches Graph's own default pitchBendRangeMPE
+let graphMidiPitchBendRange = 24 // matches Graph's own default pitchBendRangeMPE
 
 // The name Graph's own Midi.initVirtualDestination() gives its virtual MIDI destination -
 // used to auto-detect a likely Graph instance in the destination list rather than requiring
@@ -73,6 +75,25 @@ final class SequencerState: ObservableObject {
     // MARK: - Graph MIDI-out (Step 3b)
 
     private let graphMidiOut = SeqMidiOut()
+
+    // Live capture (Graph -> Seq, over the same graphMidiOut connection object but the reverse
+    // direction) - see LiveCaptureState.swift. Public so TransportView can observe it directly
+    // as its own ObservedObject (SwiftUI won't re-render on a nested object's own @Published
+    // changes otherwise).
+    private(set) var liveCapture: LiveCaptureState!
+
+    /// Starts/stops live capture, and - the actual "go direct into Seq" point of this feature -
+    /// loads the captured performance the moment capture stops, no Save/Open file round trip
+    /// needed. Doesn't pass a scale (loadDocument's own default) - a live MIDI stream carries no
+    /// scale metadata the way a .mid file's custom meta-event does, so currentScale is left
+    /// exactly as it already was rather than silently guessing or resetting it.
+    func toggleLiveCapture() {
+        let wasCapturing = liveCapture.isCapturing
+        liveCapture.toggleCapturing()
+        if wasCapturing {
+            loadDocument(liveCapture.exportDocument())
+        }
+    }
     @Published var graphOutputEnabled: Bool = false
     @Published var graphDestinationIndex: Int = 0 {
         didSet { graphMidiOut.setMidiDestination(destination: graphDestinationIndex) }
@@ -185,6 +206,11 @@ final class SequencerState: ObservableObject {
         if let index = graphMidiOut.midiDestinations.firstIndex(where: { $0.name == graphVirtualDestinationName }) {
             detectedGraphDestinationIndex = index
         }
+        // Named "Seq" so it shows up by that name in Graph's own MIDI Destination picker -
+        // that picker is the entire UI this needs on Graph's side, already built and already
+        // generic (lists whatever CoreMIDI sees, same-Mac/USB/Network MIDI alike).
+        graphMidiOut.initMidiInput(name: "Seq")
+        liveCapture = LiveCaptureState(midi: graphMidiOut, sampleRateProvider: { [weak self] in self?.sampleRate ?? 44100 })
         synthMidiOut.initMidi()
     }
 
@@ -525,25 +551,33 @@ final class SequencerState: ObservableObject {
             .contains { $0.transitionKind == .recordedContour }
     }
 
-    /// Runs the live-record plan's step 4 segmentation pass on `document` and loads the result.
-    /// Segments every note in all four parts via `Part.segmentAllNotes` - a safe no-op
-    /// passthrough for notes without a `recordedPitchBend` buffer (see that function's own doc
-    /// comment), so this is safe to call even on a document that mixes raw-recording and plain
-    /// hand-placed notes, not just a pure recording. Detects tempo from the segmented pieces'
-    /// own onset times and carries it along as the resulting SeqDocument's metadata - nil (no
-    /// confident tempo) is the correct, expected outcome for unmetered/melismatic material, not
-    /// a failure (see TempoDetection.swift's own doc comment).
+    /// Runs the live-record plan's step 4 segmentation pass on `document` and loads the result -
+    /// the "segment immediately on import" path. Just loads the raw document as-is, then hands
+    /// off to applySegmentation() below for the actual work, so the two paths (segment at
+    /// import time vs. load raw now and segment later, as its own explicit step - Norm: "record
+    /// the uncut version first... fun to see if the graph changes at all when segmentation is
+    /// applied") share one real implementation instead of two.
     func loadSegmentedDocument(_ document: SeqDocument, scale: MIDIScaleDefinition? = nil) {
-        let rawDrone = Part(name: "drone")
-        let rawX = Part(name: "x")
-        let rawY = Part(name: "y")
-        let rawZ = Part(name: "z")
-        document.apply(toDronePart: rawDrone, xPart: rawX, yPart: rawY, zPart: rawZ)
+        loadDocument(document, scale: scale)
+        applySegmentation()
+    }
 
-        let segmentedDrone = rawDrone.segmentAllNotes(sampleRate: sampleRate)
-        let segmentedX = rawX.segmentAllNotes(sampleRate: sampleRate)
-        let segmentedY = rawY.segmentAllNotes(sampleRate: sampleRate)
-        let segmentedZ = rawZ.segmentAllNotes(sampleRate: sampleRate)
+    /// Runs segmentation on whatever's currently loaded, in place - lets a raw recording be
+    /// loaded first (Load As-Is at import time, or already the result of a previous call to
+    /// this) and segmented later as its own deliberate step, rather than only ever at import
+    /// time. Segments every note in all four parts via `Part.segmentAllNotes` - a safe no-op
+    /// passthrough for notes without a `recordedPitchBend` buffer, so calling this on
+    /// already-segmented (or partly hand-edited) material is harmless, not destructive - segments
+    /// what there is to segment and leaves the rest untouched. Detects tempo from the segmented
+    /// pieces' own onset times and carries it along as metadata - nil (no confident tempo) is
+    /// the correct, expected outcome for unmetered/melismatic material, not a failure (see
+    /// TempoDetection.swift's own doc comment). Doesn't touch currentScale - segmenting in place
+    /// has no new scale information of its own to offer.
+    func applySegmentation() {
+        let segmentedDrone = dronePart.segmentAllNotes(sampleRate: sampleRate)
+        let segmentedX = xPart.segmentAllNotes(sampleRate: sampleRate)
+        let segmentedY = yPart.segmentAllNotes(sampleRate: sampleRate)
+        let segmentedZ = zPart.segmentAllNotes(sampleRate: sampleRate)
 
         let onsets = [segmentedDrone, segmentedX, segmentedY, segmentedZ]
             .flatMap { $0.notes }
@@ -552,8 +586,8 @@ final class SequencerState: ObservableObject {
             .sorted()
         let tempo = detectTempo(onsetTimes: onsets, sampleRate: sampleRate)
 
-        let finalDocument = SeqDocument(dronePart: segmentedDrone, xPart: segmentedX, yPart: segmentedY, zPart: segmentedZ, tempoInfo: tempo)
-        loadDocument(finalDocument, scale: scale)
+        let segmentedDocument = SeqDocument(dronePart: segmentedDrone, xPart: segmentedX, yPart: segmentedY, zPart: segmentedZ, tempoInfo: tempo)
+        loadDocument(segmentedDocument)
     }
 }
 

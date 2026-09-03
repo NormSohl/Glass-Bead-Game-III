@@ -19,7 +19,7 @@ struct SequencerView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            TransportView(sequencer: sequencer)
+            TransportView(sequencer: sequencer, liveCapture: sequencer.liveCapture)
             RootIndicatorView(scale: scale, settings: settings, sequencer: sequencer)
             PianoRollView(scale: scale, settings: settings, sequencer: sequencer)
                 .layoutPriority(1)

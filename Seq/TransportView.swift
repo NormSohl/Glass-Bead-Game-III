@@ -16,6 +16,9 @@ import GBGCore
 
 struct TransportView: View {
     @ObservedObject var sequencer: SequencerState
+    // Separate ObservedObject, not just reached via sequencer.liveCapture - SwiftUI only
+    // re-renders on a view's own directly-observed object publishing, not a nested object's.
+    @ObservedObject var liveCapture: LiveCaptureState
 
     private let tintColor = Color(red: 0.2, green: 0.4, blue: 0.8)
 
@@ -44,6 +47,18 @@ struct TransportView: View {
                         .font(.title2)
                 }
                 .disabled(!sequencer.hasAnyNotes && !sequencer.isPlaying)
+
+                // Live capture straight from Graph over MIDI (see LiveCaptureState) - no
+                // Save/Open file round trip needed. Loads the raw, unsegmented performance the
+                // moment capture stops (see SequencerState.toggleLiveCapture) - press Segment
+                // afterward whenever you want to apply segmentation as its own separate step.
+                Button {
+                    sequencer.toggleLiveCapture()
+                } label: {
+                    Label(liveCapture.isCapturing ? "Stop" : "Capture", systemImage: liveCapture.isCapturing ? "stop.circle.fill" : "dot.radiowaves.left.and.right")
+                }
+                .tint(liveCapture.isCapturing ? .red : tintColor)
+                .help("Capture Graph's live performance directly over MIDI - pick \"Seq\" as Graph's own MIDI Destination first")
 
                 Slider(
                     value: Binding(
@@ -95,6 +110,22 @@ struct TransportView: View {
                 } label: {
                     Label("Open", systemImage: "square.and.arrow.up")
                 }
+
+                // Applies segmentation to whatever's currently loaded, in place - Norm: "record
+                // the uncut version first, and then let the user apply segmentation as a later
+                // step... fun to see if the graph changes at all when segmentation is applied."
+                // Alongside the Segment/Load-As-Is import-time choice, not instead of it -
+                // covers "load raw now, decide later" rather than only "decide at import time."
+                // Safe to press on already-segmented material (SequencerState.applySegmentation
+                // is a no-op passthrough for any note with no recorded contour to segment), so
+                // this is always enabled whenever there's something loaded at all, not gated on
+                // detecting raw material first.
+                Button {
+                    sequencer.applySegmentation()
+                } label: {
+                    Label("Segment", systemImage: "scissors")
+                }
+                .disabled(!sequencer.hasAnyNotes)
 
                 // Panic - manual escape hatch for a voice stuck sounding, e.g. via a note
                 // shorter than pollPlayback's ~30Hz interval getting skipped entirely on the
