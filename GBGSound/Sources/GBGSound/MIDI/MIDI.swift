@@ -621,6 +621,64 @@ public class Midi{
         }
     }
 
+    // MARK: - Network MIDI (RTP-MIDI over Wi-Fi, or over a USB-Ethernet-style link)
+    //
+    // iPadOS has no system-level "Network MIDI" panel the way macOS's Audio MIDI Setup does -
+    // this app-level toggle is what makes an iPad reachable that way at all. macOS doesn't
+    // strictly need it (Norm can already do this via Audio MIDI Setup), but the same call works
+    // there too rather than gating it in this generic package - ControlView only surfaces the
+    // toggle on iOS, where it's actually the only way in.
+    //
+    // Retained here, not just a local variable in setNetworkMIDIEnabled below -
+    // MIDINetworkSession.default() is *not* a system-held singleton the way its name suggests;
+    // nothing else keeps it alive, so a purely local reference gets deallocated (tearing the
+    // session back down, silently) the moment that function returns, before Bonjour ever gets a
+    // chance to advertise anything - the exact, well-known pitfall behind "isEnabled = true does
+    // nothing" reports for this API. A stored property here, on an object sound.midi already
+    // keeps alive for the app's whole lifetime, is what actually keeps it enabled.
+    private var networkSession: MIDINetworkSession?
+
+    // connectionPolicy .anyone accepts any incoming connection on the local network with no
+    // manual host/address entry required on either side - reasonable for a local, trusted-
+    // network performance tool; revisit if that's ever too permissive for how this gets used.
+    // Once enabled, the session's own endpoint shows up in the normal midiSources/
+    // midiDestinations lists exactly like any other port - refreshMidiPorts() below is what
+    // actually picks it up (or a USB-connected device, or anything else that appeared after
+    // initMidi() already ran once at launch).
+    public func setNetworkMIDIEnabled(_ enabled: Bool) {
+        let session = MIDINetworkSession.default()
+        session.isEnabled = enabled
+        session.connectionPolicy = enabled ? .anyone : .noOne
+        networkSession = enabled ? session : nil
+        refreshMidiPorts()
+    }
+
+    // Re-scans CoreMIDI's current source/destination lists. initMidiSources/initMidiDestinations
+    // above only ever run once, at initMidi() - anything that appears afterward (a cable
+    // plugged in, another app's virtual port, Network MIDI toggled on) never shows up without
+    // this. Clears both lists first (unlike the one-shot init methods, which just append) so
+    // calling this more than once doesn't duplicate entries, and re-resolves the currently
+    // selected source/destination by name across the rebuild - the array index a picker binds
+    // to isn't stable across a refresh, but the underlying MIDIEndpointRef connection
+    // (setMidiSource's own MIDIPortConnectSource) doesn't need to change, just which index
+    // means "the same one" for the UI going forward.
+    public func refreshMidiPorts() {
+        let previousSourceName = sourceNum < midiSources.count ? midiSources[sourceNum].name : nil
+        let previousDestName = destNum < midiDestinations.count ? midiDestinations[destNum].name : nil
+
+        midiSources = []
+        initMidiSources()
+        midiDestinations = []
+        initMidiDestinations()
+
+        if let previousSourceName, let newIndex = midiSources.firstIndex(where: { $0.name == previousSourceName }) {
+            sourceNum = newIndex
+        }
+        if let previousDestName, let newIndex = midiDestinations.firstIndex(where: { $0.name == previousDestName }) {
+            destNum = newIndex
+        }
+    }
+
     private struct ChannelVoiceMessages{
         let noteOff:UInt8 = 0b10000000
         let noteOn:UInt8 =  0b10010000

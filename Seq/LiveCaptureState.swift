@@ -92,6 +92,28 @@ final class LiveCaptureState: ObservableObject {
         isCapturing ? stop() : start()
     }
 
+    // MARK: - Source selection
+    //
+    // The named virtual destination ("Seq", set up alongside this in SequencerState.init) only
+    // reaches same-Mac apps that can target it by name. A Network MIDI connection or a
+    // USB-connected device shows up as a plain MIDI SOURCE instead - this is what actually lets
+    // "connect the iPad to the Mac over the network or over USB" reach capture, since neither of
+    // those has a "Seq"-named destination of its own to target. Both paths feed the same
+    // handle(_:) above, so there's nothing else to wire up once a source is selected here.
+    // Mirrors SequencerState.graphDestinationIndex's own didSet-applies-immediately pattern.
+    var midiSources: [SeqMidiOut.MidiEndpointInfo] { midi.midiSources }
+
+    @Published var selectedSourceIndex: Int = 0 {
+        didSet { midi.setMidiSource(source: selectedSourceIndex) }
+    }
+
+    /// Re-scans for newly-available sources - a Network MIDI connection made after this app
+    /// launched (or a cable plugged in) doesn't show up on its own. See
+    /// SeqMidiOut.refreshMidiSources' own comment.
+    func refreshSources() {
+        midi.refreshMidiSources()
+    }
+
     /// Clears x/y/z and starts fresh, matching Graph's own Record button - drone is left
     /// untouched (never captured, see this file's header comment), so anything already there
     /// (e.g. from a prior import) survives.

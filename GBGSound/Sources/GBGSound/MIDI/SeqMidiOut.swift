@@ -40,17 +40,21 @@ public class SeqMidiOut {
 
     // MARK: - Input (receiving a live performance, e.g. from Graph)
     //
-    // A named virtual destination, not a "connect to a source" model - mirrors Graph's own
-    // initVirtualDestination() (Midi.swift) exactly, just in this class instead. Whatever
-    // sends here shows up decoded via onEvent below, on whatever transport CoreMIDI already
-    // carries it over (same-Mac virtual, USB, or Network MIDI/RTP-MIDI) - this class has no
-    // transport-specific code at all, and needs none: CoreMIDI already abstracts that away, so
-    // a source connected via USB or Network MIDI works identically to one on the same Mac.
-    // Opt-in (a separate call, not part of initMidi()) since not every SeqMidiOut instance
-    // should advertise itself as a destination - Seq's own "Synth Out" connection has no reason
-    // to receive anything and would otherwise show up as a second, confusing "Seq" destination
-    // in every other app's own picker.
+    // Two independent paths feed the same decode/onEvent pipeline below, mirroring Midi.swift's
+    // own identical two-path design (see its header comment on virtualDestination/initMidiInput
+    // there) for the same reason: a same-Mac app can target a named virtual destination
+    // directly (picking "Seq" from its own MIDI Destination picker), but a Network MIDI
+    // connection or a USB-connected device shows up as a plain MIDI SOURCE instead, with no
+    // "Seq"-named destination of its own to target - only the connect-to-a-source path can
+    // reach that. This class has no transport-specific code either way; CoreMIDI already
+    // abstracts same-Mac/USB/Network MIDI away identically. Opt-in (a separate call, not part
+    // of initMidi()) since not every SeqMidiOut instance should advertise/listen - Seq's own
+    // "Synth Out" connection has no reason to receive anything.
     private var virtualDestination: MIDIEndpointRef = 0
+    private var inPort: MIDIPortRef = 0
+    private var sourceNum = 0
+    private var sourceConnected = false
+    public var midiSources: [MidiEndpointInfo] = []
 
     // Reuses Midi.MidiInputEvent (GBGSound) rather than declaring a second, identical event
     // type - both classes live in this same module, and the shape (raw channel + note/velocity/
@@ -63,6 +67,47 @@ public class SeqMidiOut {
         guard midiClient != 0 else { return } // initMidi() must run first - same client the output side uses
         MIDIDestinationCreateWithBlock(midiClient, name as CFString, &virtualDestination) { [weak self] packetListPointer, _ in
             self?.handleIncomingPacketList(packetListPointer)
+        }
+        MIDIInputPortCreateWithBlock(midiClient, "\(name) In" as CFString, &inPort) { [weak self] packetListPointer, _ in
+            self?.handleIncomingPacketList(packetListPointer)
+        }
+        initMidiSources()
+    }
+
+    // Mirrors Midi.setMidiSource exactly (disconnect whatever was previously connected first,
+    // so switching sources at runtime doesn't leave the old one still delivering packets too).
+    public func setMidiSource(source: Int) {
+        guard source >= 0, source < midiSources.count else { return }
+        if sourceConnected, sourceNum < midiSources.count {
+            MIDIPortDisconnectSource(inPort, midiSources[sourceNum].midiEndpoint)
+        }
+        sourceNum = source
+        MIDIPortConnectSource(inPort, midiSources[sourceNum].midiEndpoint, nil)
+        sourceConnected = true
+    }
+
+    // Re-scans CoreMIDI's current source list - see Midi.refreshMidiPorts's own comment for why
+    // this needs to exist at all (initMidiSources only ever runs once, at initMidiInput). Also
+    // re-resolves the currently connected source by name across the rebuild, same reasoning as
+    // Midi.refreshMidiPorts.
+    public func refreshMidiSources() {
+        let previousSourceName = sourceNum < midiSources.count ? midiSources[sourceNum].name : nil
+        initMidiSources()
+        if let previousSourceName, let newIndex = midiSources.firstIndex(where: { $0.name == previousSourceName }) {
+            sourceNum = newIndex
+        }
+    }
+
+    private func initMidiSources() {
+        midiSources = []
+        let numSources = MIDIGetNumberOfSources()
+        guard numSources >= 1 else { return }
+        for i in 0..<numSources {
+            let device = MIDIGetSource(i)
+            var param: Unmanaged<CFString>?
+            MIDIObjectGetStringProperty(device, kMIDIPropertyDisplayName, &param)
+            let name = (param?.takeRetainedValue() as String?) ?? "Unknown MIDI Source \(i)"
+            midiSources.append(MidiEndpointInfo(midiEndpoint: device, index: i, name: name))
         }
     }
 

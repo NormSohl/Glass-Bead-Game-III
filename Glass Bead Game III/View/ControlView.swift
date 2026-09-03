@@ -178,26 +178,56 @@ struct ControlView: View {
                     .onChange(of: settings.useMIDI_MPE) {sound.midi.useMPE(useMpe: settings.useMIDI_MPE)}
                     .disabled(!settings.useMIDI)
                     .foregroundStyle(.white)
-                
+
+#if os(iOS)
+                // iPadOS has no system-level "Network MIDI" panel the way macOS's Audio MIDI
+                // Setup does, so this is the only way to reach that transport at all on iPad -
+                // Mac doesn't need it (Norm can already do this via Audio MIDI Setup), hence
+                // iOS-only rather than a redundant option there. Once enabled, whatever it's
+                // connected to shows up in MIDI Destination/Source below like any other port.
+                Toggle("Enable Network MIDI", isOn: $settings.useNetworkMIDI)
+                    .tint(tintcolor)
+                    .onChange(of: settings.useNetworkMIDI) { sound.midi.setNetworkMIDIEnabled(settings.useNetworkMIDI) }
+                    .disabled(!settings.useMIDI)
+                    .foregroundStyle(.white)
+                Text("Connect over USB, or pair with your Mac's Network MIDI session (Audio MIDI Setup) on the same Wi-Fi network.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+#endif
+
                 Divider().foregroundColor(.white)
 #if os(iOS)
                 Text("MIDI Destination:").foregroundStyle(.white)
 #endif
-                Picker("MIDI Destination:" ,selection: $settings.destinationIndex) {
-                    ForEach(sound.midi.midiDestinations.indices, id: \.self) { index in
-                        Text(sound.midi.midiDestinations[index].name).foregroundStyle(.white)
+                HStack {
+                    Picker("MIDI Destination:" ,selection: $settings.destinationIndex) {
+                        ForEach(sound.midi.midiDestinations.indices, id: \.self) { index in
+                            Text(sound.midi.midiDestinations[index].name).foregroundStyle(.white)
+                        }
                     }
+                    .listItemTint(.white)
+                    .background(tintcolor)
+                    .onChange(of: settings.destinationIndex) {
+                        let destinationIndex = settings.destinationIndex
+                        //print(settings.destinationIndex,destinationIndex)
+                        sound.midi.setMidiDestination(destination: destinationIndex)
+                    }
+                    .pickerStyle(.menu)
+                    .disabled(!settings.useMIDI)
+                    .tint(.white)
+
+                    // A USB cable plugged in (or anything else that newly appeared) after this
+                    // popover last checked never shows up on its own - the source/destination
+                    // lists are only scanned once at launch plus whenever this fires. See
+                    // Midi.refreshMidiPorts's own comment.
+                    Button {
+                        sound.midi.refreshMidiPorts()
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    .disabled(!settings.useMIDI)
+                    .help("Re-scan for MIDI destinations/sources - use this after plugging in a cable")
                 }
-                .listItemTint(.white)
-                .background(tintcolor)
-                .onChange(of: settings.destinationIndex) {
-                    let destinationIndex = settings.destinationIndex
-                    //print(settings.destinationIndex,destinationIndex)
-                    sound.midi.setMidiDestination(destination: destinationIndex)
-                }
-                .pickerStyle(.menu)
-                .disabled(!settings.useMIDI)
-                .tint(.white)
 
 #if os(iOS)
                 Text("MIDI Source:").foregroundStyle(.white)

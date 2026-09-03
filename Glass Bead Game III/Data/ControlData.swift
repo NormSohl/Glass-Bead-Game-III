@@ -78,6 +78,10 @@ class AppSettings: ObservableObject{
     @Published var useSynth: Bool = true
     @Published var useMIDI: Bool = true
     @Published var useMIDI_MPE: Bool = true
+    // iOS only (see ControlView's own toggle) - off by default, matching the rest of AppSettings'
+    // opt-in-each-session pattern and, more importantly, not silently advertising a network
+    // service just because the app launched.
+    @Published var useNetworkMIDI: Bool = false
     @Published var tuneMidi: Bool = false
     // nil = not sounding; 1.0/1.5/2.0 = unison/fifth/octave currently held on all four voices
     // (Midi.verifyRangeSet/verifyRangeStop) - a plain @Published var here, not @State on

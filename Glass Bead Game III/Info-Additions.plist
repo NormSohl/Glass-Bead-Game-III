@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Network MIDI (RTP-MIDI) uses Bonjour to find peers - iOS 14+ requires both of these
+	     declared up front, or the Local Network permission prompt never appears and discovery
+	     silently fails. Merged into the auto-generated Info.plist via INFOPLIST_FILE below,
+	     since GENERATE_INFOPLIST_FILE's own INFOPLIST_KEY_ build settings can't express an
+	     array value like NSBonjourServices - this is Apple's own documented way to combine the
+	     two. macOS ignores both keys harmlessly (no equivalent permission gate there), so this
+	     applies safely to Graph's single universal target. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>GBG III uses your local network to connect to Seq (or other MIDI gear) over Network MIDI, for live performance and recording.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_apple-midi._udp</string>
+	</array>
+</dict>
+</plist>

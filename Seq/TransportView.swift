@@ -155,6 +155,35 @@ struct TransportView: View {
             }
             .font(.callout)
 
+            // Live capture's own MIDI source (see LiveCaptureState) - only needed for a
+            // connection with no "Seq"-named destination to target directly (Network MIDI, USB),
+            // since a same-Mac Graph can just pick "Seq" from its own Destination picker instead.
+            // Refresh exists for the same reason ControlView's own Destination/Source refresh
+            // does: a connection made after this app launched doesn't show up on its own.
+            HStack(spacing: 12) {
+                Text("Capture Source").foregroundStyle(.secondary)
+
+                Picker("Capture Source", selection: $liveCapture.selectedSourceIndex) {
+                    ForEach(liveCapture.midiSources.indices, id: \.self) { index in
+                        Text(liveCapture.midiSources[index].name).tag(index)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .frame(width: 220)
+                .disabled(liveCapture.midiSources.isEmpty)
+
+                Button {
+                    liveCapture.refreshSources()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .help("Re-scan for MIDI sources - use this after connecting over USB or Network MIDI")
+
+                Spacer()
+            }
+            .font(.callout)
+
             // Graph MIDI-out connection - a second, independent output alongside the internal
             // synth above (both can be on at once, matching Graph's own "internal synth" +
             // "MIDI" checkbox precedent). See SequencerState's Graph MIDI-out section.

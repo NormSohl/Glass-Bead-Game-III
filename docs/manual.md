@@ -22,7 +22,9 @@ Installs from the App Store, same as any other app — nothing special needed.
 
 GBG III is free software. It doesn't require an account, doesn't ask you to sign in or sign up,
 has no in-app purchases or payments of any kind, and doesn't track or transmit your data
-anywhere — it makes no network connections at all.
+anywhere — it makes no network connections on its own. The one exception is entirely your
+choice: **Enable Network MIDI** (§4) opens a local Wi-Fi connection for MIDI only, off by
+default, and only to devices on your own network.
 
 ### What GBG III is
 
