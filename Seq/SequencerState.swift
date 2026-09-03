@@ -130,6 +130,14 @@ final class SequencerState: ObservableObject {
     // overlay and its opt-in snap-on-drag.
     @Published private(set) var tempoInfo: TempoInfo?
 
+    // The scale/root a loaded .mid declared (SeqMIDICodec's document-level metadata) - carried
+    // forward so Save writes the same scale back out, not lost the way it was before this
+    // existed. Defaults to Graph's own out-of-the-box defaults (limit 11, 3/1..1/2, middle C) for
+    // a piece that's never been imported (built from scratch here via Add Note, or opened from a
+    // plain third-party .mid with no scale metadata) - there's no independently-tracked "Seq's
+    // own scale" concept otherwise, so this is the least surprising fallback.
+    @Published private(set) var currentScale = MIDIScaleDefinition(limit: 11, highestRatio: 3.0, lowestRatio: 0.5, rootFrequency: 261.6255653005986)
+
     @Published var draggingHandle: DraggingHandle?
 
     // Which voice "Add Note" places into, and whether the next canvas tap places a note instead
@@ -490,11 +498,15 @@ final class SequencerState: ObservableObject {
     /// beginDraggingHandle already uses, since a load mutating Part.notes out from under
     /// ScorePlayer.advance() mid-playback would be exactly the unsynchronized-mutation risk
     /// that guard exists to avoid.
-    func loadDocument(_ document: SeqDocument) {
+    func loadDocument(_ document: SeqDocument, scale: MIDIScaleDefinition? = nil) {
         if isPlaying { stop() }
         if isScrubbing { endScrub() }
         document.apply(toDronePart: dronePart, xPart: xPart, yPart: yPart, zPart: zPart)
         tempoInfo = document.tempoInfo
+        // nil (not "reset to the default") when the source had no scale metadata at all - a
+        // plain third-party .mid, say - so a piece with a previously-known scale doesn't
+        // silently forget it just because it was reloaded/resegmented.
+        if let scale { currentScale = scale }
         scoreRevision += 1
         playheadSample = 0
     }
@@ -521,7 +533,7 @@ final class SequencerState: ObservableObject {
     /// own onset times and carries it along as the resulting SeqDocument's metadata - nil (no
     /// confident tempo) is the correct, expected outcome for unmetered/melismatic material, not
     /// a failure (see TempoDetection.swift's own doc comment).
-    func loadSegmentedDocument(_ document: SeqDocument) {
+    func loadSegmentedDocument(_ document: SeqDocument, scale: MIDIScaleDefinition? = nil) {
         let rawDrone = Part(name: "drone")
         let rawX = Part(name: "x")
         let rawY = Part(name: "y")
@@ -541,7 +553,7 @@ final class SequencerState: ObservableObject {
         let tempo = detectTempo(onsetTimes: onsets, sampleRate: sampleRate)
 
         let finalDocument = SeqDocument(dronePart: segmentedDrone, xPart: segmentedX, yPart: segmentedY, zPart: segmentedZ, tempoInfo: tempo)
-        loadDocument(finalDocument)
+        loadDocument(finalDocument, scale: scale)
     }
 }
 

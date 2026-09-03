@@ -27,8 +27,11 @@ struct TransportView: View {
 
     // Import segmentation prompt (Step 4) - set right after a raw-recording-shaped document is
     // decoded, so the confirmation dialog below has something to act on regardless of which
-    // choice the user makes.
+    // choice the user makes. pendingRawImportScale travels alongside it - the decoded document
+    // and its scale are captured together at import time, but only reach SequencerState once
+    // the user actually picks Segment or Load As-Is below.
     @State private var pendingRawImport: SeqDocument?
+    @State private var pendingRawImportScale: MIDIScaleDefinition?
     @State private var showSegmentPrompt = false
 
     var body: some View {
@@ -79,7 +82,8 @@ struct TransportView: View {
                 .frame(width: 220)
 
                 Button {
-                    exportFile = SeqDocumentFile(document: sequencer.exportDocument())
+                    let data = SeqMIDICodec.encode(document: sequencer.exportDocument(), scale: sequencer.currentScale, sampleRate: sequencer.sampleRate)
+                    exportFile = SeqDocumentFile(data: data)
                     isExporting = true
                 } label: {
                     Label("Save", systemImage: "square.and.arrow.down")
@@ -184,22 +188,23 @@ struct TransportView: View {
         .foregroundStyle(.white)
         .padding(12)
         .background(Color.black)
-        .fileExporter(isPresented: $isExporting, document: exportFile, contentType: .json, defaultFilename: "Untitled Piece") { _ in
+        .fileExporter(isPresented: $isExporting, document: exportFile, contentType: .midi, defaultFilename: "Untitled Piece") { _ in
             // Nothing else to do either way - the document was already captured at the moment
             // Save was pressed, so a cancelled/failed export just leaves Seq's own state as-is.
         }
-        .fileImporter(isPresented: $isImporting, allowedContentTypes: [.json]) { result in
+        .fileImporter(isPresented: $isImporting, allowedContentTypes: [.midi]) { result in
             guard case .success(let url) = result else { return }
             let accessed = url.startAccessingSecurityScopedResource()
             defer { if accessed { url.stopAccessingSecurityScopedResource() } }
             guard let data = try? Data(contentsOf: url),
-                  let document = try? JSONDecoder().decode(SeqDocument.self, from: data)
+                  let decoded = try? SeqMIDICodec.decode(data, targetSampleRate: sequencer.sampleRate)
             else { return }
-            if SequencerState.looksLikeRawRecording(document) {
-                pendingRawImport = document
+            if SequencerState.looksLikeRawRecording(decoded.document) {
+                pendingRawImport = decoded.document
+                pendingRawImportScale = decoded.scale
                 showSegmentPrompt = true
             } else {
-                sequencer.loadDocument(document)
+                sequencer.loadDocument(decoded.document, scale: decoded.scale)
             }
         }
         // Step 4: an imported document shaped like a raw live recording (see
@@ -211,8 +216,8 @@ struct TransportView: View {
             isPresented: $showSegmentPrompt,
             presenting: pendingRawImport
         ) { document in
-            Button("Segment") { sequencer.loadSegmentedDocument(document) }
-            Button("Load As-Is") { sequencer.loadDocument(document) }
+            Button("Segment") { sequencer.loadSegmentedDocument(document, scale: pendingRawImportScale) }
+            Button("Load As-Is") { sequencer.loadDocument(document, scale: pendingRawImportScale) }
             Button("Cancel", role: .cancel) {}
         } message: { _ in
             Text("Split it into editable notes, or load the continuous recording unchanged?")
@@ -230,27 +235,29 @@ struct TransportView: View {
     }
 }
 
-/// Thin FileDocument wrapper around SeqDocument for .fileExporter - SeqDocument itself is
-/// plain Codable (it lives in GBGCore, which has no reason to know about SwiftUI's FileDocument
-/// protocol), so this adapter is Seq's own, not GBGCore's.
+/// Thin FileDocument wrapper around an already-encoded Standard MIDI File for .fileExporter -
+/// SeqMIDICodec.encode (GBGCore) does the actual document->bytes work before this is even
+/// constructed, so this just carries bytes to disk. init(configuration:) exists solely for
+/// FileDocument conformance - Seq's own Open goes through .fileImporter + SeqMIDICodec.decode
+/// directly instead (it needs the decoded scale alongside the document, which this type has no
+/// way to carry).
 struct SeqDocumentFile: FileDocument {
-    static var readableContentTypes: [UTType] { [.json] }
+    static var readableContentTypes: [UTType] { [.midi] }
 
-    var document: SeqDocument
+    var data: Data
 
-    init(document: SeqDocument) {
-        self.document = document
+    init(data: Data) {
+        self.data = data
     }
 
     init(configuration: ReadConfiguration) throws {
-        guard let data = configuration.file.regularFileContents else {
+        guard let contents = configuration.file.regularFileContents else {
             throw CocoaError(.fileReadCorruptFile)
         }
-        document = try JSONDecoder().decode(SeqDocument.self, from: data)
+        data = contents
     }
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        let data = try JSONEncoder().encode(document)
-        return FileWrapper(regularFileWithContents: data)
+        FileWrapper(regularFileWithContents: data)
     }
 }
