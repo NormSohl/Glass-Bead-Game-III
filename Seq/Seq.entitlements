@@ -8,5 +8,12 @@
          user-selected file via .fileExporter, not just read one. -->
     <key>com.apple.security.files.user-selected.read-write</key>
     <true/>
+    <!-- On macOS, App Sandbox gates any audio-input device (including IDAM's composite
+         audio+MIDI interface for a USB-connected iPad) behind this entitlement, separately
+         from and in addition to the NSMicrophoneUsageDescription/TCC prompt - without it, a
+         sandboxed app can be denied access even after the user grants that prompt. Added
+         alongside NSMicrophoneUsageDescription (see project.pbxproj) for the same reason. -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
 </dict>
 </plist>

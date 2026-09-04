@@ -208,38 +208,27 @@ public class Midi{
                     lsb: 0)
     }
 
+    // Shared by startMidi's four voices below - each one only differs in which channel/note/
+    // velocity/frequency/pitch-bend-storage it touches, so a future change to the send order or
+    // logic (like the packet-encoding bug fixed in sendMidiCC, once duplicated the same way)
+    // only needs applying once.
+    private func startVoice(enable: Bool, isPlaying: inout Bool, channel: Int, note: Int, velocity: Int, frequency: Double, pitchBend: inout Int) {
+        guard enable else { return }
+        isPlaying = true
+        pitchBend = PitchBendMath.freqToPB(frequency: frequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
+        sendMidiNoteOn(channel: channel, note: note, velocity: velocity)
+        sendMidiPitchBend(channel: channel, value: pitchBend) // root's own pitchbend is centered, should be 8192
+    }
+
     public func startMidi(){
         // note values and pitchbend have already been stored in shared variables
         if midiTrace {print("\nMidi: startMidi: rootMidiNote = \(rootMidiNote), xMidiNote = \(xMidiNote), yMidiNote = \(yMidiNote), rootMidiFrequency = \(rootMidiFrequency)")}
-        if rootMidiEnable {
-            rootMidiIsPlaying = true
-            // Root (drone) note - always last of the four MPE channels, see the
-            // rootMidiMPEChannel declaration above.
-            rootMidiPitchBend = PitchBendMath.freqToPB(frequency: rootMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
-            sendMidiNoteOn(channel: rootMidiMPEChannel, note: rootMidiNote, velocity:rootMidiVelocity)
-            sendMidiPitchBend(channel: rootMidiMPEChannel, value: rootMidiPitchBend) // root note has centered pitchbend, should be 8192
-        }
-
-        if xMidiEnable {
-            xMidiIsPlaying = true
-            xMidiPitchBend = PitchBendMath.freqToPB(frequency: xMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
-            sendMidiNoteOn(channel: xMidiMPEChannel, note: xMidiNote, velocity: xMidiVelocity)
-            sendMidiPitchBend(channel: xMidiMPEChannel, value: xMidiPitchBend)
-        }
-
-        if yMidiEnable {
-            yMidiIsPlaying = true
-            yMidiPitchBend = PitchBendMath.freqToPB(frequency: yMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
-            sendMidiNoteOn(channel: yMidiMPEChannel, note: yMidiNote, velocity: yMidiVelocity)
-            sendMidiPitchBend(channel: yMidiMPEChannel, value: yMidiPitchBend)
-        }
-
-        if zMidiEnable {
-            zMidiIsPlaying = true
-            zMidiPitchBend = PitchBendMath.freqToPB(frequency: zMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
-            sendMidiNoteOn(channel: zMidiMPEChannel, note: zMidiNote, velocity: zMidiVelocity)
-            sendMidiPitchBend(channel: zMidiMPEChannel, value: zMidiPitchBend)
-        }
+        // Root (drone) note - always last of the four MPE channels, see the rootMidiMPEChannel
+        // declaration above.
+        startVoice(enable: rootMidiEnable, isPlaying: &rootMidiIsPlaying, channel: rootMidiMPEChannel, note: rootMidiNote, velocity: rootMidiVelocity, frequency: rootMidiFrequency, pitchBend: &rootMidiPitchBend)
+        startVoice(enable: xMidiEnable, isPlaying: &xMidiIsPlaying, channel: xMidiMPEChannel, note: xMidiNote, velocity: xMidiVelocity, frequency: xMidiFrequency, pitchBend: &xMidiPitchBend)
+        startVoice(enable: yMidiEnable, isPlaying: &yMidiIsPlaying, channel: yMidiMPEChannel, note: yMidiNote, velocity: yMidiVelocity, frequency: yMidiFrequency, pitchBend: &yMidiPitchBend)
+        startVoice(enable: zMidiEnable, isPlaying: &zMidiIsPlaying, channel: zMidiMPEChannel, note: zMidiNote, velocity: zMidiVelocity, frequency: zMidiFrequency, pitchBend: &zMidiPitchBend)
     }
 
     public func stopMidi(){
@@ -277,39 +266,36 @@ public class Midi{
     // pitch-bend-only message can arrive on an already-sounding drone note), so this now
     // mirrors setMidiXPitch/etc.'s live-update branch - confirmed missing via a real CoreMIDI
     // monitor: a live pitch-bend update produced no outgoing bytes before this fix.
+    // Shared by the four setMidi*Pitch functions below - a live pitch-bend update only actually
+    // goes out while that voice is already playing (see setMidiRootPitch's own header comment
+    // for why); each voice only differs in which channel/frequency/pitch-bend-storage it uses.
+    private func updatePitchBend(isPlaying: Bool, channel: Int, frequency: Double, pitchBend: inout Int) {
+        guard isPlaying else { return }
+        pitchBend = PitchBendMath.freqToPB(frequency: frequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
+        sendMidiPitchBend(channel: channel, value: pitchBend)
+    }
+
     public func setMidiRootPitch(frequency: Double){
         rootMidiFrequency = frequency
-        if rootMidiIsPlaying{
-            rootMidiPitchBend = PitchBendMath.freqToPB(frequency: rootMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
-            sendMidiPitchBend(channel: rootMidiMPEChannel, value: rootMidiPitchBend)
-        }
+        updatePitchBend(isPlaying: rootMidiIsPlaying, channel: rootMidiMPEChannel, frequency: rootMidiFrequency, pitchBend: &rootMidiPitchBend)
         if midiTrace { print("Midi: SetRootPitch: frequency = \(rootMidiFrequency)")}
     }
 
     public func setMidiXPitch(frequency: Double){
         xMidiFrequency = frequency
-        if xMidiIsPlaying{
-            xMidiPitchBend = PitchBendMath.freqToPB(frequency: xMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
-            sendMidiPitchBend(channel: xMidiMPEChannel, value: xMidiPitchBend)
-        }
+        updatePitchBend(isPlaying: xMidiIsPlaying, channel: xMidiMPEChannel, frequency: xMidiFrequency, pitchBend: &xMidiPitchBend)
         if midiTrace { print("Midi: SetXMidiPitch: frequency = \(xMidiFrequency)")}
     }
 
     public func setMidiYPitch(frequency: Double){
         yMidiFrequency = frequency
-        if yMidiIsPlaying{
-            yMidiPitchBend = PitchBendMath.freqToPB(frequency: yMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
-            sendMidiPitchBend(channel: yMidiMPEChannel, value: yMidiPitchBend)
-        }
+        updatePitchBend(isPlaying: yMidiIsPlaying, channel: yMidiMPEChannel, frequency: yMidiFrequency, pitchBend: &yMidiPitchBend)
         if midiTrace { print("Midi: SetYMidiPitch: frequency = \(yMidiFrequency)")}
     }
 
     public func setMidiZPitch(frequency: Double){
         zMidiFrequency = frequency
-        if zMidiIsPlaying{
-            zMidiPitchBend = PitchBendMath.freqToPB(frequency: zMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
-            sendMidiPitchBend(channel: zMidiMPEChannel, value: zMidiPitchBend)
-        }
+        updatePitchBend(isPlaying: zMidiIsPlaying, channel: zMidiMPEChannel, frequency: zMidiFrequency, pitchBend: &zMidiPitchBend)
         if midiTrace { print("Midi: SetZMidiPitch: frequency = \(zMidiFrequency)")}
     }
 
@@ -714,11 +700,11 @@ public class Midi{
         //
         // Fixed a real bug here (2026-08-29): `cc` was never actually written into the packet
         // at all, and `value` was written into data.1 - the CC-number slot - instead of data.2,
-        // the value slot. Every RPN this file has ever sent (MPE Configuration in
-        // enableMPE/disableMPE, and Pitch Bend Sensitivity) was going out as a malformed,
-        // incomplete packet no receiver could have interpreted correctly - confirmed via the
-        // same CoreMIDI virtual-destination monitor used for this session's other MIDI
-        // testing: enableMPE's RPN6 produced zero bytes at the receiver before this fix.
+        // the value slot. Every RPN this file has ever sent (the MPE Configuration message sent
+        // by enableMPE, and Pitch Bend Sensitivity) was going out as a malformed, incomplete
+        // packet no receiver could have interpreted correctly - confirmed via the same CoreMIDI
+        // virtual-destination monitor used for this session's other MIDI testing: enableMPE's
+        // RPN6 produced zero bytes at the receiver before this fix.
         var packet1 = MIDIPacket();
         packet1.timeStamp = 0;
         packet1.data.0 = channelVoiceMessages.controlChange | (UInt8(channel) - 1) //(0x90 + (channel-1))

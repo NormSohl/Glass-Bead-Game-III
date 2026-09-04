@@ -165,14 +165,14 @@ class AppSettings: ObservableObject{
         
         sound.setRootPitch(frequency: self.rootFrequency)
         sound.setRootNote(midiNote: self.rootMidiNote)
-        // MPE is unconditional now (Midi.initMidi's own enableMPE() call already declares the
-        // zone at launch) - this just pushes the real pitch-bend-range value over the placeholder
-        // 0 Midi.pitchBendRangeMPE starts with, so the RPN 0 message initMidi sent at launch
-        // gets corrected to the real value before anything actually plays. Matters musically,
-        // not just cosmetically: the graph's default range (3/1 above root to 1/2 below, ~19
-        // semitones up and 12 down) needs this wider range - a plain, non-MPE-safe ±12
-        // semitones (what many non-MPE receivers reliably honor) would clip everything above
-        // +12 semitones, which is most of the graph's own default span.
+        // MPE is unconditional now (Midi.initMidi's own enableMPE() call already declared the
+        // zone at launch, via RPN 6 - it never touches pitch bend range itself). This is the
+        // first and only RPN 0 (Pitch Bend Sensitivity) send, pushing the real value over the
+        // placeholder 0 Midi.pitchBendRangeMPE starts with, before anything actually plays.
+        // Matters musically, not just cosmetically: the graph's default range (3/1 above root
+        // to 1/2 below, ~19 semitones up and 12 down) needs this wider range - a plain,
+        // non-MPE-safe ±12 semitones (what many non-MPE receivers reliably honor) would clip
+        // everything above +12 semitones, which is most of the graph's own default span.
         sound.setPitchBendRangeMPE(pitchBendRange: self.pitchBendRangeMPE)
         // X/Y/Z's underlying Midi/Audio pitch state otherwise stays at Midi's own raw 0.0
         // default (garbage - a 0Hz-derived pitch bend clamps to the minimum) until each one's

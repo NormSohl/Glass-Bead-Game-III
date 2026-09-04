@@ -207,6 +207,17 @@ final class RecordingState: ObservableObject {
 
     func beginZTouch() {
         guard isRecording else { return }
+        // Z only actually sounds now when the graph itself is being touched, or a previous
+        // touch is being held by the pedal (see Sound.applyZVoiceEnables) - a lone Z-slider
+        // drag no longer starts sound on its own (see ZSliderView's gesture), so it shouldn't
+        // be recorded as a note either: recording one anyway would insert a full-amplitude
+        // "phantom" note that plays back audibly despite never having sounded live. Approximate,
+        // not exact - if a graph touch or pedal-hold begins *after* this Z drag already started,
+        // this call (made every onChanged frame, not just once at drag-start - see ZSliderView)
+        // picks it up on the very next frame rather than retroactively; same class of
+        // approximation this file already accepts for pedal-extended audible duration outliving
+        // a touch's own recorded duration.
+        guard activeX != nil || activeY != nil || settings.pedal else { return }
         beginGesture(frequency: settings.zFrequency, active: &activeZ, part: zPart, cursor: &zCursor)
     }
 
