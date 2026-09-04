@@ -31,7 +31,11 @@ struct ZSliderView: View {
     @ObservedObject var recordingState: RecordingState
 
     @State private var hoverLocation: CGPoint = .zero
-    @State private var isSound = false
+    // Gates recordingState.beginZTouch()/endZTouch() to once per continuous drag, not once per
+    // frame - Norm: dragging the Z-slider must no longer sound (or start recording as if it
+    // sounded) a note by itself, only retune whatever's already audible via the pen or the
+    // pedal. See the gesture below - it no longer calls sound.beginZTouch/endZTouch at all.
+    @State private var isTouching = false
     // Guards against the canvas overwriting settings.zFrequency on its very first render, before
     // any real touch - hoverLocation starts at .zero (screenLocation 0, the low end of the
     // slider), so without this the untouched slider would silently drag zFrequency down to the
@@ -186,19 +190,26 @@ struct ZSliderView: View {
                         settings.zDragActive = true
                         hoverLocation = value.location
                         hoverLocation.y = zSliderHeight - hoverLocation.y
-                        if isSound == false {
-                            sound.beginZTouch(amp: 1)
+                        // No sound.beginZTouch(amp:) here - Norm: after practicing with it, the
+                        // Z-slider must never start a note on its own (so levels can be changed
+                        // silently); only the pen (HitTestView's graph touch) may trigger sound.
+                        // recordingState.beginZTouch() still fires, unconditionally on touch -
+                        // that capture is deliberately independent of what's actually sounding
+                        // (see RecordingState's own comment), so Z's gesture is still recorded
+                        // whenever the slider itself is touched, silent or not.
+                        if isTouching == false {
                             recordingState.beginZTouch()
-                            isSound = true
+                            isTouching = true
                         }
                     }
                     .onEnded { _ in
                         settings.zDragActive = false
-                        sound.endZTouch(pedal: settings.pedal)
+                        // Unconditional, unlike the pen/pedal pattern elsewhere - there's no
+                        // sound.endZTouch(pedal:) call to guard against re-triggering, since this
+                        // view no longer starts sound at all. Whatever's currently audible (pen-
+                        // held or pedal-sustained) is untouched either way.
                         recordingState.endZTouch()
-                        if !settings.pedal {
-                            isSound = false
-                        }
+                        isTouching = false
                     }
             )
 

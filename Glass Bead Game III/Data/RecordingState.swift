@@ -186,10 +186,12 @@ final class RecordingState: ObservableObject {
     // MARK: - Touch lifecycle hooks
     //
     // Called by HitTestView (the graph - X and Y move together, one crosshair) and ZSliderView
-    // (Z, its own independent touch), alongside their existing sound.beginGraphTouch/
-    // endGraphTouch/beginZTouch/endZTouch calls - see Sound.swift's own touch-lifecycle
-    // functions, which this deliberately doesn't call into (recording capture is independent of
-    // what's actually sounding). No-ops whenever recording isn't armed.
+    // (Z, its own independent touch). HitTestView's touch also calls sound.beginGraphTouch/
+    // endGraphTouch, the thing that actually starts/stops audible sound - this deliberately
+    // doesn't call into that (recording capture is independent of what's actually sounding), so
+    // Z's own gesture is still captured here even though ZSliderView's touch no longer reaches
+    // Sound at all (it can only retune an already-audible Z voice, never start one - see
+    // ZSliderView's gesture and Sound.applyZVoiceEnables). No-ops whenever recording isn't armed.
 
     func beginGraphTouch() {
         guard isRecording else { return }

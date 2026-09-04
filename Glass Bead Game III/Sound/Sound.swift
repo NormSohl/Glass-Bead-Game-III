@@ -33,10 +33,14 @@ class Sound {
     var enableY: Bool { settings?.playNoteY ?? false }
     var enableZ: Bool { settings?.playNoteZ ?? false }
 
-    // How many touch zones (the X/Y graph, the Z slider) are currently held down. X/Y and Z are
-    // independent simultaneous touches now, but they share one audio engine/MIDI stream - so
-    // starting/stopping the engine is reference-counted rather than gated by either touch alone,
-    // or releasing one finger while the other is still held would wrongly silence everything.
+    // How many touch zones are currently held down and able to start/stop the shared audio
+    // engine - the graph (X/Y, via beginGraphTouch/endGraphTouch) and the sequencer's own scrub/
+    // play (beginTouch/endTouch) below. The Z-slider is deliberately NOT one of these zones -
+    // Norm, after practicing with it: dragging Z must never sound (or silence) a note by itself,
+    // only retune whatever's already audible because the graph or the pedal is holding it. Kept
+    // as a reference count rather than a simple flag because more than one of these zones can be
+    // held at once - releasing one while another is still held must not wrongly silence
+    // everything.
     private var activeTouchCount = 0
 
 
@@ -68,15 +72,12 @@ class Sound {
     // response to an unrelated zone's touch was the bug: a pedal-sustained voice must only ever
     // be touched by its own zone's begin/end, or the pedal being released, never by another
     // zone's activity. Each begin/end below now only calls the group(s) it actually owns.
-    // X/Y follow "is anything being touched" (activeTouchCount), same rule Z/drone already
-    // use below - not graphTouchCount specifically. Norm: while the Z-slider is being dragged
-    // (graph itself untouched), X and Y should still be heard at whatever pitch they were most
-    // recently set to, not go silent just because the graph zone specifically isn't held. This
-    // used to be graphTouchCount-gated, deliberately isolated from Z's own touch (see this
-    // file's git history for the pedal-cutout bug that isolation originally fixed) - now that
-    // beginZTouch/endZTouch call this function too (below), a plain activeTouchCount check
-    // gets the same pedal-safety property for free: those functions still skip recomputing
-    // anything while pedal is held, exactly like beginGraphTouch/endGraphTouch already do.
+    // X/Y follow "is anything being touched" (activeTouchCount) rather than graphTouchCount
+    // specifically, same rule Z/drone already use below - so a pedal-sustained X/Y voice can't
+    // be silenced by some other zone's activity, the same property the original fix relied on.
+    // (The Z-slider itself is no longer one of the zones that can change activeTouchCount at
+    // all - see the note on that var's own declaration above - so this is now purely about the
+    // graph's and the sequencer's own touch/pedal interplay, not Z.)
     private func applyGraphVoiceEnables(){
         audio.triad.enableTriadXTone(enable: enableX && (activeTouchCount > 0 || xExternallyDriven))
         audio.triad.enableTriadYTone(enable: enableY && (activeTouchCount > 0 || yExternallyDriven))
@@ -86,9 +87,9 @@ class Sound {
 
     // Z follows "is anything being touched" - Norm wants Z, when enabled, to always sound
     // whenever the graph is touched, at 1/1 by default or whatever the Z-slider was last
-    // dragged to, not only while the Z-slider itself is actively held. Called from every
-    // zone's begin/end below, same as applyDroneVoiceEnable and (now) applyGraphVoiceEnables
-    // above, for that reason.
+    // dragged to - the Z-slider's own touch no longer factors in at all (it can retune Z, via
+    // sound.setZPitch, but can't start or stop it - see ZSliderView's gesture). Called from
+    // beginGraphTouch/endGraphTouch and releasePedal below, same as applyDroneVoiceEnable.
     private func applyZVoiceEnables(){
         audio.triad.enableTriadZTone(enable: enableZ && activeTouchCount > 0)
         midi.zMidiEnable = enableZ && activeTouchCount > 0
@@ -112,11 +113,11 @@ class Sound {
         midi.stopMidi()
     }
 
-    /// Call when the graph (X/Y) touch zone begins. Touches the graph's own voice group plus
-    /// Z and drone (both follow "is anything touched," not their own zone - see
-    /// applyZVoiceEnables/applyDroneVoiceEnable), independent of whether the Z-slider is also
-    /// currently held - the shared engine itself starts only on the overall 0->1 transition,
-    /// so an already-active Z-slider touch doesn't get redundantly restarted.
+    /// Call when the graph (X/Y) touch zone begins - the pen touching the graph is the only
+    /// thing that can start a note. Touches the graph's own voice group plus Z and drone (both
+    /// follow "is anything touched," not their own zone - see applyZVoiceEnables/
+    /// applyDroneVoiceEnable), so Z and the drone become audible too, at whatever pitch/level
+    /// they were last set to.
     func beginGraphTouch(amp: Float) {
         activeTouchCount += 1
         applyGraphVoiceEnables()
@@ -130,31 +131,6 @@ class Sound {
     /// pedal itself is released), re-evaluates Z/drone the same way, and stops the shared
     /// engine only once every zone has ended.
     func endGraphTouch(pedal: Bool) {
-        activeTouchCount = max(0, activeTouchCount - 1)
-        if !pedal {
-            applyGraphVoiceEnables()
-            applyZVoiceEnables()
-            applyDroneVoiceEnable()
-            if activeTouchCount == 0 { stopEngine() }
-        }
-    }
-
-    /// Z-slider touch begin/end. Touches all three groups, same as beginGraphTouch/
-    /// endGraphTouch - X/Y now follow activeTouchCount (see applyGraphVoiceEnables' own
-    /// comment), so a Z-only touch legitimately affects them too: X/Y should be heard at
-    /// their most recent pitch while Z is being changed, even though the graph itself isn't
-    /// touched. Pedal safety carries over unchanged - endZTouch skips recomputing anything
-    /// while pedal is held, exactly like endGraphTouch does, so a pedal-sustained voice still
-    /// can't be silenced by Z-slider activity.
-    func beginZTouch(amp: Float) {
-        activeTouchCount += 1
-        applyGraphVoiceEnables()
-        applyZVoiceEnables()
-        applyDroneVoiceEnable()
-        if activeTouchCount == 1 { startEngine(amp: amp) }
-    }
-
-    func endZTouch(pedal: Bool) {
         activeTouchCount = max(0, activeTouchCount - 1)
         if !pedal {
             applyGraphVoiceEnables()
