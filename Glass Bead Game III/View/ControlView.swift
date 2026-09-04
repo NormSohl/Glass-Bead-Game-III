@@ -168,15 +168,17 @@ struct ControlView: View {
                     .onChange(of: settings.useSynth) {sound.outputToAudio = settings.useSynth}
                     .foregroundStyle(.white)
                 
-                Toggle("Use Midi", isOn:$settings.useMIDI)
+                // Labeled "MPE" now that it's the only mode this app ever sends - MPE is a
+                // strict superset of plain MIDI 1.0 (a receiver that doesn't understand its
+                // extra zone-declaration RPN just ignores it and still gets normal per-channel
+                // note-on/off + pitch bend), and the app's own default pitch bend range (~19
+                // semitones up, 12 down) doesn't fit inside the ±12 semitones a non-MPE
+                // declaration could safely assume most receivers honor - see
+                // Sound/Sound.swift's git history for the removed "Use MPE" toggle this
+                // replaced.
+                Toggle("Use Midi MPE", isOn:$settings.useMIDI)
                     .tint(tintcolor)
                     .onChange(of: settings.useMIDI) {sound.outputToMidi = settings.useMIDI}
-                    .foregroundStyle(.white)
-                
-                Toggle("Use MPE", isOn:$settings.useMIDI_MPE)
-                    .tint(tintcolor)
-                    .onChange(of: settings.useMIDI_MPE) {sound.midi.useMPE(useMpe: settings.useMIDI_MPE)}
-                    .disabled(!settings.useMIDI)
                     .foregroundStyle(.white)
 
 #if os(iOS)
@@ -252,14 +254,13 @@ struct ControlView: View {
                 Divider()
 
                 // Built from the actual channel numbers rather than hardcoded - those moved
-                // once already this session (X/Y/Z first, drone last) and differ between MPE
-                // and non-MPE besides, so a fixed "1, 2, 3, and 4" string would silently go
-                // stale exactly the way this one had, telling the user the wrong channels to
-                // check on their receiving synth.
-                let tuningMidiChannels = (settings.useMIDI_MPE
-                    ? [sound.midi.xMidiMPEChannel, sound.midi.yMidiMPEChannel, sound.midi.zMidiMPEChannel, sound.midi.rootMidiMPEChannel]
-                    : [sound.midi.xMidiChannel, sound.midi.yMidiChannel, sound.midi.zMidiChannel, sound.midi.rootMidiChannel]
-                ).sorted()
+                // once already this session (X/Y/Z first, drone last), so a fixed "1, 2, 3, and
+                // 4" string would silently go stale exactly the way this one had, telling the
+                // user the wrong channels to check on their receiving synth.
+                let tuningMidiChannels = [
+                    sound.midi.xMidiMPEChannel, sound.midi.yMidiMPEChannel,
+                    sound.midi.zMidiMPEChannel, sound.midi.rootMidiMPEChannel
+                ].sorted()
                 let details = "Midi channels \(tuningMidiChannels[0]), \(tuningMidiChannels[1]), \(tuningMidiChannels[2]), and \(tuningMidiChannels[3]) are sending A: 440 hz" // to the \(sound.midi.midiDestinations[settings.destinationIndex].name)"
 
                 Text("For modular/analog gear tuned by hand - MIDI can't retune it automatically.")

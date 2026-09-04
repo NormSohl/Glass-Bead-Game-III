@@ -14,9 +14,6 @@ public class Midi{
     // control debug trace
     private var midiTrace = false
 
-    // midi MPE
-    private var useMPE: Bool = true
-
     // since we change the root frequency during tuning, save this here
     private var referenceFrequency = 0.0
 
@@ -41,7 +38,6 @@ public class Midi{
     private var zMidiVelocity: Int = 100
     private var zMidiPitchBend: Int = 8192
 
-    private var pitchBendRange: Int = 0
     private var pitchBendRangeMPE: Int = 0
     //private var PitchMidiNote: UInt8 = 60 // middle C
 
@@ -88,19 +84,13 @@ public class Midi{
     var yMidiIsPlaying = false
     var zMidiIsPlaying = false
 
-    // midi channels - X/Y/Z first, drone last (not first) since drone is the one optional
+    // midi MPE channels - X/Y/Z first, drone last (not first) since drone is the one optional
     // voice: a receiver only listening for "my three main voices" can just use the first
-    // three channels and never has to care whether drone happens to be on, instead of drone
-    // always occupying channel 1 and shifting what X/Y/Z sit on depending on nothing (their
-    // own channels were always fixed either way, but always one slot later than they needed
-    // to be).
-    public var xMidiChannel = 1
-    public var yMidiChannel = 2
-    public var zMidiChannel = 3
-    public var rootMidiChannel = 4
-
-    // midi MPE channels - same X/Y/Z-first, drone-last ordering as above.
-    // MPE channel 1 is master channel for zone
+    // three member channels and never has to care whether drone happens to be on, instead of
+    // drone always occupying the first one and shifting what X/Y/Z sit on depending on nothing
+    // (their own channels were always fixed either way, but always one slot later than they
+    // needed to be). Channel 1 itself is reserved as the MPE zone's master channel - see
+    // enableMPE - so member channels start at 2.
     public var xMidiMPEChannel = 2
     public var yMidiMPEChannel = 3
     public var zMidiMPEChannel = 4
@@ -147,9 +137,7 @@ public class Midi{
         initVirtualDestination()
         initMidiSources()
         initMidiDestinations()
-        if useMPE {
-            enableMPE()
-        }
+        enableMPE()
     }
 
     // Creates a named virtual destination ("Glass Bead Game III") so another app can send to
@@ -165,9 +153,7 @@ public class Midi{
 
     public func setMidiDestination(destination: Int){
         destNum = destination
-        if useMPE {
-            enableMPE()
-        }
+        enableMPE()
         sendPitchBendSensitivity()
     }
 
@@ -202,151 +188,78 @@ public class Midi{
                     msb: numOfChannelsInLowerZone)
     }
 
-    func disableMPE(){
-        //print("\nMIDI: disableMPE")
-        // MPE spec says that we have to do several things to enter MPE mode
-        // Section 2.2.1 of the MPE spec.
-        //    Initialise the MPE mode to zone and number of channels
-        sendMidiRPN(channel: mpeChannel.lowerZoneMasterChannel,
-                    rpn: registeredParameterNumbers.mpeConfiguration,
-                    msb: 0)
-    }
-
     // RPN 0 (Pitch Bend Sensitivity) tells the receiver what range to interpret this app's
     // outgoing pitch-bend numbers against - without it, a receiver just falls back to its own
     // default (often 2 semitones on plain GM-style gear, or 48 on many MPE-oriented
-    // instruments), which won't match pitchBendRange/pitchBendRangeMPE and renders every bend
-    // at the wrong interval. Norm: real devices often ignore this and need manual
-    // configuration anyway, but it's still the right thing to send. In MPE this is zone-wide -
-    // one message on the zone's master channel covers every member channel, same as the MPE
-    // Configuration message above - so it's called from the same places that resend that
-    // (destination changes, MPE toggled on/off). Outside MPE there's no zone, so each of the
-    // four channels needs its own declaration. Deliberately NOT called from inside
-    // enableMPE() itself: enableMPE's very first call happens from initMidi(), at app launch,
-    // before AppSettings has ever pushed a real pitchBendRangeMPE value - sending 0 there
-    // would tell a receiver to actually zero out its bend range, worse than not telling it
-    // anything. Every call site below runs after a real value is guaranteed to be set.
+    // instruments), which won't match pitchBendRangeMPE and renders every bend at the wrong
+    // interval. Norm: real devices often ignore this and need manual configuration anyway, but
+    // it's still the right thing to send. This is zone-wide - one message on the zone's master
+    // channel covers every member channel, same as the MPE Configuration message above - so
+    // it's called from the same places that resend that (destination changes). Deliberately
+    // NOT called from inside enableMPE() itself: enableMPE's very first call happens from
+    // initMidi(), at app launch, before AppSettings has ever pushed a real pitchBendRangeMPE
+    // value - sending 0 there would tell a receiver to actually zero out its bend range, worse
+    // than not telling it anything. Every call site below runs after a real value is guaranteed
+    // to be set.
     private func sendPitchBendSensitivity(){
-        if useMPE {
-            sendMidiRPN(channel: mpeChannel.lowerZoneMasterChannel,
-                        rpn: registeredParameterNumbers.pitchBendSensitivity,
-                        msb: UInt8(pitchBendRangeMPE),
-                        lsb: 0)
-        } else {
-            for channel in [rootMidiChannel, xMidiChannel, yMidiChannel, zMidiChannel] {
-                sendMidiRPN(channel: UInt8(channel),
-                            rpn: registeredParameterNumbers.pitchBendSensitivity,
-                            msb: UInt8(pitchBendRange),
-                            lsb: 0)
-            }
-        }
+        sendMidiRPN(channel: mpeChannel.lowerZoneMasterChannel,
+                    rpn: registeredParameterNumbers.pitchBendSensitivity,
+                    msb: UInt8(pitchBendRangeMPE),
+                    lsb: 0)
     }
 
     public func startMidi(){
         // note values and pitchbend have already been stored in shared variables
-        if midiTrace {print("\nMidi: startMidi: useMPE = \(useMPE), rootMidiNote = \(rootMidiNote), xMidiNote = \(xMidiNote), yMidiNote = \(yMidiNote), rootMidiFrequency = \(rootMidiFrequency)")}
-        if useMPE{
-            if rootMidiEnable {
-                rootMidiIsPlaying = true
-                // Root (drone) note - always last of the four MPE channels, see the
-                // rootMidiMPEChannel declaration above.
-                rootMidiPitchBend = PitchBendMath.freqToPB(frequency: rootMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
-                sendMidiNoteOn(channel: rootMidiMPEChannel, note: rootMidiNote, velocity:rootMidiVelocity)
-                sendMidiPitchBend(channel: rootMidiMPEChannel, value: rootMidiPitchBend) // root note has centered pitchbend, should be 8192
-            }
-
-            if xMidiEnable {
-                xMidiIsPlaying = true
-                xMidiPitchBend = PitchBendMath.freqToPB(frequency: xMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
-                sendMidiNoteOn(channel: xMidiMPEChannel, note: xMidiNote, velocity: xMidiVelocity)
-                sendMidiPitchBend(channel: xMidiMPEChannel, value: xMidiPitchBend)
-            }
-
-            if yMidiEnable {
-                yMidiIsPlaying = true
-                yMidiPitchBend = PitchBendMath.freqToPB(frequency: yMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
-                sendMidiNoteOn(channel: yMidiMPEChannel, note: yMidiNote, velocity: yMidiVelocity)
-                sendMidiPitchBend(channel: yMidiMPEChannel, value: yMidiPitchBend)
-            }
-
-            if zMidiEnable {
-                zMidiIsPlaying = true
-                zMidiPitchBend = PitchBendMath.freqToPB(frequency: zMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
-                sendMidiNoteOn(channel: zMidiMPEChannel, note: zMidiNote, velocity: zMidiVelocity)
-                sendMidiPitchBend(channel: zMidiMPEChannel, value: zMidiPitchBend)
-            }
+        if midiTrace {print("\nMidi: startMidi: rootMidiNote = \(rootMidiNote), xMidiNote = \(xMidiNote), yMidiNote = \(yMidiNote), rootMidiFrequency = \(rootMidiFrequency)")}
+        if rootMidiEnable {
+            rootMidiIsPlaying = true
+            // Root (drone) note - always last of the four MPE channels, see the
+            // rootMidiMPEChannel declaration above.
+            rootMidiPitchBend = PitchBendMath.freqToPB(frequency: rootMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
+            sendMidiNoteOn(channel: rootMidiMPEChannel, note: rootMidiNote, velocity:rootMidiVelocity)
+            sendMidiPitchBend(channel: rootMidiMPEChannel, value: rootMidiPitchBend) // root note has centered pitchbend, should be 8192
         }
-        else { // not MPE
-            if rootMidiEnable {
-                rootMidiIsPlaying = true
-                // Root (drone) note - always last of the four channels, see the
-                // rootMidiChannel declaration above.
-                sendMidiNoteOff(channel: rootMidiChannel, note: rootMidiNote)
-                sendMidiPitchBend(channel:rootMidiChannel, value: rootMidiPitchBend) // root note has centered pitchbend, should be 8192
-                sendMidiNoteOn(channel: rootMidiChannel, note: rootMidiNote, velocity: rootMidiVelocity)
-            }
 
-            if xMidiEnable {
-                xMidiIsPlaying = true
-                sendMidiNoteOff(channel: xMidiChannel, note: xMidiNote)
-                xMidiPitchBend = PitchBendMath.freqToPB(frequency: xMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRange)
-                sendMidiPitchBend(channel: xMidiChannel, value: xMidiPitchBend)
-                sendMidiNoteOn(channel: xMidiChannel, note: xMidiNote, velocity: xMidiVelocity)
-            }
+        if xMidiEnable {
+            xMidiIsPlaying = true
+            xMidiPitchBend = PitchBendMath.freqToPB(frequency: xMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
+            sendMidiNoteOn(channel: xMidiMPEChannel, note: xMidiNote, velocity: xMidiVelocity)
+            sendMidiPitchBend(channel: xMidiMPEChannel, value: xMidiPitchBend)
+        }
 
-            if yMidiEnable {
-                yMidiIsPlaying = true
-                //print ("\nMidi: startMidi: Y")
-                // Send note off to quiet glitch when changing PB and to clear channel for new note if needed
-                sendMidiNoteOff(channel: yMidiChannel, note: yMidiNote)
-                yMidiPitchBend = PitchBendMath.freqToPB(frequency: yMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRange)
-                sendMidiPitchBend(channel: yMidiChannel, value: yMidiPitchBend)
-                sendMidiNoteOn(channel: yMidiChannel, note: yMidiNote, velocity: yMidiVelocity)
-            }
+        if yMidiEnable {
+            yMidiIsPlaying = true
+            yMidiPitchBend = PitchBendMath.freqToPB(frequency: yMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
+            sendMidiNoteOn(channel: yMidiMPEChannel, note: yMidiNote, velocity: yMidiVelocity)
+            sendMidiPitchBend(channel: yMidiMPEChannel, value: yMidiPitchBend)
+        }
 
-            if zMidiEnable {
-                zMidiIsPlaying = true
-                sendMidiNoteOff(channel: zMidiChannel, note: zMidiNote)
-                zMidiPitchBend = PitchBendMath.freqToPB(frequency: zMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRange)
-                sendMidiPitchBend(channel: zMidiChannel, value: zMidiPitchBend)
-                sendMidiNoteOn(channel: zMidiChannel, note: zMidiNote, velocity: zMidiVelocity)
-            }
+        if zMidiEnable {
+            zMidiIsPlaying = true
+            zMidiPitchBend = PitchBendMath.freqToPB(frequency: zMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
+            sendMidiNoteOn(channel: zMidiMPEChannel, note: zMidiNote, velocity: zMidiVelocity)
+            sendMidiPitchBend(channel: zMidiMPEChannel, value: zMidiPitchBend)
         }
     }
 
     public func stopMidi(){
-        if midiTrace {print("\nMidi: stopMidi: useMPE = \(useMPE), rootMidiNote = \(rootMidiNote), xMidiNote = \(xMidiNote), yMidiNote = \(yMidiNote)")}
+        if midiTrace {print("\nMidi: stopMidi: rootMidiNote = \(rootMidiNote), xMidiNote = \(xMidiNote), yMidiNote = \(yMidiNote)")}
         rootMidiIsPlaying = false
         xMidiIsPlaying = false
         yMidiIsPlaying = false
         zMidiIsPlaying = false
 
-        if useMPE{
-            //print ("Midi: stopMidi: Root")
-            sendMidiNoteOff(channel: rootMidiMPEChannel, note: rootMidiNote)
+        //print ("Midi: stopMidi: Root")
+        sendMidiNoteOff(channel: rootMidiMPEChannel, note: rootMidiNote)
 
-            //print ("Midi: stopMidi: X")
-            sendMidiNoteOff(channel: xMidiMPEChannel, note: xMidiNote)
+        //print ("Midi: stopMidi: X")
+        sendMidiNoteOff(channel: xMidiMPEChannel, note: xMidiNote)
 
-            //print ("Midi: stopMidi: Y")
-            sendMidiNoteOff(channel: yMidiMPEChannel, note: yMidiNote)
+        //print ("Midi: stopMidi: Y")
+        sendMidiNoteOff(channel: yMidiMPEChannel, note: yMidiNote)
 
-            //print ("Midi: stopMidi: Z")
-            sendMidiNoteOff(channel: zMidiMPEChannel, note: zMidiNote)
-        }
-        else {
-            //print ("Midi: stopMidi: Root")
-            sendMidiNoteOff(channel: rootMidiChannel, note: rootMidiNote)
-
-            //print ("Midi: stopMidi: X")
-            sendMidiNoteOff(channel: xMidiChannel, note: xMidiNote)
-
-            //print ("Midi: stopMidi: Y")
-            sendMidiNoteOff(channel: yMidiChannel, note: yMidiNote)
-
-            //print ("Midi: stopMidi: Z")
-            sendMidiNoteOff(channel: zMidiChannel, note: zMidiNote)
-        }
+        //print ("Midi: stopMidi: Z")
+        sendMidiNoteOff(channel: zMidiMPEChannel, note: zMidiNote)
     }
 
     public func setMidiReferencePitch(frequency: Double){
@@ -367,14 +280,8 @@ public class Midi{
     public func setMidiRootPitch(frequency: Double){
         rootMidiFrequency = frequency
         if rootMidiIsPlaying{
-            if useMPE{
-                rootMidiPitchBend = PitchBendMath.freqToPB(frequency: rootMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
-                sendMidiPitchBend(channel: rootMidiMPEChannel, value: rootMidiPitchBend)
-            }
-            else{
-                rootMidiPitchBend = PitchBendMath.freqToPB(frequency: rootMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRange)
-                sendMidiPitchBend(channel: rootMidiChannel, value: rootMidiPitchBend)
-            }
+            rootMidiPitchBend = PitchBendMath.freqToPB(frequency: rootMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
+            sendMidiPitchBend(channel: rootMidiMPEChannel, value: rootMidiPitchBend)
         }
         if midiTrace { print("Midi: SetRootPitch: frequency = \(rootMidiFrequency)")}
     }
@@ -382,15 +289,8 @@ public class Midi{
     public func setMidiXPitch(frequency: Double){
         xMidiFrequency = frequency
         if xMidiIsPlaying{
-            if useMPE{
-                xMidiPitchBend = PitchBendMath.freqToPB(frequency: xMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
-                sendMidiPitchBend(channel: xMidiMPEChannel, value: xMidiPitchBend)
-            }
-            else{
-                xMidiPitchBend = PitchBendMath.freqToPB(frequency: xMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRange)
-                sendMidiPitchBend(channel: xMidiChannel, value: xMidiPitchBend)
-            }
-
+            xMidiPitchBend = PitchBendMath.freqToPB(frequency: xMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
+            sendMidiPitchBend(channel: xMidiMPEChannel, value: xMidiPitchBend)
         }
         if midiTrace { print("Midi: SetXMidiPitch: frequency = \(xMidiFrequency)")}
     }
@@ -398,14 +298,8 @@ public class Midi{
     public func setMidiYPitch(frequency: Double){
         yMidiFrequency = frequency
         if yMidiIsPlaying{
-            if useMPE{
-                yMidiPitchBend = PitchBendMath.freqToPB(frequency: yMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
-                sendMidiPitchBend(channel: yMidiMPEChannel, value: yMidiPitchBend)
-            }
-            else{
-                yMidiPitchBend = PitchBendMath.freqToPB(frequency: yMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRange)
-                sendMidiPitchBend(channel: yMidiChannel, value: yMidiPitchBend)
-            }
+            yMidiPitchBend = PitchBendMath.freqToPB(frequency: yMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
+            sendMidiPitchBend(channel: yMidiMPEChannel, value: yMidiPitchBend)
         }
         if midiTrace { print("Midi: SetYMidiPitch: frequency = \(yMidiFrequency)")}
     }
@@ -413,39 +307,15 @@ public class Midi{
     public func setMidiZPitch(frequency: Double){
         zMidiFrequency = frequency
         if zMidiIsPlaying{
-            if useMPE{
-                zMidiPitchBend = PitchBendMath.freqToPB(frequency: zMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
-                sendMidiPitchBend(channel: zMidiMPEChannel, value: zMidiPitchBend)
-            }
-            else{
-                zMidiPitchBend = PitchBendMath.freqToPB(frequency: zMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRange)
-                sendMidiPitchBend(channel: zMidiChannel, value: zMidiPitchBend)
-            }
+            zMidiPitchBend = PitchBendMath.freqToPB(frequency: zMidiFrequency, referenceFrequency: referenceFrequency, pitchBendRange: pitchBendRangeMPE)
+            sendMidiPitchBend(channel: zMidiMPEChannel, value: zMidiPitchBend)
         }
         if midiTrace { print("Midi: SetZMidiPitch: frequency = \(zMidiFrequency)")}
-    }
-
-    public func setMidiPitchBendRange(pitchBendRange: Int){
-        // parameter shares a name with the property it sets, so `self.` disambiguates
-        self.pitchBendRange = pitchBendRange
-        //print("\nMidi: SetMidiPitchBendRange: Range = \(pitchBendRange)")
-        sendPitchBendSensitivity()
     }
 
     public func setMidiPitchBendRangeMPE(pitchBendRange: Int){
         pitchBendRangeMPE = pitchBendRange
         //print("\nMidi: SetMidiPitchBendRangeMPE: Range = \(pitchBendRangeMPE)")
-        sendPitchBendSensitivity()
-    }
-
-    public func useMPE(useMpe:Bool){
-        useMPE = useMpe
-        if useMPE {
-            enableMPE()
-        }
-        else {
-            disableMPE()
-        }
         sendPitchBendSensitivity()
     }
 

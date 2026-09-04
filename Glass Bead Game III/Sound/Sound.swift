@@ -211,16 +211,8 @@ class Sound {
         midi.setMidiZPitch(frequency: frequency)
     }
     
-    func setPitchBendRange(pitchBendRange: Int){
-        midi.setMidiPitchBendRange(pitchBendRange: pitchBendRange)
-    }
-
     func setPitchBendRangeMPE(pitchBendRange: Int){
         midi.setMidiPitchBendRangeMPE(pitchBendRange: pitchBendRange)
-    }
-
-    func setUseMPE(useMpe: Bool){
-        midi.useMPE(useMpe: useMpe)
     }
 
     func setRootNote(midiNote: Int){
@@ -248,14 +240,10 @@ class Sound {
     private var lastIncomingNote: [SequencerVoice: Int] = [:]
 
     private func voiceForChannel(_ channel: Int) -> SequencerVoice? {
-        let mpe = settings?.useMIDI_MPE ?? false
-        let xChannel = mpe ? midi.xMidiMPEChannel : midi.xMidiChannel
-        let yChannel = mpe ? midi.yMidiMPEChannel : midi.yMidiChannel
-        let zChannel = mpe ? midi.zMidiMPEChannel : midi.zMidiChannel
         switch channel {
-        case xChannel: return .x
-        case yChannel: return .y
-        case zChannel: return .z
+        case midi.xMidiMPEChannel: return .x
+        case midi.yMidiMPEChannel: return .y
+        case midi.zMidiMPEChannel: return .z
         default: return nil // the root/drone channel is handled separately, before this is ever
                              // called - see handleIncomingMidi's isRootChannel check and the
                              // drone external-drive section below.
@@ -263,8 +251,7 @@ class Sound {
     }
 
     private func frequencyForIncoming(note: Int, pitchBend: Int) -> Double {
-        let mpe = settings?.useMIDI_MPE ?? false
-        let range = mpe ? (settings?.pitchBendRangeMPE ?? 24) : (settings?.pitchBendRange ?? 12)
+        let range = settings?.pitchBendRangeMPE ?? 24
         return PitchBendMath.frequencyFromNoteAndPitchBend(note: note, pitchBend: pitchBend, pitchBendRange: range)
     }
 
@@ -396,8 +383,7 @@ class Sound {
     private var lastIncomingDroneNote: Int?
 
     private func isRootChannel(_ channel: Int) -> Bool {
-        let mpe = settings?.useMIDI_MPE ?? false
-        return channel == (mpe ? midi.rootMidiMPEChannel : midi.rootMidiChannel)
+        channel == midi.rootMidiMPEChannel
     }
 
     private func handleIncomingDroneMidi(kind: Midi.MidiInputEvent.Kind) {

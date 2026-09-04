@@ -76,8 +76,9 @@ class AppSettings: ObservableObject{
     // KeyboardMonitor once a key comes in. nil whenever nothing is being captured.
     @Published var pendingKeyBindingAction: KeyAction? = nil
     @Published var useSynth: Bool = true
+    // MPE is the only mode this app ever sends now (see ControlView's "Use Midi MPE" toggle) -
+    // there's no separate useMIDI_MPE flag to keep in sync any more.
     @Published var useMIDI: Bool = true
-    @Published var useMIDI_MPE: Bool = true
     // iOS only (see ControlView's own toggle) - off by default, matching the rest of AppSettings'
     // opt-in-each-session pattern and, more importantly, not silently advertising a network
     // service just because the app launched.
@@ -153,7 +154,6 @@ class AppSettings: ObservableObject{
     @Published var border: Double = 40
     
     // MIDI data
-    @Published var pitchBendRange: Int = 12
     @Published var pitchBendRangeMPE: Int = 24
     
     init(){
@@ -165,25 +165,15 @@ class AppSettings: ObservableObject{
         
         sound.setRootPitch(frequency: self.rootFrequency)
         sound.setRootNote(midiNote: self.rootMidiNote)
-        // MPE's range first, then the non-MPE range, then the mode itself - Midi.useMPE
-        // defaults true (matching useMIDI_MPE's own default below) and each range setter
-        // immediately re-declares whichever range is currently active via RPN 0 (see
-        // Midi.sendPitchBendSensitivity), so setting the *inactive* range first would
-        // transmit it as if it were current. This order keeps every message correct instead
-        // of sending a wrong value that a moment later gets corrected.
+        // MPE is unconditional now (Midi.initMidi's own enableMPE() call already declares the
+        // zone at launch) - this just pushes the real pitch-bend-range value over the placeholder
+        // 0 Midi.pitchBendRangeMPE starts with, so the RPN 0 message initMidi sent at launch
+        // gets corrected to the real value before anything actually plays. Matters musically,
+        // not just cosmetically: the graph's default range (3/1 above root to 1/2 below, ~19
+        // semitones up and 12 down) needs this wider range - a plain, non-MPE-safe ±12
+        // semitones (what many non-MPE receivers reliably honor) would clip everything above
+        // +12 semitones, which is most of the graph's own default span.
         sound.setPitchBendRangeMPE(pitchBendRange: self.pitchBendRangeMPE)
-        sound.setPitchBendRange(pitchBendRange: self.pitchBendRange)
-        // Midi.useMPE is a separate stored var with its own hardcoded default, not something
-        // that reads straight through settings the way enableDrone/enableX/Y/Z do (see the
-        // comment on those below) - it wasn't drifting silently before only because both
-        // defaults happened to independently be true, the exact fragility that comment
-        // describes. Norm: "make MPE default if it is not" - explicitly syncing it here means
-        // the real answer no longer depends on two hardcoded defaults staying coincidentally
-        // aligned. Matters musically, not just cosmetically: the graph's default range (3/1
-        // above root to 1/2 below, ~19 semitones up and 12 down) only fits inside MPE's wider
-        // pitchBendRangeMPE - the plain pitchBendRange would clip everything above +12
-        // semitones.
-        sound.setUseMPE(useMpe: self.useMIDI_MPE)
         // X/Y/Z's underlying Midi/Audio pitch state otherwise stays at Midi's own raw 0.0
         // default (garbage - a 0Hz-derived pitch bend clamps to the minimum) until each one's
         // own view actually publishes a real value. X/Y happen to get seeded as a side effect
