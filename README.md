@@ -15,7 +15,7 @@ The name comes from Hermann Hesse's novel, in which the fictional Glass Bead Gam
 ## What's built
 
 - Live touch performance: drone + two movable tones, snapping to just ratios (or unsnapped with Shift/no-snap)
-- Real-time synthesis and/or MIDI output, including MPE (MIDI Polyphonic Expression) so microtonal pitches can drive external synths accurately
+- Real-time synthesis and/or MIDI output. MIDI output is MPE-only (MIDI Polyphonic Expression) so each voice's microtonal pitch bend is independent - safe for any receiver, since MPE's extra zone-declaration message is itself backward-compatible MIDI a non-MPE receiver just ignores
 - Selectable harmonic limit (3/5/7/9/11/13/17/19) controlling how far the lattice extends
 - Square / Diamond / Triangle presentations of the same underlying graph
 - Diamonds mark points where the natural harmonics of all three tones (root, X, Y) line up exactly - the precise, absolute consonances

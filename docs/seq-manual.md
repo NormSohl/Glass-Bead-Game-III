@@ -44,7 +44,7 @@ notes appear in the piano roll as you play them.
 
 1. In GBG III's Settings, set **MIDI Destination** to **Seq** (it shows up in that picker like
    any other MIDI destination, since Seq advertises itself the same way GBG III does) and make
-   sure **Use Midi** is on.
+   sure **Use Midi MPE** is on.
 2. In Seq's transport bar, tap **Capture**. It stays armed (shown as **Stop**) until you tap it
    again - play as long as you like across it. This stops playback if it was running, since the
    two can't happen at once.
@@ -57,10 +57,10 @@ notes appear in the piano roll as you play them.
 
 Connecting over USB or Network MIDI works the same way once the connection itself exists - pair
 the iPad and Mac in **Audio MIDI Setup**'s Network MIDI panel (or plug in over USB), and GBG
-III's MIDI Destination picker will show Seq the same way it does on the same Mac. This one known
-limitation: Seq assumes GBG III is using its default MPE channel assignment for X/Y/Z - if GBG
-III's **Use MPE** is off, live capture won't line up (Record → Save → Open still works
-regardless, since files carry no such assumption).
+III's MIDI Destination picker will show Seq the same way it does on the same Mac. Seq assumes
+GBG III's MPE channel assignment for X/Y/Z - GBG III is MPE-only now, with no separate mode to
+fall out of sync with, so this always lines up (Record → Save → Open never depended on this
+either, since files carry no such assumption).
 
 ## Recording a performance in GBG III (for Save/Open instead of live capture)
 

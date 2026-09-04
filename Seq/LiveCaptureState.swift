@@ -30,11 +30,11 @@
 //  see AppSettings/Sound.setXPitch in Graph). X/Y/Z only, same as Graph's own recorder - drone
 //  has no live-touch pitch interaction to capture there either.
 //
-//  Known limitation, inherited from GraphMidiChannel's own established precedent
-//  (SequencerState.swift): assumes Graph is using its default MPE channel assignment (2/3/4 for
-//  X/Y/Z) - not negotiated live between the two apps, so this won't line up if Graph's "Use
-//  MPE" is off. The same limitation the existing Seq->Graph MIDI-out already accepts, not a new
-//  gap this introduces.
+//  Assumes Graph's default MPE channel assignment (2/3/4 for X/Y/Z), inherited from
+//  GraphMidiChannel's own established precedent (SequencerState.swift) - not negotiated live
+//  between the two apps, but safe: Graph is MPE-only now, with no non-MPE mode to fall out of
+//  sync with (see GBGSound.Midi). The same assumption the existing Seq->Graph MIDI-out already
+//  makes.
 //
 
 import Foundation
@@ -64,10 +64,12 @@ final class LiveCaptureState: ObservableObject {
 
     /// One voice's in-progress gesture - nil when that voice isn't currently mid-note.
     /// referenceFrequency is fixed at note-on, using whatever pitch-bend value is already known
-    /// for that channel at that instant (0/center if none has arrived yet) - Graph's own
-    /// non-MPE send order puts the real starting bend before note-on, MPE's own order puts it
-    /// just after, so this can't assume either ordering; see Sound.beginExternalDrive (Graph
-    /// target) for the identical assumption already made for the same real-world scenario.
+    /// for that channel at that instant (0/center if none has arrived yet) - Graph's own MPE
+    /// send order puts note-on before the real starting bend, but this doesn't hard-assume that:
+    /// real MIDI transports (Network MIDI especially) can still reorder or drop packets, so a
+    /// pitch-bend-before-note-on arrival is defended against rather than assumed impossible; see
+    /// Sound.beginExternalDrive (Graph target) for the identical assumption already made for the
+    /// same real-world scenario.
     private struct ActiveGesture {
         let referenceFrequency: Double
         let startSampleTime: Int

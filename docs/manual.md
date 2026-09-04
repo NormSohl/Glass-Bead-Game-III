@@ -176,7 +176,7 @@ occasionally rather than mid-phrase.
 
 ## 4. Connecting outboard MIDI gear
 
-GBG III's **MIDI Destination** and **MIDI Source** pickers (under Use MIDI) list whatever your
+GBG III's **MIDI Destination** and **MIDI Source** pickers (under Use Midi MPE) list whatever your
 Mac or iPad already sees as MIDI ports — physical USB-MIDI interfaces, virtual/IAC ports,
 Bluetooth MIDI devices, or Network MIDI sessions. GBG III draws no distinction between these:
 if your device already shows up in your Mac's Audio MIDI Setup or your iPad's Bluetooth
@@ -200,26 +200,26 @@ It drives Pedal exactly like the Space bar: pedal down engages sustain, pedal up
 isn't tied to X/Y/Z's own MIDI channels - a pedal sends this on whatever channel it's configured
 for (often channel 1 by default), and GBG III watches for it on any incoming channel.
 
-### Enabling MPE
+### MPE
 
-**Use MPE** turns on MIDI Polyphonic Expression — each voice (Drone/X/Y/Z) gets its own MIDI
-channel with independent pitch bend, rather than sharing a smaller set of fixed channels. Turn
-this on only if your receiving gear actually understands MPE; GBG III sends standard MPE
-configuration and per-channel pitch bend either way, but a receiver that doesn't understand MPE
-will just see several ordinary channels each bending independently, which may or may not be
-what you want.
+GBG III is **MPE-only** (MIDI Polyphonic Expression) — every voice (Drone/X/Y/Z) always gets its
+own MIDI channel with independent pitch bend; there's no separate "plain MIDI" mode to turn on
+or off. This is safe for any receiver: MPE's extra zone-declaration message is itself ordinary,
+backward-compatible MIDI, so gear that doesn't understand it simply ignores that message and
+still receives normal per-channel note-on/off and pitch bend, exactly as it would from any
+multi-channel MIDI source.
 
-Default channel assignments: with MPE on, Drone/X/Y/Z use channels 5/2/3/4; with MPE off, they
-use channels 4/1/2/3. Either way, X/Y/Z occupy the first three channels and Drone comes last —
-useful if your receiver is only listening for your three main voices.
+Channel assignments: Drone/X/Y/Z use channels 5/2/3/4 — X/Y/Z occupy the first three (useful if
+your receiver only cares about your three main voices), Drone comes last, and channel 1 is
+reserved as the MPE zone's master channel.
 
 ### Pitch bend range
 
-GBG III declares its pitch bend range to the receiver automatically (±12 semitones without MPE,
-±24 semitones with it) using the standard MIDI RPN 0 message. Well-behaved gear picks this up
+GBG III declares a ±24 semitone pitch bend range to the receiver automatically, using the
+standard MIDI RPN 0 message, sent zone-wide per the MPE spec. Well-behaved gear picks this up
 on its own. **Real analog/modular gear often doesn't** — if notes sound in the wrong octave or
 with a squashed/exaggerated bend, you'll likely need to set your receiving instrument's own
-pitch bend range by hand to match (±12 or ±24 semitones, matching whether MPE is on).
+pitch bend range by hand to ±24 semitones to match.
 
 ### Tune Midi
 
