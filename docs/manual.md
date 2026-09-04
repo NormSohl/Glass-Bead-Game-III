@@ -38,10 +38,14 @@ root. Play by moving through the map instead of pressing fixed keys.
 For the theory behind it — why just intonation, how the lattice is built, what the diamonds and
 scale limits mean mathematically — see [MapTone](https://www.sohl.com/maptone/).
 
-On first launch, GBG III asks for nothing — no microphone permission, no Bluetooth pairing
-prompt. It doesn't touch the microphone (its "recording" feature captures your touch/pen
-gestures, not audio - see the Seq manual), and MIDI access needs no permission prompt on either
-platform. Audio output is on by default - if you don't hear anything, check your device's
+On first launch, GBG III asks for nothing — no Bluetooth pairing prompt, and MIDI access needs
+no permission prompt on either platform for a normal outboard-MIDI or Network MIDI connection.
+It never actually records or touches audio (its "recording" feature captures your touch/pen
+gestures, not audio - see the Seq manual) - the one exception is connecting a USB-attached
+iPad via macOS's IDAM (Inter-Device Audio & MIDI): since IDAM exposes the iPad as a combined
+audio+MIDI interface, macOS gates it behind the same microphone permission as an actual
+microphone, and will show that system prompt the first time you use it, even though no audio is
+ever recorded. Audio output is on by default - if you don't hear anything, check your device's
 volume before anything else. You can start playing immediately.
 
 ---

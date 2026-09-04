@@ -55,9 +55,13 @@ notes appear in the piano roll as you play them.
    performance, raw and unsegmented - nothing to open, nothing to save first. Apply **Segment**
    (see below) whenever you're ready, or leave it as-is and segment/edit some other time.
 
-Connecting over USB or Network MIDI works the same way once the connection itself exists - pair
-the iPad and Mac in **Audio MIDI Setup**'s Network MIDI panel (or plug in over USB), and GBG
-III's MIDI Destination picker will show Seq the same way it does on the same Mac. Seq assumes
+Connecting over Network MIDI works the same way once the connection itself exists - pair the
+iPad and Mac in **Audio MIDI Setup**'s Network MIDI panel, and GBG III's MIDI Destination picker
+will show Seq the same way it does on the same Mac. USB is a separate mechanism, not just "plug
+in the cable": macOS bridges a USB-connected iPad's MIDI via IDAM (Inter-Device Audio & MIDI),
+which needs enabling per-connection in **Audio MIDI Setup**'s *Audio Devices* window (not the
+MIDI Studio window a real MIDI interface would show up in) - look for the iPad's own entry there
+and click **Enable**. Seq assumes
 GBG III's MPE channel assignment for X/Y/Z - GBG III is MPE-only now, with no separate mode to
 fall out of sync with, so this always lines up (Record → Save → Open never depended on this
 either, since files carry no such assumption).

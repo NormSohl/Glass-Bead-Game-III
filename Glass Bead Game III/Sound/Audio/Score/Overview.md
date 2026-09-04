@@ -1,14 +1,22 @@
 # Overview of the Score system
 
-The system is made up of objects which have (for the most part) a hierarchical structure.
+**This document describes the original 2022 design.** Two parts of it were never built and don't
+match the current code - noted inline below, not corrected throughout, since the class
+hierarchy and Note/Transition/Envelope model it describes are otherwise still accurate and in
+real use:
 
-Most of the input and output objects are normalized to a range of 0 to 1 where it makes sense. This is for simplicity as much as anything. 64 bit floating point. Slow, but accurate.
+- There's no `loadScore` object and no score text file (`exampleScore.txt` doesn't exist in this
+  repo). Real construction happens two other ways instead: `Glass Bead Game III/Data/
+  RecordingState.swift` builds `Part`s live from touch/pen input while recording, and GBGCore's
+  `SeqMIDICodec`/`StandardMIDIFile` decode them from a Standard MIDI File (Seq's own save
+  format, and GBG III's own Live Recording save - see `docs/manual.md`/`docs/seq-manual.md`).
+- The `Score` class itself is essentially vestigial today - grep the repo and it's only ever
+  instantiated in its own unit test (`GBGCoreTests/ScoreTests.swift`). Real code (`SeqDocument`,
+  `RecordingState`, `SequencerState`) holds four named `Part`s directly (drone/x/y/z), with no
+  wrapping `Score` object, and `Audio.Triad` has no pointer to a `Score` at all - it's driven
+  directly by explicit `setPitch`/enable calls from `Sound.swift`, not by querying a score tree.
 
-Simply put this is how it works:
-
-A loadScore object is created, and given a pointer to a score text file. See exampleScore.txt for an example.
-
-This score is parsed, and a tree of objects are created. They have the following structure:
+Setting those two points aside, this is the model:
 
 ```
 Superclass: 
@@ -91,7 +99,13 @@ AudioUtil
 The audio system creates an AVAudioSourceNode to manage filling raw audio values into buffers for playback. All functions that interact with the system are in the Audio Class.
 The Graph needs three tones which are managed by the Triad class
 
-The Audio.Triad object has a pointer to the Score object. It can call the Score object to get the individual parts, and can assign part pointers to the individual Tone objects.
+**Not built this way** - see this doc's own header. `Audio.Triad` has no pointer to a `Score` or
+`Part` at all; it's driven directly, frame by frame, by explicit `setPitch`/enable calls from
+`Sound.swift` in response to live touch/pen input or incoming MIDI. `Score`/`Part`/`Note` *are*
+used for playback, but through a separate path entirely: Seq's `ScorePlayer` reads directly from
+a `Part`'s `Note`s (via `getCurrentNote`/`getNextNote`) and writes the resulting frequency/
+amplitude straight into its own audio engine each render callback - there's no `Score`-holds-
+Triad-holds-Tone-holds-Part chain as described below.
 
 ## Tone
 Each Tone object manages the low level loops for one tone, and define the waveform used to generate the signal.
@@ -99,7 +113,3 @@ Each has an exposed Frequency and Amplitude property that is used to control the
 
 * setPitch(Double)  // frequency in Hz.
 * setAmplitude(Double)  // 0 to 1 value used to scale the rendered output.
-
-The Audio.Triad.Tone object has a pointer to it's associated Score.Part, and would query for a pointer to a new Score.Part.Note object when needed. The Note object has all information needed to render.
-
-Once initialized, each note can be quickly queried for next frequency and amplitude. When the note ends the pointer is updated to the next note. This can be done until the score is over or until playback is stopped.
