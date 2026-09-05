@@ -28,6 +28,8 @@ struct GlassBeadGameIIIApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     #endif
 
+    @Environment(\.scenePhase) private var scenePhase
+
     init() {
         sound.initSound()
         #if os(macOS)
@@ -53,6 +55,36 @@ struct GlassBeadGameIIIApp: App {
         // screen's available height (square graph + ZSliderView's fixed 70pt), rather than
         // guessing a width.
         .defaultSize(idealWindowSize())
+        #if os(iOS)
+        // Norm: swiping up from the bottom to close the app on iPad starts a note that keeps
+        // sounding for about a second before fading out. The swipe gesture's own initial touch-
+        // down originates right where the graph's own DragGesture lives (minimumDistance: 0,
+        // .defersSystemGestures(on: .all) - see HitTestView), so it's briefly seen as a real
+        // graph touch before iOS's system gesture recognizer takes over and steals it; the
+        // stolen touch's own onEnded may never fire, so nothing ever calls endGraphTouch. Rather
+        // than carve out a dead zone at the bottom edge (real graph interactivity lost there for
+        // an edge case), force everything silent as soon as the app leaves the foreground - safe
+        // and correct regardless of what left a touch stuck, matching how panic() is already
+        // meant to be used.
+        //
+        // Reacts to .inactive, not just .background - Norm, after testing: .background alone
+        // (which iOS delays until the close animation finishes, ~a second) stopped the *stuck*
+        // case cleanly, but with a pedal-held note already sounding, the stray touch's own hit-
+        // test could still write a brief pitch-jump/retrigger onto it before .background ever
+        // fired - a delayed panic can silence what follows but can't undo a glitch that already
+        // happened. .inactive fires right as the swipe begins instead, closing that gap. Traded
+        // off deliberately, with Norm's explicit go-ahead: .inactive also fires for things like
+        // Control Center or a phone call banner, so a pedal-held note won't survive those either
+        // now, not just an actual close.
+        //
+        // iOS-only - macOS's own equivalent, the window losing focus via Cmd-Tab, is a normal
+        // way to keep a sustained drone going in the background, not something to silence.
+        .onChange(of: scenePhase) {
+            if scenePhase != .active {
+                sound.panic()
+            }
+        }
+        #endif
     }
 }
 

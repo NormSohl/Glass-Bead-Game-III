@@ -32,10 +32,25 @@ class AppSettings: ObservableObject{
     // still available via its own toggle. This is the only copy
     // of the drone's enabled state - Sound.enableDrone reads straight through sound.settings
     // (wired below in init()) rather than keeping a separately-defaulted copy.
-    @Published var playDrone: Bool = false
-    @Published var playNoteX: Bool = true
-    @Published var playNoteY: Bool = true
-    @Published var playNoteZ: Bool = true
+    // didSet, same reasoning as pedal's own just above: Drone can be toggled from the toolbar
+    // button or the D/K key command as well as ControlView's own checkbox, and X/Y/Z's Note
+    // toggles live only inside ControlView (mounted only while the settings popover is open) -
+    // a didSet here fires regardless of which one changed it. Without this, toggling any of
+    // these had no audible effect at all until the next touch begin/end happened to recompute
+    // enables (confirmed live, 2026-09-05: Drone toggled mid-touch, or with nothing touched,
+    // produced no change whatsoever) - see Sound.refreshVoiceEnables's own comment.
+    @Published var playDrone: Bool = false {
+        didSet { sound.refreshVoiceEnables() }
+    }
+    @Published var playNoteX: Bool = true {
+        didSet { sound.refreshVoiceEnables() }
+    }
+    @Published var playNoteY: Bool = true {
+        didSet { sound.refreshVoiceEnables() }
+    }
+    @Published var playNoteZ: Bool = true {
+        didSet { sound.refreshVoiceEnables() }
+    }
     @Published var snap: Bool = true
     // didSet, not a View's onChange - pedal can now be released from several places (the
     // settings checkbox, the toolbar button, the Space-bar key command), and only the checkbox

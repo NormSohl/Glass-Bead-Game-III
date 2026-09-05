@@ -43,6 +43,27 @@ class Sound {
     // everything.
     private var activeTouchCount = 0
 
+    // True exactly while the pedal is the only thing keeping a previously-touched voice
+    // audible - the last real touch just ended while pedal was already held. Deliberately
+    // distinct from settings.pedal itself, which can be true with nothing ever having been
+    // touched at all (pedal pressed before playing a note): only in this genuine hand-off case
+    // should a voice's own Play toggle be able to silence or re-sound it without a real touch -
+    // otherwise pedal being merely *engaged*, with nothing ever played, would let a stray Play-
+    // toggle flip start a note out of nowhere. Set in endGraphTouch/endTouch the moment
+    // activeTouchCount reaches 0 while pedal is held; cleared by releasePedal, the actual end
+    // of a pedal-sustained passage.
+    private var pedalIsSustaining = false
+
+    // What applyGraphVoiceEnables/applyZVoiceEnables/applyDroneVoiceEnable actually gate on -
+    // either a real touch is active right now, or the pedal is genuinely sustaining one from a
+    // moment ago (see pedalIsSustaining's own comment). Introduced so a voice's own Play toggle
+    // can take effect during a pedal-held passage (Norm: toggling Drone off while pedal held a
+    // note should silence just that note, not require lifting the pedal first) without the
+    // plain activeTouchCount > 0 check silencing every *other* voice pedal was also holding -
+    // confirmed live: before this, calling these functions at all during pedal-sustain (no
+    // active touch) unconditionally disabled X/Y/Z/drone alike, regardless of their own toggle
+    // state, since the old check had no way to represent "pedal legitimately holds this."
+    private var sustained: Bool { activeTouchCount > 0 || (pedalIsSustaining && settings?.pedal == true) }
 
     func initSound(){
         midi.initMidi()
@@ -79,10 +100,10 @@ class Sound {
     // all - see the note on that var's own declaration above - so this is now purely about the
     // graph's and the sequencer's own touch/pedal interplay, not Z.)
     private func applyGraphVoiceEnables(){
-        audio.triad.enableTriadXTone(enable: enableX && (activeTouchCount > 0 || xExternallyDriven))
-        audio.triad.enableTriadYTone(enable: enableY && (activeTouchCount > 0 || yExternallyDriven))
-        midi.xMidiEnable = enableX && (activeTouchCount > 0 || xExternallyDriven)
-        midi.yMidiEnable = enableY && (activeTouchCount > 0 || yExternallyDriven)
+        audio.triad.enableTriadXTone(enable: enableX && (sustained || xExternallyDriven))
+        audio.triad.enableTriadYTone(enable: enableY && (sustained || yExternallyDriven))
+        midi.xMidiEnable = enableX && (sustained || xExternallyDriven)
+        midi.yMidiEnable = enableY && (sustained || yExternallyDriven)
     }
 
     // Z follows "is anything being touched" - Norm wants Z, when enabled, to always sound
@@ -91,16 +112,33 @@ class Sound {
     // sound.setZPitch, but can't start or stop it - see ZSliderView's gesture). Called from
     // beginGraphTouch/endGraphTouch and releasePedal below, same as applyDroneVoiceEnable.
     private func applyZVoiceEnables(){
-        audio.triad.enableTriadZTone(enable: enableZ && activeTouchCount > 0)
-        midi.zMidiEnable = enableZ && activeTouchCount > 0
+        audio.triad.enableTriadZTone(enable: enableZ && sustained)
+        midi.zMidiEnable = enableZ && sustained
     }
 
     // Drone has no touch zone of its own, so it follows "is anything being touched" - any zone
     // beginning/ending legitimately affects it, unlike X/Y above (Z now follows the same rule,
     // see applyZVoiceEnables just above).
     private func applyDroneVoiceEnable(){
-        audio.triad.enableTriadRootTone(enable: enableDrone && activeTouchCount > 0)
-        midi.rootMidiEnable = enableDrone && activeTouchCount > 0
+        audio.triad.enableTriadRootTone(enable: enableDrone && sustained)
+        midi.rootMidiEnable = enableDrone && sustained
+    }
+
+    /// Re-applies all three groups above immediately - for AppSettings' own didSet on the four
+    /// play-toggles (Drone/X/Y/Z), which otherwise have no way to take audible effect until the
+    /// next touch begin/end happens to recompute enables. Norm, confirmed live: toggling Drone
+    /// mid-touch (or with nothing touched) produced no audible change at all, since nothing ever
+    /// called back into Sound just because a toggle changed - enableDrone/enableX/Y/Z reading
+    /// straight through settings (see that comment above) keeps the *value* always current, but
+    /// only fixed a different bug (the two-copies-drifting one); it never made toggling one
+    /// re-run the apply functions on its own. Safe to call unconditionally, touched or not,
+    /// pedal-sustained or not - each apply function's own `sustained` check (see that var's
+    /// comment) already does the right thing for a pedal-held passage: it lets the toggled
+    /// voice respond immediately without disturbing whatever else pedal is also holding.
+    func refreshVoiceEnables() {
+        applyGraphVoiceEnables()
+        applyZVoiceEnables()
+        applyDroneVoiceEnable()
     }
 
     private func startEngine(amp: Float){
@@ -120,6 +158,7 @@ class Sound {
     /// they were last set to.
     func beginGraphTouch(amp: Float) {
         activeTouchCount += 1
+        pedalIsSustaining = false // a real touch is active again - see that var's own comment
         applyGraphVoiceEnables()
         applyZVoiceEnables()
         applyDroneVoiceEnable()
@@ -137,6 +176,11 @@ class Sound {
             applyZVoiceEnables()
             applyDroneVoiceEnable()
             if activeTouchCount == 0 { stopEngine() }
+        } else if activeTouchCount == 0 {
+            // The hand-off moment: this was the last active touch, and pedal is holding it -
+            // see pedalIsSustaining's own comment for why this needs recording rather than
+            // just inferring it from settings.pedal being true.
+            pedalIsSustaining = true
         }
     }
 
@@ -163,6 +207,7 @@ class Sound {
     /// whatever was ONLY still sounding because of the pedal).
     func releasePedal() {
         guard activeTouchCount == 0 else { return }
+        pedalIsSustaining = false // the sustained passage genuinely ends here
         applyGraphVoiceEnables()
         applyZVoiceEnables()
         applyDroneVoiceEnable()
@@ -177,6 +222,7 @@ class Sound {
     /// permanently). Safe to call at any time, touched or not.
     func panic() {
         activeTouchCount = 0
+        pedalIsSustaining = false
         xExternallyDriven = false
         yExternallyDriven = false
         zExternallyDriven = false

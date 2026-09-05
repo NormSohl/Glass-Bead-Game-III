@@ -276,6 +276,23 @@ struct HitTestView: View {
 #if os(iOS)
         .defersSystemGestures(on: .all)
 #endif
+        // A touch's own onEnded only resets isSound to false when settings.pedal is already
+        // false at that moment (see both gestures above) - deliberately, so a pedal-held touch
+        // leaves isSound true and doesn't get double-triggered. But if the pedal is released
+        // *afterward*, with no touch active, nothing was ever telling isSound to catch up -
+        // it stayed stuck true, so the next real touch's onChanged saw isSound already true and
+        // silently never called sound.beginGraphTouch() at all. Confirmed live: touching down
+        // right after releasing a pedal that was sustaining a note produced no sound; the very
+        // next touch (whose own onEnded finally reset isSound, since pedal was already false by
+        // then) worked fine - the "only the first touch after pedal-off fails" signature this
+        // fixes. Guarded by !isDrag so this can't fire mid-touch: releasePedal() itself already
+        // no-ops while any touch is active (see Sound.releasePedal's own guard), so isSound
+        // being true only because of a genuinely active touch is never what this needs to catch.
+        .onChange(of: settings.pedal) {
+            if !settings.pedal && !isDrag {
+                isSound = false
+            }
+        }
     }
 
     // Mirrors exactly what a real DragGesture's onChanged does to start a touch (both the
