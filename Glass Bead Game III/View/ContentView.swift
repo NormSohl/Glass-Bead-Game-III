@@ -131,6 +131,12 @@ struct ContentView: View {
         // pads are cheap," so this keeps that path open rather than treating Pencil-squeeze
         // as the iPad's only input. See KeyboardMonitor's own comment.
         .background(KeyboardMonitor(settings: settings, recordingState: recordingState))
+        // A Bluetooth/USB mouse operated by the free hand around the back of the case -
+        // Norm's answer to Pencil-squeeze not firing reliably while the pencil is touching the
+        // graph. iOS-only: on macOS the mouse already drives HitTestView's X/Y drag, so giving
+        // it a second meaning there would conflict rather than help. See MouseMonitor's own
+        // comment for the full reasoning.
+        .background(MouseMonitor(settings: settings, recordingState: recordingState, scale: scale))
         #endif
         .onChange(of: settings.selectedLimit) {
             graphScale.rebuild(for: settings)
@@ -283,6 +289,15 @@ import AppKit
 // not - which needs separate keyDown/keyUp tracking, not one press-to-flip event. Space is
 // unused elsewhere in the app; many inexpensive USB foot pedals default to sending Space without
 // any reconfiguration at all.
+//
+// Also monitors the right mouse button (Norm's idea, 2026-09-04): HitTestView's graph drag only
+// ever tracks the primary button, so the secondary button on a Mac mouse is otherwise unused -
+// bound to Portamento (hold) by default via the same "mouseRight" token the iOS-only MouseMonitor
+// already defined, routed through the same handlePhysicalInput so KeyMappingView's remap capture
+// works on it for free. Deliberately only consumed (event returned nil) when something is
+// actually bound to it, or a remap capture is in progress - otherwise left alone so an unbound
+// right-click still falls through to its normal system behavior (e.g. a context menu, if one is
+// ever added here).
 private struct KeyCommandMonitor: NSViewRepresentable {
     @ObservedObject var settings: AppSettings
     let recordingState: RecordingState
@@ -318,7 +333,7 @@ private struct KeyCommandMonitor: NSViewRepresentable {
 
         func install() {
             guard monitor == nil else { return }
-            monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { [weak self] event in
+            monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged, .rightMouseDown, .rightMouseUp]) { [weak self] event in
                 guard let self else { return event }
                 // Stand down entirely while KeyMappingView's own capture monitor is listening
                 // for a new binding - see AppSettings.isCapturingKeyBinding's own comment.
@@ -373,6 +388,12 @@ private struct KeyCommandMonitor: NSViewRepresentable {
                         }
                     }
                     self.heldModifierTokens = newlyHeld
+                case .rightMouseDown, .rightMouseUp:
+                    let pressed = event.type == .rightMouseDown
+                    if self.settings.pendingKeyBindingAction != nil || self.settings.keyMapping.action(for: "mouseRight") != nil {
+                        self.dispatcher.handlePhysicalInput(token: "mouseRight", pressed: pressed)
+                        return nil
+                    }
                 default:
                     break
                 }
@@ -647,21 +668,7 @@ private struct KeyboardMonitor: UIViewRepresentable {
             guard let input else { return }
             input.keyChangedHandler = { [weak self] _, _, keyCode, pressed in
                 guard let self, let token = KeyboardMonitor.token(for: keyCode) else { return }
-                // A pending capture from KeyMappingView's "+" button always wins over normal
-                // dispatch, and only reacts to the press half of the gesture.
-                if pressed, let pendingAction = self.settings.pendingKeyBindingAction {
-                    self.settings.keyMapping.bind(token, to: pendingAction)
-                    self.settings.pendingKeyBindingAction = nil
-                    self.settings.isCapturingKeyBinding = false
-                    return
-                }
-                guard !self.settings.isCapturingKeyBinding,
-                      let action = self.settings.keyMapping.action(for: token) else { return }
-                if pressed {
-                    self.dispatcher.applyKeyDown(action, isARepeat: false)
-                } else if action.isMomentary {
-                    self.dispatcher.applyKeyUp(action)
-                }
+                self.dispatcher.handlePhysicalInput(token: token, pressed: pressed)
             }
         }
 
@@ -691,6 +698,221 @@ private struct KeyboardMonitor: UIViewRepresentable {
         ]
         if let letter = letterCodes[keyCode] { return String(letter) }
         return nil
+    }
+}
+
+// Bridges a Bluetooth/USB mouse into the same KeyMapping-driven dispatch as KeyboardMonitor -
+// Norm's back-of-iPad-case controller idea: Apple Pencil Pro's squeeze gesture doesn't fire
+// reliably while the pencil is actively touching the graph (see PencilSqueezeMonitor's own
+// comment and the memory notes on this), so a small mouse operated by the free hand's fingers,
+// reaching around the back of the case, gives buttons that work regardless. Button presses feed
+// the identical KeyActionDispatcher.handlePhysicalInput path a keyboard key does - Pedal/
+// Portamento/etc. are remappable to a mouse button through the same Keyboard Mapping UI, no
+// separate binding model. Mouse movement (Y axis) additionally drives Z continuously - no
+// separate "engage" gesture needed, since Z can't itself start or stop sound any more (see
+// Sound.applyZVoiceEnables/Sound.sustained) - a stray movement with nothing else playing is
+// silent, exactly like dragging the on-screen Z-slider with nothing touched.
+//
+// Deliberately iOS-only: on macOS, HitTestView already uses mouse drag to move X/Y on the graph
+// itself - giving the mouse a second, unrelated meaning there would be a real conflict, not a
+// feature, so this whole type only exists in the iOS build.
+//
+// Locks/hides the system pointer for as long as a mouse is connected, via UIViewController's
+// prefersPointerLocked - Apple's own recommended pattern (WWDC20 "Build for the iPadOS
+// pointer") for an app that wants a mouse's raw relative movement/buttons as a game-style
+// controller rather than a normal on-screen pointer. Without this, the system pointer would
+// still be free to tap/click through to the graph or any button as the mouse moves - exactly
+// the conflict Norm flagged, just on iOS instead of macOS. NOT YET VERIFIED LIVE: this is the
+// one piece of this feature that needs confirming with a real mouse in hand - specifically,
+// that prefersPointerLocked set on a child view controller embedded via
+// UIViewControllerRepresentable actually engages the system-wide pointer lock as expected.
+private struct MouseMonitor: UIViewControllerRepresentable {
+    @ObservedObject var settings: AppSettings
+    let recordingState: RecordingState
+    // For scroll-driven Z stepping (handleScroll below) - the same Scale instance GraphView/
+    // ZSliderView already draw their gridlines from, not a separate copy.
+    let scale: Scale
+
+    final class PointerLockingViewController: UIViewController {
+        var locked = false {
+            didSet {
+                guard locked != oldValue else { return }
+                setNeedsUpdateOfPrefersPointerLocked()
+            }
+        }
+        override var prefersPointerLocked: Bool { locked }
+    }
+
+    func makeUIViewController(context: Context) -> PointerLockingViewController {
+        let controller = PointerLockingViewController()
+        context.coordinator.viewController = controller
+        context.coordinator.install()
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: PointerLockingViewController, context: Context) {
+        context.coordinator.settings = settings
+        // scale is rebuilt (a new value, not mutated in place) whenever settings.selectedLimit
+        // changes - GraphScaleState.rebuild(for:) - so this has to be re-pushed here on every
+        // update the same way settings is, or a mid-session limit change would leave scroll-
+        // stepping working off a stale scale.
+        context.coordinator.scale = scale
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(settings: settings, recordingState: recordingState, scale: scale)
+    }
+
+    final class Coordinator {
+        var settings: AppSettings {
+            didSet { dispatcher.settings = settings }
+        }
+        var scale: Scale
+        private let dispatcher: KeyActionDispatcher
+        private var connectObserver: Any?
+        private var disconnectObserver: Any?
+        weak var viewController: PointerLockingViewController?
+
+        // Cents of Z movement per raw GCMouse delta unit - a starting guess, not a measured
+        // value. GCMouse's own deltas scale with the system's pointer-speed setting, which
+        // this can't query, so the right constant can only really be picked by feel once a
+        // real mouse is actually being used this way - expect to need to tune this.
+        private let zCentsPerDelta = 4.0
+
+        // Norm's concern (2026-09-04, before any live test): pressing a physical mouse button
+        // tends to jostle the mouse itself very slightly - felt only as an ignorable stray
+        // pixel or two normally, but here it would land straight in Z and detune a note at the
+        // exact instant Pedal/Portamento engages. Rather than ignore movement for the whole
+        // time a button is held (which would defeat the actually-wanted case of dragging Z
+        // while Pedal holds a note), only movement arriving in the brief instant right at a
+        // button transition is discarded - a deliberate drag a moment later still goes through
+        // untouched. 60ms is a guess at "longer than a click's mechanical settle, shorter than
+        // any real intentional movement"; tune alongside zCentsPerDelta once tested live.
+        private let jostleSuppressionWindow: TimeInterval = 0.06
+        private var jostleSuppressedUntil = Date.distantPast
+
+        private func suppressJostle() {
+            jostleSuppressedUntil = Date().addingTimeInterval(jostleSuppressionWindow)
+        }
+
+        init(settings: AppSettings, recordingState: RecordingState, scale: Scale) {
+            self.settings = settings
+            self.scale = scale
+            self.dispatcher = KeyActionDispatcher(settings: settings, recordingState: recordingState)
+        }
+
+        func install() {
+            attach(GCMouse.current)
+            // Same reasoning as KeyboardMonitor's own connect-notification fallback -
+            // GCMouse.current can plausibly read nil even with a mouse already attached, this
+            // session, too early in the view's lifecycle.
+            connectObserver = NotificationCenter.default.addObserver(forName: .GCMouseDidConnect, object: nil, queue: .main) { [weak self] notification in
+                self?.attach(notification.object as? GCMouse)
+            }
+            disconnectObserver = NotificationCenter.default.addObserver(forName: .GCMouseDidDisconnect, object: nil, queue: .main) { [weak self] _ in
+                self?.viewController?.locked = false
+            }
+        }
+
+        private func attach(_ mouse: GCMouse?) {
+            guard let input = mouse?.mouseInput else { return }
+            viewController?.locked = true
+
+            input.leftButton.pressedChangedHandler = { [weak self] _, _, pressed in
+                self?.suppressJostle()
+                self?.dispatcher.handlePhysicalInput(token: "mouseLeft", pressed: pressed)
+            }
+            input.rightButton?.pressedChangedHandler = { [weak self] _, _, pressed in
+                self?.suppressJostle()
+                self?.dispatcher.handlePhysicalInput(token: "mouseRight", pressed: pressed)
+            }
+            input.middleButton?.pressedChangedHandler = { [weak self] _, _, pressed in
+                self?.suppressJostle()
+                self?.dispatcher.handlePhysicalInput(token: "mouseMiddle", pressed: pressed)
+            }
+            input.mouseMovedHandler = { [weak self] _, _, deltaY in
+                self?.handleMove(deltaY: deltaY)
+            }
+            // Second, independent Z path for the same test session (Norm, 2026-09-05): a
+            // mechanical wheel reports one discrete, fairly large step per detent-click (no
+            // sub-notch data at all - unlike raw pointer movement, which is effectively
+            // continuous), while the Magic Mouse's touch-sensitive scroll ball and a trackpad's
+            // two-finger scroll are NOT detented and behave more like continuous movement.
+            // Which of those two feels this delivers can't be known without the actual hardware
+            // in hand, so this is wired up as its own tunable path (zCentsPerScrollTick,
+            // separate from drag's zCentsPerDelta) rather than assumed to behave like drag.
+            // Live alongside handleMove rather than replacing it, so both can be A/B'd freely -
+            // whichever wins can have the other's binding removed later.
+            input.scroll.valueChangedHandler = { [weak self] _, _, deltaY in
+                self?.handleScroll(deltaY: deltaY)
+            }
+        }
+
+        // Mirrors ZSliderView's own bottom-up convention (screenLocation increases upward
+        // there too) - a positive deltaY here is meant to raise pitch. Unverified without a
+        // real mouse in hand; flip the sign below if it feels backwards live.
+        private func handleMove(deltaY: Float) {
+            guard Date() >= jostleSuppressedUntil else { return }
+            applyZCents(Double(deltaY) * zCentsPerDelta)
+        }
+
+        // One detent = one scale step (Norm, 2026-09-05) - rather than guess a cents-per-tick
+        // constant (the earlier approach, and still what handleMove above does for drag), each
+        // scroll event just moves Z to the next/previous element of the actual scale, same
+        // ScaleElement list ZSliderView draws its gridlines/diamonds from. This sidesteps needing
+        // to know a wheel's per-click delta magnitude at all - only its sign matters - and it's
+        // musically exact by construction (always lands precisely on a real scale degree) rather
+        // than an approximation that happens to be close. Note this is still built on the
+        // assumption that one scroll callback == one physical notch, true for a mechanical wheel
+        // but very likely NOT true for a non-detented continuous surface (Magic Mouse ball,
+        // trackpad two-finger scroll), which fires many small callbacks per finger-length of
+        // motion - expect that combination to zip through many scale steps almost instantly, and
+        // to need an accumulate-then-step threshold added here if that's how it actually feels.
+        private func handleScroll(deltaY: Float) {
+            guard Date() >= jostleSuppressedUntil else { return }
+            if deltaY > 0 {
+                stepZ(by: 1)
+            } else if deltaY < 0 {
+                stepZ(by: -1)
+            }
+        }
+
+        private func stepZ(by direction: Int) {
+            guard !scale.scale.isEmpty else { return }
+            let currentNormalized = log2(settings.zFrequency / settings.rootFrequency)
+            // scale.scale is kept sorted ascending by valueNormalized (see Scale.init in
+            // GBGCore), so the closest element by absolute distance is genuinely the nearest
+            // scale degree to wherever Z currently sits, whether or not it's currently sitting
+            // exactly on one (e.g. right after a drag-driven move).
+            var currentIndex = 0
+            var closestDistance = Double.greatestFiniteMagnitude
+            for (index, element) in scale.scale.enumerated() {
+                let distance = abs(element.valueNormalized - currentNormalized)
+                if distance < closestDistance {
+                    closestDistance = distance
+                    currentIndex = index
+                }
+            }
+            let newIndex = min(max(currentIndex + direction, 0), scale.scale.count - 1)
+            let newFrequency = settings.rootFrequency * pow(2, scale.scale[newIndex].valueNormalized)
+            guard newFrequency != settings.zFrequency else { return }
+            settings.zFrequency = newFrequency
+            sound.setZPitch(frequency: newFrequency)
+        }
+
+        private func applyZCents(_ cents: Double) {
+            var normalized = log2(settings.zFrequency / settings.rootFrequency) + cents / 1200
+            normalized = min(max(normalized, settings.lowestRatioNormalized), settings.highestRatioNormalized)
+            let newFrequency = settings.rootFrequency * pow(2, normalized)
+            guard newFrequency != settings.zFrequency else { return }
+            settings.zFrequency = newFrequency
+            sound.setZPitch(frequency: newFrequency)
+        }
+
+        deinit {
+            if let connectObserver { NotificationCenter.default.removeObserver(connectObserver) }
+            if let disconnectObserver { NotificationCenter.default.removeObserver(disconnectObserver) }
+        }
     }
 }
 #endif

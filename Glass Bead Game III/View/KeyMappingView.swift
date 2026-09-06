@@ -10,6 +10,7 @@
 //
 
 import SwiftUI
+import GBGCore
 #if os(macOS)
 import AppKit
 #endif

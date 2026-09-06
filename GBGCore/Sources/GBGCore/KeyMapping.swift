@@ -1,21 +1,29 @@
 //
 //  KeyMapping.swift
-//  Glass Bead Game III
+//  GBGCore
 //
-//  User-remappable bindings for the four keyboard-controllable actions (Drone/Portamento
-//  toggle/Portamento hold/Pedal hold) - see KeyCommandMonitor in ContentView.swift, which reads
-//  this instead of the hardcoded key checks it used to have. Persisted via UserDefaults (unlike
-//  the rest of AppSettings, which is deliberately in-memory-only and resets every launch - a
-//  performer's own keyboard remap is a real, deliberate customization worth keeping, not an
-//  ephemeral session toggle like Drone/Pedal/Portamento themselves).
+//  User-remappable bindings for the keyboard-controllable actions (Drone/Portamento toggle/
+//  Portamento hold/Pedal hold/Record/Save) - see KeyCommandMonitor/KeyboardMonitor/MouseMonitor
+//  in the app target's ContentView.swift, which read this instead of hardcoded key checks.
+//  Persisted via UserDefaults (unlike the rest of AppSettings, which is deliberately
+//  in-memory-only and resets every launch - a performer's own keyboard remap is a real,
+//  deliberate customization worth keeping, not an ephemeral session toggle like Drone/Pedal/
+//  Portamento themselves).
+//
+//  Lives in GBGCore (moved from the app target 2026-09-05) rather than the app itself so it -
+//  and KeyActionDispatcher.swift alongside it - can be exercised by GBGCoreTests via a plain
+//  `swift test`, without needing a live keyboard/mouse/pencil or a UI test target at all. Norm:
+//  "add automated test harnesses... to confirm we don't lose functionality moving forward."
+//  This file has zero dependency on the app's AppSettings/RecordingState classes to begin with,
+//  so it moved over unchanged apart from `public` visibility.
 //
 
 import Foundation
 
-enum KeyAction: String, CaseIterable, Codable {
+public enum KeyAction: String, CaseIterable, Codable {
     case drone, portamentoToggle, portamentoMomentary, pedal, recordToggle, save
 
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .drone: return "Drone"
         case .portamentoToggle: return "Portamento (toggle)"
@@ -28,7 +36,7 @@ enum KeyAction: String, CaseIterable, Codable {
 
     // Momentary actions care about release (settings flips back on keyUp/modifier-released);
     // toggle actions fire once per press and never care about release at all.
-    var isMomentary: Bool {
+    public var isMomentary: Bool {
         self == .portamentoMomentary || self == .pedal
     }
 }
@@ -36,44 +44,61 @@ enum KeyAction: String, CaseIterable, Codable {
 // Plain String tokens rather than a wrapper enum - a regular character key is its own single-
 // character lowercase token ("f", " " for space); the four modifier keys use their full name
 // ("shift"/"option"/"control"/"command") instead, which can never collide with a single-
-// character token, so nothing else is needed to tell the two kinds apart.
-typealias KeyToken = String
-let modifierKeyTokens: Set<KeyToken> = ["shift", "option", "control", "command"]
+// character token, so nothing else is needed to tell the two kinds apart. Mouse button tokens
+// follow the same convention - multi-character names that can't collide with a single letter.
+// "mouseLeft"/"mouseMiddle" are iOS-only (see MouseMonitor in ContentView.swift - macOS's mouse
+// is already spoken for by HitTestView's graph drag). "mouseRight" is the one exception: it's
+// unused by graph drag on either platform, so it's live on both - MouseMonitor on iOS,
+// KeyCommandMonitor's right-mouse-button case on macOS.
+public typealias KeyToken = String
+public let modifierKeyTokens: Set<KeyToken> = ["shift", "option", "control", "command"]
+public let mouseButtonTokens: Set<KeyToken> = ["mouseLeft", "mouseRight", "mouseMiddle"]
 
-func displayLabel(forKeyToken token: KeyToken) -> String {
+public func displayLabel(forKeyToken token: KeyToken) -> String {
     switch token {
     case " ": return "Space"
     case "shift": return "Shift"
     case "option": return "Option"
     case "control": return "Control"
     case "command": return "Command"
+    case "mouseLeft": return "Mouse Left"
+    case "mouseRight": return "Mouse Right"
+    case "mouseMiddle": return "Mouse Middle"
     default: return token.uppercased()
     }
 }
 
-struct KeyMapping: Codable, Equatable {
+public struct KeyMapping: Codable, Equatable {
     // KeyAction.rawValue -> the set of tokens bound to it. A dictionary keyed by the enum
     // itself would also work, but String keys keep the persisted JSON legible if anyone ever
     // has to look at defaults(1) output while debugging.
-    var bindings: [String: Set<KeyToken>]
+    public var bindings: [String: Set<KeyToken>]
 
-    static let defaultMapping = KeyMapping(bindings: [
+    public init(bindings: [String: Set<KeyToken>]) {
+        self.bindings = bindings
+    }
+
+    // mouseLeft/mouseRight defaults are here specifically for Norm's back-of-case mouse
+    // controller idea (squeeze doesn't fire reliably while the pencil is touching the graph -
+    // see the memory notes) - immediately testable without a trip to Keyboard Mapping first,
+    // same reasoning as every other default here.
+    public static let defaultMapping = KeyMapping(bindings: [
         KeyAction.drone.rawValue: ["d", "k"],
         KeyAction.portamentoToggle.rawValue: ["g", "h"],
-        KeyAction.portamentoMomentary.rawValue: ["shift"],
-        KeyAction.pedal.rawValue: [" ", "f", "j"],
+        KeyAction.portamentoMomentary.rawValue: ["shift", "mouseRight"],
+        KeyAction.pedal.rawValue: [" ", "f", "j", "mouseLeft"],
         KeyAction.recordToggle.rawValue: ["r"],
         KeyAction.save.rawValue: ["s"],
     ])
 
-    func tokens(for action: KeyAction) -> Set<KeyToken> {
+    public func tokens(for action: KeyAction) -> Set<KeyToken> {
         bindings[action.rawValue] ?? []
     }
 
     // Which action (if any) currently owns this token - the live key monitor's own lookup, and
     // also what the remap UI uses to find (and evict) wherever a token used to live before
     // binding it somewhere new.
-    func action(for token: KeyToken) -> KeyAction? {
+    public func action(for token: KeyToken) -> KeyAction? {
         for action in KeyAction.allCases where bindings[action.rawValue]?.contains(token) == true {
             return action
         }
@@ -83,14 +108,14 @@ struct KeyMapping: Codable, Equatable {
     // Moves `token` to `action`, removing it from whatever action (if any) already had it -
     // a token can only ever mean one thing at a time, so rebinding it is always a move, never
     // an additional simultaneous binding.
-    mutating func bind(_ token: KeyToken, to action: KeyAction) {
+    public mutating func bind(_ token: KeyToken, to action: KeyAction) {
         for key in bindings.keys {
             bindings[key]?.remove(token)
         }
         bindings[action.rawValue, default: []].insert(token)
     }
 
-    mutating func unbind(_ token: KeyToken, from action: KeyAction) {
+    public mutating func unbind(_ token: KeyToken, from action: KeyAction) {
         bindings[action.rawValue]?.remove(token)
     }
 }
@@ -98,7 +123,7 @@ struct KeyMapping: Codable, Equatable {
 extension KeyMapping {
     private static let userDefaultsKey = "GlassBeadGameIII.keyMapping"
 
-    static func loadFromDefaults() -> KeyMapping {
+    public static func loadFromDefaults() -> KeyMapping {
         guard let data = UserDefaults.standard.data(forKey: userDefaultsKey),
               let decoded = try? JSONDecoder().decode(KeyMapping.self, from: data) else {
             return .defaultMapping
@@ -125,7 +150,7 @@ extension KeyMapping {
         return merged
     }
 
-    func saveToDefaults() {
+    public func saveToDefaults() {
         guard let data = try? JSONEncoder().encode(self) else { return }
         UserDefaults.standard.set(data, forKey: Self.userDefaultsKey)
     }

@@ -7,10 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		6CD18EB7875F4D6D83FA672A /* GBGCore in Frameworks */ = {isa = PBXBuildFile; productRef = 04B162C5595040048C6852EF /* GBGCore */; };
-		C3D4E5F60718293A4B5C6D7E /* GBGSound in Frameworks */ = {isa = PBXBuildFile; productRef = B2C3D4E5F60718293A4B5C6D /* GBGSound */; };
-		4D9981F43229467D80A3D2BF /* PitchHitTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A8E917E593A42A893FBEA9C /* PitchHitTest.swift */; };
-		A38475822A7D41D583CA3B43 /* ZSliderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 792C3694A73A41E196B16CA2 /* ZSliderView.swift */; };
 		0634BD102B8A8912001E3644 /* TickView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0634BD0F2B8A8912001E3644 /* TickView.swift */; };
 		06824BDE2B881E3C002E9661 /* Glass_Bead_Game_IIIApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BDD2B881E3C002E9661 /* Glass_Bead_Game_IIIApp.swift */; };
 		06824BE22B881E3D002E9661 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 06824BE12B881E3D002E9661 /* Assets.xcassets */; };
@@ -19,37 +15,39 @@
 		06824BFD2B886963002E9661 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF62B886962002E9661 /* ContentView.swift */; };
 		06824BFE2B886963002E9661 /* HitTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF72B886962002E9661 /* HitTestView.swift */; };
 		06824C012B886963002E9661 /* GraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BFA2B886963002E9661 /* GraphView.swift */; };
-		4F2A84F6F62AC5B7BE29C791 /* GraphSquareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E903D696C4E843EF518EE59 /* GraphSquareView.swift */; };
-		57C87FAE324C4F7CB281F922 /* AudienceGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11652339D95D45C69024E258 /* AudienceGraphView.swift */; };
-		29ADA6F73A6E4745AE863E3C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F2C24BD93574824A1F71E47 /* AppDelegate.swift */; };
-		751E2CD4B179416AA331E175 /* ExternalDisplaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3254C2ACD7B49B292C8D1F9 /* ExternalDisplaySceneDelegate.swift */; };
 		06824C022B886963002E9661 /* ControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BFB2B886963002E9661 /* ControlView.swift */; };
 		06D0626C2BAA9A9000C68262 /* ControlData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062682BAA9A9000C68262 /* ControlData.swift */; };
-		317B1BA8A34162AA9B38DE5C /* GraphScaleState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DDCC95CF1A81170C4DE41F /* GraphScaleState.swift */; };
-		CA9DFB93682D7900B1F2C29C /* RecordingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBCBBD744B6C27D6A0A04EC /* RecordingState.swift */; };
-		0F37A5CF92CA650B1D6E4E38 /* KeyMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70FAC6DCA6094545F1B5FFF3 /* KeyMapping.swift */; };
-		55B90A60C8BB801656E8503C /* KeyActionDispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 749E855D9A9BC73A4907BF54 /* KeyActionDispatcher.swift */; };
-		8948E67C5DBAEC3899D80AE1 /* KeyMappingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778271CF9DA6CEB34CCEC947 /* KeyMappingView.swift */; };
 		06D062702BAA9C4E00C68262 /* Sound.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D0626F2BAA9C4E00C68262 /* Sound.swift */; };
-		EE645A5026D54B47871B55B4 /* ScoreCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290A597C9AA1404D82BB59FA /* ScoreCapture.swift */; };
-		8CFA26E61CFF41F3AE63BE38 /* TetradView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6DF75EF1C024FBCA782C7AE /* TetradView.swift */; };
-		F4CDD0102BD145C7BD92A70B /* SeqApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F35D5C9D9E84298AE75468E /* SeqApp.swift */; };
 		11280A0FE44E4B508045F64C /* SeqSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 796BD56083BA49C1BA9CCD93 /* SeqSettings.swift */; };
-		8878126A0E2B457A823BFDAD /* SequencerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA574CC535E9488087FE433B /* SequencerState.swift */; };
-		DF063A4191F1A5726E2F314B /* LiveCaptureState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09830CF05D1A4289498E8A7B /* LiveCaptureState.swift */; };
 		1BD79A4C38D54541987EBE6C /* PianoRollCoordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60EBDB420A6441FD86D347C5 /* PianoRollCoordinates.swift */; };
-		B5350927B1EA469B8572FCAC /* PianoRollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F5DEAD64F3749BC96777619 /* PianoRollView.swift */; };
-		F360FFA894604821B07976E7 /* RootIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04CFF1117DA340028AAA74C8 /* RootIndicatorView.swift */; };
-		993C55E39EE9405B91FC52E1 /* TransportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 034D090B4A594A8DB3E796B9 /* TransportView.swift */; };
-		C9DDCB90C8F2408F86C84FAB /* SequencerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FC5B11E74EC4FFC823642D9 /* SequencerView.swift */; };
-		FE88F8752F854C75871D6C00 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F71E89B896DE4710A56E4B62 /* Assets.xcassets */; };
+		29ADA6F73A6E4745AE863E3C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F2C24BD93574824A1F71E47 /* AppDelegate.swift */; };
+		317B1BA8A34162AA9B38DE5C /* GraphScaleState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DDCC95CF1A81170C4DE41F /* GraphScaleState.swift */; };
+		4D9981F43229467D80A3D2BF /* PitchHitTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A8E917E593A42A893FBEA9C /* PitchHitTest.swift */; };
+		4F2A84F6F62AC5B7BE29C791 /* GraphSquareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E903D696C4E843EF518EE59 /* GraphSquareView.swift */; };
+		57C87FAE324C4F7CB281F922 /* AudienceGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11652339D95D45C69024E258 /* AudienceGraphView.swift */; };
 		647B50C93934404799447CE2 /* GBGCore in Frameworks */ = {isa = PBXBuildFile; productRef = 04B162C5595040048C6852EF /* GBGCore */; };
+		6CD18EB7875F4D6D83FA672A /* GBGCore in Frameworks */ = {isa = PBXBuildFile; productRef = 04B162C5595040048C6852EF /* GBGCore */; };
+		751E2CD4B179416AA331E175 /* ExternalDisplaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3254C2ACD7B49B292C8D1F9 /* ExternalDisplaySceneDelegate.swift */; };
+		8878126A0E2B457A823BFDAD /* SequencerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA574CC535E9488087FE433B /* SequencerState.swift */; };
+		8948E67C5DBAEC3899D80AE1 /* KeyMappingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778271CF9DA6CEB34CCEC947 /* KeyMappingView.swift */; };
+		8CFA26E61CFF41F3AE63BE38 /* TetradView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6DF75EF1C024FBCA782C7AE /* TetradView.swift */; };
+		993C55E39EE9405B91FC52E1 /* TransportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 034D090B4A594A8DB3E796B9 /* TransportView.swift */; };
+		A38475822A7D41D583CA3B43 /* ZSliderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 792C3694A73A41E196B16CA2 /* ZSliderView.swift */; };
+		B5350927B1EA469B8572FCAC /* PianoRollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F5DEAD64F3749BC96777619 /* PianoRollView.swift */; };
+		C3D4E5F60718293A4B5C6D7E /* GBGSound in Frameworks */ = {isa = PBXBuildFile; productRef = B2C3D4E5F60718293A4B5C6D /* GBGSound */; };
+		C9DDCB90C8F2408F86C84FAB /* SequencerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FC5B11E74EC4FFC823642D9 /* SequencerView.swift */; };
+		CA9DFB93682D7900B1F2C29C /* RecordingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBCBBD744B6C27D6A0A04EC /* RecordingState.swift */; };
+		DF063A4191F1A5726E2F314B /* LiveCaptureState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09830CF05D1A4289498E8A7B /* LiveCaptureState.swift */; };
 		E434633F43BE43C28F278AE5 /* GBGSound in Frameworks */ = {isa = PBXBuildFile; productRef = B2C3D4E5F60718293A4B5C6D /* GBGSound */; };
+		EE645A5026D54B47871B55B4 /* ScoreCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290A597C9AA1404D82BB59FA /* ScoreCapture.swift */; };
+		F360FFA894604821B07976E7 /* RootIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04CFF1117DA340028AAA74C8 /* RootIndicatorView.swift */; };
+		F4CDD0102BD145C7BD92A70B /* SeqApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F35D5C9D9E84298AE75468E /* SeqApp.swift */; };
+		FE88F8752F854C75871D6C00 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F71E89B896DE4710A56E4B62 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		4A8E917E593A42A893FBEA9C /* PitchHitTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PitchHitTest.swift; sourceTree = "<group>"; };
-		792C3694A73A41E196B16CA2 /* ZSliderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZSliderView.swift; sourceTree = "<group>"; };
+		034D090B4A594A8DB3E796B9 /* TransportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransportView.swift; sourceTree = "<group>"; };
+		04CFF1117DA340028AAA74C8 /* RootIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootIndicatorView.swift; sourceTree = "<group>"; };
 		0634BD0F2B8A8912001E3644 /* TickView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TickView.swift; sourceTree = "<group>"; };
 		06824BDA2B881E3C002E9661 /* Glass Bead Game III.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Glass Bead Game III.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		06824BDD2B881E3C002E9661 /* Glass_Bead_Game_IIIApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Glass_Bead_Game_IIIApp.swift; sourceTree = "<group>"; };
@@ -60,32 +58,30 @@
 		06824BF62B886962002E9661 /* ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		06824BF72B886962002E9661 /* HitTestView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HitTestView.swift; sourceTree = "<group>"; };
 		06824BFA2B886963002E9661 /* GraphView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GraphView.swift; sourceTree = "<group>"; };
-		7E903D696C4E843EF518EE59 /* GraphSquareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphSquareView.swift; sourceTree = "<group>"; };
-		11652339D95D45C69024E258 /* AudienceGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudienceGraphView.swift; sourceTree = "<group>"; };
-		4F2C24BD93574824A1F71E47 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		A3254C2ACD7B49B292C8D1F9 /* ExternalDisplaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalDisplaySceneDelegate.swift; sourceTree = "<group>"; };
 		06824BFB2B886963002E9661 /* ControlView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControlView.swift; sourceTree = "<group>"; };
 		06D062312BAA953300C68262 /* Overview.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Overview.md; sourceTree = "<group>"; };
-		290A597C9AA1404D82BB59FA /* ScoreCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreCapture.swift; sourceTree = "<group>"; };
 		06D062682BAA9A9000C68262 /* ControlData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControlData.swift; sourceTree = "<group>"; };
-		E5DDCC95CF1A81170C4DE41F /* GraphScaleState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphScaleState.swift; sourceTree = "<group>"; };
-		6FBCBBD744B6C27D6A0A04EC /* RecordingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingState.swift; sourceTree = "<group>"; };
-		70FAC6DCA6094545F1B5FFF3 /* KeyMapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyMapping.swift; sourceTree = "<group>"; };
-		749E855D9A9BC73A4907BF54 /* KeyActionDispatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyActionDispatcher.swift; sourceTree = "<group>"; };
-		778271CF9DA6CEB34CCEC947 /* KeyMappingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyMappingView.swift; sourceTree = "<group>"; };
 		06D0626F2BAA9C4E00C68262 /* Sound.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sound.swift; sourceTree = "<group>"; };
-		D6DF75EF1C024FBCA782C7AE /* TetradView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TetradView.swift; sourceTree = "<group>"; };
+		09830CF05D1A4289498E8A7B /* LiveCaptureState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveCaptureState.swift; sourceTree = "<group>"; };
+		11652339D95D45C69024E258 /* AudienceGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudienceGraphView.swift; sourceTree = "<group>"; };
+		290A597C9AA1404D82BB59FA /* ScoreCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreCapture.swift; sourceTree = "<group>"; };
+		2C54886396D84BE08EF97D59 /* Seq.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Seq.entitlements; sourceTree = "<group>"; };
+		4A8E917E593A42A893FBEA9C /* PitchHitTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PitchHitTest.swift; sourceTree = "<group>"; };
+		4F2C24BD93574824A1F71E47 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		4FC5B11E74EC4FFC823642D9 /* SequencerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequencerView.swift; sourceTree = "<group>"; };
+		60EBDB420A6441FD86D347C5 /* PianoRollCoordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PianoRollCoordinates.swift; sourceTree = "<group>"; };
+		6FBCBBD744B6C27D6A0A04EC /* RecordingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingState.swift; sourceTree = "<group>"; };
+		778271CF9DA6CEB34CCEC947 /* KeyMappingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyMappingView.swift; sourceTree = "<group>"; };
+		792C3694A73A41E196B16CA2 /* ZSliderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZSliderView.swift; sourceTree = "<group>"; };
+		796BD56083BA49C1BA9CCD93 /* SeqSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeqSettings.swift; sourceTree = "<group>"; };
+		7E903D696C4E843EF518EE59 /* GraphSquareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphSquareView.swift; sourceTree = "<group>"; };
+		8F5DEAD64F3749BC96777619 /* PianoRollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PianoRollView.swift; sourceTree = "<group>"; };
 		969C76870C734BBD95B79A2E /* Seq.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Seq.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9F35D5C9D9E84298AE75468E /* SeqApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeqApp.swift; sourceTree = "<group>"; };
-		2C54886396D84BE08EF97D59 /* Seq.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Seq.entitlements; sourceTree = "<group>"; };
-		796BD56083BA49C1BA9CCD93 /* SeqSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeqSettings.swift; sourceTree = "<group>"; };
+		A3254C2ACD7B49B292C8D1F9 /* ExternalDisplaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalDisplaySceneDelegate.swift; sourceTree = "<group>"; };
 		CA574CC535E9488087FE433B /* SequencerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequencerState.swift; sourceTree = "<group>"; };
-		09830CF05D1A4289498E8A7B /* LiveCaptureState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveCaptureState.swift; sourceTree = "<group>"; };
-		60EBDB420A6441FD86D347C5 /* PianoRollCoordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PianoRollCoordinates.swift; sourceTree = "<group>"; };
-		8F5DEAD64F3749BC96777619 /* PianoRollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PianoRollView.swift; sourceTree = "<group>"; };
-		04CFF1117DA340028AAA74C8 /* RootIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootIndicatorView.swift; sourceTree = "<group>"; };
-		034D090B4A594A8DB3E796B9 /* TransportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransportView.swift; sourceTree = "<group>"; };
-		4FC5B11E74EC4FFC823642D9 /* SequencerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequencerView.swift; sourceTree = "<group>"; };
+		D6DF75EF1C024FBCA782C7AE /* TetradView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TetradView.swift; sourceTree = "<group>"; };
+		E5DDCC95CF1A81170C4DE41F /* GraphScaleState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphScaleState.swift; sourceTree = "<group>"; };
 		F71E89B896DE4710A56E4B62 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -128,24 +124,6 @@
 			);
 			name = Products;
 			sourceTree = "<group>";
-		};
-		78F7DB73E76342149400A5AC /* Seq */ = {
-			isa = PBXGroup;
-			children = (
-				9F35D5C9D9E84298AE75468E /* SeqApp.swift */,
-				796BD56083BA49C1BA9CCD93 /* SeqSettings.swift */,
-				CA574CC535E9488087FE433B /* SequencerState.swift */,
-				09830CF05D1A4289498E8A7B /* LiveCaptureState.swift */,
-				60EBDB420A6441FD86D347C5 /* PianoRollCoordinates.swift */,
-				8F5DEAD64F3749BC96777619 /* PianoRollView.swift */,
-				04CFF1117DA340028AAA74C8 /* RootIndicatorView.swift */,
-				034D090B4A594A8DB3E796B9 /* TransportView.swift */,
-				4FC5B11E74EC4FFC823642D9 /* SequencerView.swift */,
-				F71E89B896DE4710A56E4B62 /* Assets.xcassets */,
-				2C54886396D84BE08EF97D59 /* Seq.entitlements */,
-			);
-			path = Seq;
-			sourceTree = SOURCE_ROOT;
 		};
 		06824BDC2B881E3C002E9661 /* Glass Bead Game III */ = {
 			isa = PBXGroup;
@@ -218,6 +196,16 @@
 			path = Score;
 			sourceTree = "<group>";
 		};
+		06D0626B2BAA9A9000C68262 /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				06D062682BAA9A9000C68262 /* ControlData.swift */,
+				E5DDCC95CF1A81170C4DE41F /* GraphScaleState.swift */,
+				6FBCBBD744B6C27D6A0A04EC /* RecordingState.swift */,
+			);
+			path = Data;
+			sourceTree = "<group>";
+		};
 		3302985D5FA047DEBA414D14 /* App */ = {
 			isa = PBXGroup;
 			children = (
@@ -227,41 +215,25 @@
 			path = App;
 			sourceTree = "<group>";
 		};
-		06D0626B2BAA9A9000C68262 /* Data */ = {
+		78F7DB73E76342149400A5AC /* Seq */ = {
 			isa = PBXGroup;
 			children = (
-				06D062682BAA9A9000C68262 /* ControlData.swift */,
-				E5DDCC95CF1A81170C4DE41F /* GraphScaleState.swift */,
-				6FBCBBD744B6C27D6A0A04EC /* RecordingState.swift */,
-				70FAC6DCA6094545F1B5FFF3 /* KeyMapping.swift */,
-				749E855D9A9BC73A4907BF54 /* KeyActionDispatcher.swift */,
+				9F35D5C9D9E84298AE75468E /* SeqApp.swift */,
+				796BD56083BA49C1BA9CCD93 /* SeqSettings.swift */,
+				CA574CC535E9488087FE433B /* SequencerState.swift */,
+				09830CF05D1A4289498E8A7B /* LiveCaptureState.swift */,
+				60EBDB420A6441FD86D347C5 /* PianoRollCoordinates.swift */,
+				8F5DEAD64F3749BC96777619 /* PianoRollView.swift */,
+				04CFF1117DA340028AAA74C8 /* RootIndicatorView.swift */,
+				034D090B4A594A8DB3E796B9 /* TransportView.swift */,
+				4FC5B11E74EC4FFC823642D9 /* SequencerView.swift */,
+				F71E89B896DE4710A56E4B62 /* Assets.xcassets */,
+				2C54886396D84BE08EF97D59 /* Seq.entitlements */,
 			);
-			path = Data;
-			sourceTree = "<group>";
+			path = Seq;
+			sourceTree = SOURCE_ROOT;
 		};
 /* End PBXGroup section */
-
-/* Begin XCLocalSwiftPackageReference section */
-		10D44CB7B2FC4126835AF8A6 /* XCLocalSwiftPackageReference "GBGCore" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = GBGCore;
-		};
-		A1B2C3D4E5F60718293A4B5C /* XCLocalSwiftPackageReference "GBGSound" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = GBGSound;
-		};
-/* End XCLocalSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		04B162C5595040048C6852EF /* GBGCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = GBGCore;
-		};
-		B2C3D4E5F60718293A4B5C6D /* GBGSound */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = GBGSound;
-		};
-/* End XCSwiftPackageProductDependency section */
 
 /* Begin PBXNativeTarget section */
 		06824BD92B881E3C002E9661 /* Glass Bead Game III */ = {
@@ -391,8 +363,6 @@
 				A38475822A7D41D583CA3B43 /* ZSliderView.swift in Sources */,
 				8CFA26E61CFF41F3AE63BE38 /* TetradView.swift in Sources */,
 				EE645A5026D54B47871B55B4 /* ScoreCapture.swift in Sources */,
-				0F37A5CF92CA650B1D6E4E38 /* KeyMapping.swift in Sources */,
-				55B90A60C8BB801656E8503C /* KeyActionDispatcher.swift in Sources */,
 				8948E67C5DBAEC3899D80AE1 /* KeyMappingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -416,6 +386,48 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		04D4CBC7CA1B4858B1C1D881 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Seq/Seq.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 342G7AUKSH;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Used to receive MIDI over a USB-connected iPad via Inter-Device Audio & MIDI (IDAM). No audio is recorded.";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.sohl.norm.Glass-Bead-Game-III-Seq";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
 		06824BE72B881E3D002E9661 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -624,7 +636,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = "Seq/Seq.entitlements";
+				CODE_SIGN_ENTITLEMENTS = Seq/Seq.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -662,48 +674,6 @@
 			};
 			name = Debug;
 		};
-		04D4CBC7CA1B4858B1C1D881 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = "Seq/Seq.entitlements";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 342G7AUKSH;
-				ENABLE_HARDENED_RUNTIME = YES;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Used to receive MIDI over a USB-connected iPad via Inter-Device Audio & MIDI (IDAM). No audio is recorded.";
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
-				INFOPLIST_KEY_UIRequiresFullScreen = YES;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
-				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 14.2;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.sohl.norm.Glass-Bead-Game-III-Seq";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
-				SUPPORTS_MACCATALYST = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 2;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -735,6 +705,28 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		10D44CB7B2FC4126835AF8A6 /* XCLocalSwiftPackageReference "GBGCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = GBGCore;
+		};
+		A1B2C3D4E5F60718293A4B5C /* XCLocalSwiftPackageReference "GBGSound" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = GBGSound;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		04B162C5595040048C6852EF /* GBGCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = GBGCore;
+		};
+		B2C3D4E5F60718293A4B5C6D /* GBGSound */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = GBGSound;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 06824BD22B881E3C002E9661 /* Project object */;
 }

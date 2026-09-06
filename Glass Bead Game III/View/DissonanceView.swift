@@ -41,10 +41,44 @@ import SwiftUI
 import GBGCore
 import CoreGraphics
 
-struct DissonanceView: View {
+// Equatable (see the .equatable() call site in GraphView.swift) so pressing an unrelated
+// button elsewhere in the app - Drone, Pedal, Record, anything that mutates AppSettings but
+// has nothing to do with dissonance - doesn't re-run this View's body at all. Before this,
+// DissonanceView held @ObservedObject var settings: AppSettings directly, so EVERY published
+// change to that single shared object re-invoked this body (SwiftUI invalidates every
+// observer of an ObservableObject on any @Published mutation, not just the fields a given
+// view actually reads) - harmless in the end since the CacheKey check inside already skipped
+// the real recompute, but real wasted work all the same: rebuilding CacheKey, Canvas layout,
+// etc., on every keystroke of the whole app, not just when something dissonance-relevant
+// changed. Norm: "filter this loop to only update when dissonance related values change...
+// might save a lot of cycles." Now takes plain, non-observed values instead - the exact set
+// DissonanceView actually reads - so SwiftUI's own re-render (parent rebuilding this View
+// value) is the only trigger, and .equatable() then skips even that unless one of these
+// fields genuinely differs from last time.
+struct DissonanceView: View, Equatable {
     let scale: Scale
-    @ObservedObject var settings: AppSettings
+    let rootFrequency: Double
+    let zFrequency: Double
+    let zDragActive: Bool
+    let selectedLimit: Limit
     let showDissonance: Bool
+
+    // Manual, not synthesized - Scale itself isn't Equatable (its `scale: [ScaleElement]` array
+    // isn't either), so this compares only what actually determines the roughness field's
+    // shape: exactly the same three fields (limit/highestRatio/lowestRatio) CacheKey below
+    // already uses to decide whether the field itself needs recomputing, plus the render
+    // inputs CacheKey doesn't cover (zDragActive picks the live-vs-refined resolution branch,
+    // showDissonance gates whether this renders at all).
+    static func == (lhs: DissonanceView, rhs: DissonanceView) -> Bool {
+        lhs.rootFrequency == rhs.rootFrequency
+            && lhs.zFrequency == rhs.zFrequency
+            && lhs.zDragActive == rhs.zDragActive
+            && lhs.selectedLimit == rhs.selectedLimit
+            && lhs.showDissonance == rhs.showDissonance
+            && lhs.scale.limit == rhs.scale.limit
+            && lhs.scale.highestRatio == rhs.scale.highestRatio
+            && lhs.scale.lowestRatio == rhs.scale.lowestRatio
+    }
 
     // The grid/image only actually depend on root/Z/limit/weighting/scale-shape/canvas size -
     // none of which change on a plain X/Y touch - but this View now correctly redraws on every
@@ -105,12 +139,12 @@ struct DissonanceView: View {
     var body: some View {
         if showDissonance {
             Canvas { context, size in
-                guard let limit = limitMap[settings.selectedLimit], limit > 0 else { return }
+                guard let limit = limitMap[selectedLimit], limit > 0 else { return }
                 // Dissonance.roughnessGrid accepts an optional Z for its own more general
                 // 2-or-3-voice API, but Z is always live here (ZSliderView is always mounted),
                 // so this is never actually nil.
-                let zFrequency: Double? = settings.zFrequency
-                let isDragging = settings.zDragActive
+                let zFrequencyOptional: Double? = zFrequency
+                let isDragging = zDragActive
                 let canvasWidth = max(1, Int(size.width.rounded()))
                 // Half the per-axis pixel count (Norm: "2x pixel to save time") while a drag
                 // is live, rather than one grid cell per screen pixel - context.draw upscales
@@ -118,8 +152,8 @@ struct DissonanceView: View {
                 let liveResolution = max(1, canvasWidth / 2)
 
                 let key = CacheKey(
-                    rootFrequency: settings.rootFrequency,
-                    zFrequency: zFrequency,
+                    rootFrequency: rootFrequency,
+                    zFrequency: zFrequencyOptional,
                     limit: limit,
                     highestRatio: scale.highestRatio,
                     lowestRatio: scale.lowestRatio,
@@ -144,7 +178,7 @@ struct DissonanceView: View {
                     cache.refinementTask?.cancel()
                     cache.refinementTask = nil
                     guard let built = Self.renderRoughnessImage(
-                        scale: scale, rootFrequency: settings.rootFrequency, zFrequency: zFrequency,
+                        scale: scale, rootFrequency: rootFrequency, zFrequency: zFrequencyOptional,
                         limit: limit, resolution: liveResolution
                     ) else { return }
                     image = built
@@ -161,7 +195,7 @@ struct DissonanceView: View {
                 // this is the only place that case gets picked up).
                 if !isDragging, cache.refinementTask == nil, cache.refinedKey != key {
                     scheduleRefinement(
-                        scale: scale, rootFrequency: settings.rootFrequency, zFrequency: zFrequency,
+                        scale: scale, rootFrequency: rootFrequency, zFrequency: zFrequencyOptional,
                         limit: limit, canvasWidth: canvasWidth, startKey: key
                     )
                 }
@@ -181,10 +215,9 @@ struct DissonanceView: View {
         let steps = [0.7, 0.85, 1.0]
             .map { max(1, Int((Double(canvasWidth) * $0).rounded())) }
 
-        // Capture the ImageCache/RefinementTrigger references themselves, not `self` (the
-        // View struct, which carries a non-Sendable @ObservedObject settings) - Task.detached's
-        // closure must be @Sendable, and these two objects are the only state the refinement
-        // passes touch.
+        // Capture the ImageCache/RefinementTrigger references themselves, not `self` (the View
+        // struct isn't Sendable) - Task.detached's closure must be @Sendable, and these two
+        // objects are the only state the refinement passes touch.
         let cache = cache
         let refinementTrigger = refinementTrigger
         cache.refinementTask = Task.detached(priority: .utility) { [cache, refinementTrigger] in

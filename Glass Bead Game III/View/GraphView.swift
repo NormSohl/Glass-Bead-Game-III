@@ -37,8 +37,19 @@ struct GraphView: View {
                 Ticks(border: settings.border, alignment: .leading, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized)
                     .frame(width: settings.border)
                 ZStack(){
-                    // dissonance field, drawn first so it sits behind the grid/diamonds
-                    DissonanceView(scale: scale, settings: settings, showDissonance: settings.showDissonance)
+                    // dissonance field, drawn first so it sits behind the grid/diamonds -
+                    // .equatable() (see DissonanceView's own header comment) so this doesn't
+                    // re-render on every unrelated AppSettings change elsewhere in the app -
+                    // only on an actual change to the values passed in below.
+                    DissonanceView(
+                        scale: scale,
+                        rootFrequency: settings.rootFrequency,
+                        zFrequency: settings.zFrequency,
+                        zDragActive: settings.zDragActive,
+                        selectedLimit: settings.selectedLimit,
+                        showDissonance: settings.showDissonance
+                    )
+                    .equatable()
                     // graph
                     Graph(scale: scale, tetradLayers: tetradLayers, settings: settings)
                     TetradView(tetradLayers: tetradLayers,

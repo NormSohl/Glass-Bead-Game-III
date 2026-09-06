@@ -291,3 +291,7 @@ final class RecordingState: ObservableObject {
         active = gesture
     }
 }
+
+// Lets GBGCore's KeyActionDispatcher (moved there 2026-09-05, see its own header comment) call
+// these two without knowing anything else about RecordingState.
+extension RecordingState: RecordingActionPerforming {}

@@ -208,6 +208,11 @@ class AppSettings: ObservableObject{
     }
 }
 
+// Lets GBGCore's KeyActionDispatcher (moved there 2026-09-05, see its own header comment) read
+// and write exactly the settings it needs without knowing anything about AppSettings itself -
+// no change to AppSettings above was needed, since it already had every one of these properties.
+extension AppSettings: KeyActionPerforming {}
+
 enum Limit: String, CaseIterable, Identifiable {
     case three, five, seven, nine, eleven, thirteen, seventeen, nineteen
     var id: Self { self }
