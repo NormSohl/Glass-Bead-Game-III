@@ -96,6 +96,16 @@ struct HitTestView: View {
     @State private var isDrag = false
     @State private var isShift = false
     @State private var isSound = false
+    // Tracks raw gesture lifecycle - true from a DragGesture's first onChanged to its onEnded,
+    // always reset in onEnded regardless of pedal state. Deliberately separate from isSound,
+    // which stays true across a pedal hand-off on purpose (see isSound's own onChange(of:
+    // settings.pedal) comment) - that stickiness is exactly why isSound alone can't tell "a
+    // brand-new touch just landed while pedal already held the previous note" apart from "this
+    // is the same still-active touch". Used only to fire a re-strike (retriggerTouch) for the
+    // former case, since beginGraphTouch's own onset detection won't retrigger a voice that
+    // never went silent - confirmed live 2026-09-05 ("does fire on pen down... but does not
+    // fire on pen down when pedal is on").
+    @State private var isTouchDown = false
     
     var body: some View {
         Canvas(){context, size in
@@ -207,15 +217,21 @@ struct HitTestView: View {
                 hoverLocation.y = height - hoverLocation.y
                 isDrag = true
                 isShift = true
-                if isSound == false{
-                    sound.beginGraphTouch(amp: 1)
-                    recordingState.beginGraphTouch()
-                    isSound = true
+                if !isTouchDown {
+                    isTouchDown = true
+                    if isSound == false{
+                        sound.beginGraphTouch(amp: 1)
+                        recordingState.beginGraphTouch()
+                        isSound = true
+                    } else {
+                        sound.retriggerTouch() // pedal already had it sounding - still a fresh strike
+                    }
                 }
             }
             .onEnded { _ in
                 //hoverLocation = .zero  // don't think this is needed.
                 isDrag = false
+                isTouchDown = false
                 // Resting state should reflect the Snapping toggle (matching the "hack" in the
                 // plain gesture's onChanged below), not hardcode snapped=true - hardcoding this
                 // to false used to make the crosshair visibly snap to the nearest diamond for a
@@ -251,16 +267,22 @@ struct HitTestView: View {
                     // tracks live, so a mid-drag Shift release (or press) takes effect
                     // immediately instead of only at the next touch's start.
                     isShift = !settings.snap
-                    if isSound == false{
-                        sound.beginGraphTouch(amp: 1)
-                        recordingState.beginGraphTouch()
-                        isSound = true
+                    if !isTouchDown {
+                        isTouchDown = true
+                        if isSound == false{
+                            sound.beginGraphTouch(amp: 1)
+                            recordingState.beginGraphTouch()
+                            isSound = true
+                        } else {
+                            sound.retriggerTouch() // pedal already had it sounding - still a fresh strike
+                        }
                     }
                     if hitTestTrace {print("HitTestView: DragGesture .onChanged called. isDrag = \(isDrag), isShift = \(isShift), isSound = \(isSound)")}
                 }
                 .onEnded { _ in
                     //hoverLocation = .zero  // this has been causing occasional bad values leaking into drag gestures. Don't think it is actually needed.
                     isDrag = false
+                    isTouchDown = false
                     // See the shift-modifier gesture's own onEnded, just above #endif, for why
                     // this reflects settings.snap rather than hardcoding false.
                     isShift = !settings.snap
@@ -316,5 +338,10 @@ struct HitTestView: View {
         sound.beginGraphTouch(amp: 1)
         recordingState.beginGraphTouch()
         isSound = true
+        isTouchDown = true // the real DragGesture's own onChanged, firing right after this for
+                            // the same click, must see this already true - otherwise it would
+                            // see isSound already true (just set above) and take the "pedal
+                            // already had it sounding" retrigger branch for what's actually the
+                            // same fresh touch this just started, firing a redundant retrigger.
     }
 }

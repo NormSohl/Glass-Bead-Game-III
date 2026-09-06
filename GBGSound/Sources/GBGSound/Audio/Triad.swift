@@ -16,14 +16,31 @@ public class Triad{
     let yAmplitude: Double = 1.15
     let zAmplitude: Double = 1.15
 
-    // Fixed stereo pan position per voice, spread across ~3/4 of the field (-0.75...+0.75),
-    // left to right: Z, X, Y, drone - same spec and channel-role mapping as monk-mpe's own
-    // pan table (see that project's src/mpe_engine.c), kept consistent since both apps read
-    // the same X/Y/Z/root roles out of this graph.
-    private static let rootPan = 0.75  // drone, rightmost
-    private static let xPan = -0.25
-    private static let yPan = 0.25
-    private static let zPan = -0.75    // leftmost
+    // Fixed stereo pan position per voice, spread across the full field (-1...+1), left to
+    // right: Z, X, Y, drone - same channel-role mapping as monk-mpe's own pan table (see that
+    // project's src/mpe_engine.c), but wider than monk-mpe's +/-0.25/+/-0.75 spec: widened here
+    // (root/Z to hard pan, X/Y out to +/-0.4) for more separation on top of the onset stagger
+    // above, confirmed by ear on 2026-09-05 as an improvement. monk-mpe's own table would need
+    // the same change to keep the two apps' pan specs in sync, if that's still wanted.
+    private static let rootPan = 1.0   // drone, hard right
+    private static let xPan = -0.4
+    private static let yPan = 0.4
+    private static let zPan = -1.0     // hard left
+
+    // Small per-voice onset stagger: without this, all four voices reach full amplitude at
+    // exactly the same sample whenever a chord starts, and simultaneous onset is one of the
+    // strongest grouping cues in auditory scene analysis (Bregman) - it fuses separate tones
+    // into one perceived complex sound, overriding even the stereo pan separation above.
+    // Staggering onsets by a few tens of milliseconds breaks that synchrony; kept at or under
+    // the ~30-50ms range where a stagger starts being heard as a rolled/strummed chord rather
+    // than one (less fused) simultaneous attack - 45ms (Z's delay, the largest) is close to that
+    // upper edge by design, confirmed by ear on 2026-09-05 as "better, could be more" at 21ms
+    // before this increase. Values are arbitrary beyond "distinct and increasing" - not tied to
+    // the pan order.
+    private static let rootOnsetDelaySeconds = 0.0
+    private static let xOnsetDelaySeconds = 0.015
+    private static let yOnsetDelaySeconds = 0.030
+    private static let zOnsetDelaySeconds = 0.045
 
     // Equal-power pan law: pan -1...+1 maps to angle 0...pi/2.
     private static func panGains(_ pan: Double) -> (left: Double, right: Double) {
@@ -46,10 +63,10 @@ public class Triad{
     public init() {
         // property initializers can't reference sibling instance properties (self isn't
         // available yet), so tone1/2/3/4 are built here instead, off the amplitude constants above
-        tone1 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: rootAmplitude)
-        tone2 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: xAmplitude)
-        tone3 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: yAmplitude)
-        tone4 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: zAmplitude)
+        tone1 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: rootAmplitude, onsetDelaySeconds: Triad.rootOnsetDelaySeconds, noiseSeed: 0x1234_5678)
+        tone2 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: xAmplitude, onsetDelaySeconds: Triad.xOnsetDelaySeconds, noiseSeed: 0x2468_ACE1)
+        tone3 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: yAmplitude, onsetDelaySeconds: Triad.yOnsetDelaySeconds, noiseSeed: 0x3579_BDF2)
+        tone4 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: zAmplitude, onsetDelaySeconds: Triad.zOnsetDelaySeconds, noiseSeed: 0x48AC_E024)
     }
 
     func setTriadSampleRate (sampleRate:Double){
@@ -98,6 +115,18 @@ public class Triad{
         else {
             tone4.setAmplitude(inAmplitude: 0.0)
         }
+    }
+
+    /// Forces a fresh attack+click on every voice currently meant to be sounding - see
+    /// Tone.retrigger's own comment. For a genuine new strike gesture (the pen touching the
+    /// graph) that should always re-articulate, even for a voice the pedal is already
+    /// sustaining from a previous note (which enableTriad*Tone's own onset detection alone
+    /// wouldn't retrigger, since that voice's amplitude never actually reached silence).
+    public func retriggerAll() {
+        tone1.retrigger()
+        tone2.retrigger()
+        tone3.retrigger()
+        tone4.retrigger()
     }
 
     func setTriadRootAmplitude(amplitude:Double){
