@@ -16,6 +16,26 @@ public class Triad{
     let yAmplitude: Double = 1.15
     let zAmplitude: Double = 1.15
 
+    // Fixed stereo pan position per voice, spread across ~3/4 of the field (-0.75...+0.75),
+    // left to right: Z, X, Y, drone - same spec and channel-role mapping as monk-mpe's own
+    // pan table (see that project's src/mpe_engine.c), kept consistent since both apps read
+    // the same X/Y/Z/root roles out of this graph.
+    private static let rootPan = 0.75  // drone, rightmost
+    private static let xPan = -0.25
+    private static let yPan = 0.25
+    private static let zPan = -0.75    // leftmost
+
+    // Equal-power pan law: pan -1...+1 maps to angle 0...pi/2.
+    private static func panGains(_ pan: Double) -> (left: Double, right: Double) {
+        let angle = (pan + 1.0) * (Double.pi / 4.0)
+        return (cos(angle), sin(angle))
+    }
+
+    private let rootGains = Triad.panGains(Triad.rootPan)
+    private let xGains = Triad.panGains(Triad.xPan)
+    private let yGains = Triad.panGains(Triad.yPan)
+    private let zGains = Triad.panGains(Triad.zPan)
+
     var rootPitch: Double = 0.0
 
     var tone1: Tone
@@ -112,13 +132,22 @@ public class Triad{
         tone4.setPitch(inFrequency: frequency)
     }
 
-    func getTriadValue() -> Double{
-        let value1 = tone1.getValue()
-        let value2 = tone2.getValue()
-        let value3 = tone3.getValue()
-        let value4 = tone4.getValue()
-        let toneMix = (value1+value2+value3+value4) / 4  // want to keep the amplitude equal or below 1.0
-        return toneMix
+    // Each tone's getValue() has a side effect (it advances its own amplitude-smoothing ramp -
+    // see Tone.getValue's own comment), so it must be called exactly once per tone per sample,
+    // never once per output channel - the per-channel pan gains below are applied to that
+    // single captured value, not by calling getValue() again.
+    func getTriadValue() -> (left: Double, right: Double){
+        let value1 = tone1.getValue() // root/drone
+        let value2 = tone2.getValue() // X
+        let value3 = tone3.getValue() // Y
+        let value4 = tone4.getValue() // Z
+
+        // Same /4 normalization as the old mono mix, to keep amplitude at or below 1.0 - still
+        // safe headroom-wise even at the loudest plausible pan combination, since each gain
+        // factor is itself <= 1.
+        let left = (value1 * rootGains.left + value2 * xGains.left + value3 * yGains.left + value4 * zGains.left) / 4
+        let right = (value1 * rootGains.right + value2 * xGains.right + value3 * yGains.right + value4 * zGains.right) / 4
+        return (left, right)
     }
 
     func incrementTriadPhase(){

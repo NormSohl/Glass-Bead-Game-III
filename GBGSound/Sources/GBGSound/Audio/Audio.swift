@@ -42,30 +42,40 @@ public class Audio {
         // create structures for format
         outputFormat = output.inputFormat(forBus: 0) //An AVAudioNodeBus represents a bus as a zero-based index. AVAudioNode objects potentially have multiple input and output buss0es.
         sampleRate = (outputFormat.sampleRate)
-        // Use the output format for the input, but reduce the channel count to 1.
+        // Stereo now - Triad.getTriadValue() returns a panned (left, right) pair (root/X/Y/Z
+        // each fixed across the stereo field - see Triad.swift's own pan-gain comment), not one
+        // mono value duplicated onto every channel. The old channels: 1 here (with its own
+        // "changing this to 2 appears to have no impact" comment) was never actually an
+        // AVAudioEngine limitation - the render loop below used to write the identical mono
+        // value into every channel buffer regardless of channel count, which is why bumping
+        // this alone never did anything.
         inputFormat = AVAudioFormat(commonFormat: outputFormat.commonFormat,
                                     sampleRate: outputFormat.sampleRate,
-                                    channels: 1, // changing this to 2 appears to have no impact
+                                    channels: 2,
                                     interleaved: outputFormat.isInterleaved)!
         triad.setTriadSampleRate(sampleRate: outputFormat.sampleRate)
-        
+
         // create source node
         let srcNode = AVAudioSourceNode {_, _, frameCount, audioBufferList -> OSStatus in
             let ablPointer = UnsafeMutableAudioBufferListPointer(audioBufferList)
+            // inputFormat above is always non-interleaved (matches outputFormat.isInterleaved,
+            // which - like virtually all AVAudioEngine formats - is false), so channels: 2
+            // guarantees exactly two separate buffers here, one per channel.
+            guard ablPointer.count >= 2 else { return noErr }
+            let leftBuffer = UnsafeMutableBufferPointer<Float>(ablPointer[0])
+            let rightBuffer = UnsafeMutableBufferPointer<Float>(ablPointer[1])
+
             for frame in 0..<Int(frameCount) {
 
                 self.scorePlayer?.advance()
 
-                let value = self.triad.getTriadValue()
-                
+                let stereo = self.triad.getTriadValue()
+
                 // Advance the phase for the next frame.
                 self.triad.incrementTriadPhase()
-                
-                // Set the same value on all channels (due to the inputFormat, there's only one channel though).
-                for buffer in ablPointer {
-                    let buf: UnsafeMutableBufferPointer<Float> = UnsafeMutableBufferPointer(buffer)  // this appears to be putting a simple 16 bit float into the actual data stream. I think Float and Float32 are the same on modern systems. The commonFormat above is set to 1 which is pcmFormatFloat32, otherwise known as float. So all is good. value from note is actually double, so see what that gets us.
-                    buf[frame] = Float(value)
-                }
+
+                leftBuffer[frame] = Float(stereo.left)
+                rightBuffer[frame] = Float(stereo.right)
             }
             return noErr
         }
