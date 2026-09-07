@@ -180,7 +180,11 @@ class Tone{
     func retrigger() {
         let epsilon = 0.0001
         guard targetAmplitude >= epsilon else { return }
-        pendingOnsetSamples = onsetDelaySamples
+        // No pendingOnsetSamples here, unlike setAmplitude's onset path: this voice is already
+        // sounding (targetAmplitude >= epsilon, guarded above), so there's no silence to hold
+        // through - forcing getValue() to return a hard 0 for onsetDelaySamples would itself be
+        // an audible mute-and-pop discontinuity, which is exactly the "pop on pedal notes" bug
+        // this was suspected to cause (see gbg_synth_adsr_pluck memory).
         peakAmplitude = targetAmplitude
         attackSamplesRemaining = attackSamples
         clickEnvelope = 1

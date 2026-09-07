@@ -68,7 +68,11 @@ final class GBGSoundTests: XCTestCase {
         let lateClick = abs(tone3.getValue())
 
         print("=== Click first-sample magnitude: \(firstClick), late (80ms) magnitude: \(lateClick) ===")
-        XCTAssertGreaterThan(firstClick, 0.05, "expected an audible click magnitude right at onset")
+        // Threshold is well below clickGainFraction (currently 0.075, halved twice by ear since
+        // this test was written) rather than tied to it, since a uniform -1...1 noise sample's
+        // magnitude is only ~half of that gain on average and this seed's actual first sample
+        // (~0.0415) should stay comfortably clear of it.
+        XCTAssertGreaterThan(firstClick, 0.02, "expected an audible click magnitude right at onset")
         XCTAssertLessThan(lateClick, firstClick * 0.05, "expected the click to have decayed away well before 80ms")
     }
 }
