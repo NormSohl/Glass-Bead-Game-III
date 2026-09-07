@@ -50,6 +50,14 @@ struct ControlView: View {
                 .tint(tintcolor)
                 .foregroundStyle(.white)
 
+                Picker("Border Labels", selection: $settings.tickLabelStyle) {
+                    ForEach(TickLabelStyle.allCases) { style in
+                        Text(style.rawValue).tag(style)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .tint(tintcolor)
+
                 Toggle("Note X", isOn: $settings.playNoteX)
                     .tint(tintcolor)
                     .foregroundStyle(.white)

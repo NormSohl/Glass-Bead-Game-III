@@ -26,6 +26,7 @@ class AppSettings: ObservableObject{
     // thinned out at off-root Z layers, which read as clutter rather than structure. Toggle stays
     // available to revert to the full unfiltered grid.
     @Published var filterGraphLines: Bool = true
+    @Published var tickLabelStyle: TickLabelStyle = .letters
     @Published var selectedLimit: Limit = Limit.eleven
     // Norm: Z always sits at unison (= the drone's own pitch) until touched, so playing the
     // drone too just doubles a tone already sounding - off by default since Z always covers it;
@@ -221,6 +222,17 @@ enum Limit: String, CaseIterable, Identifiable {
 enum GraphShape: String, CaseIterable, Identifiable {
     case square, diamond, triangle
     var id: Self {self}
+}
+
+// Two ways to label the graph's border ticks - see Ticks (TickView.swift) for the actual
+// drawing. .letters is the original fixed 12-EDO note-name grid (C/D/E/... at the naturals,
+// blank dash ticks between); .ratios instead marks the graph's own just-intonation scale
+// degrees (Scale.scale, the same ScaleElements the grid lines are drawn from) with a dot and a
+// small numerator/slash/denominator label, positioned level with each element's actual line.
+enum TickLabelStyle: String, CaseIterable, Identifiable {
+    case letters = "Letters"
+    case ratios = "Ratios"
+    var id: Self { self }
 }
 
 // The graph square's rotation/scale/offset, set atomically per GraphShape by ControlView's

@@ -26,7 +26,7 @@ struct GraphView: View {
                 // top left corner
                 Corner(border: settings.border)
                 // top tick marks
-                Ticks(border: settings.border, alignment: .top, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized)
+                Ticks(border: settings.border, alignment: .top, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized, scale: scale, labelStyle: settings.tickLabelStyle)
                     .frame(height: settings.border)
                 // top right corner
                 Corner(border: settings.border)
@@ -34,7 +34,7 @@ struct GraphView: View {
             
             HStack(alignment: .center, spacing:0){  // middle including left border, graph and right border
                 // left border
-                Ticks(border: settings.border, alignment: .leading, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized)
+                Ticks(border: settings.border, alignment: .leading, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized, scale: scale, labelStyle: settings.tickLabelStyle)
                     .frame(width: settings.border)
                 ZStack(){
                     // dissonance field, drawn first so it sits behind the grid/diamonds -
@@ -63,7 +63,7 @@ struct GraphView: View {
                 }.border(.white)
 
                 // right border
-                Ticks(border: settings.border, alignment: .trailing, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized)
+                Ticks(border: settings.border, alignment: .trailing, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized, scale: scale, labelStyle: settings.tickLabelStyle)
                     .frame(width: settings.border)
             }
             
@@ -71,7 +71,7 @@ struct GraphView: View {
                 // bottom left corner
                 Corner(border: settings.border)
                 // bottom tick marks
-                Ticks(border: settings.border, alignment: .bottom, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized)
+                Ticks(border: settings.border, alignment: .bottom, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized, scale: scale, labelStyle: settings.tickLabelStyle)
                     .frame(height: settings.border)
                 // bottom right corner
                 Corner(border: settings.border)
