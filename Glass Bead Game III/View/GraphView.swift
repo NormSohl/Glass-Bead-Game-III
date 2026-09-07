@@ -19,22 +19,27 @@ struct GraphView: View {
     var interactive: Bool = true
 
     var body: some View {
+        // Same Z-filtered subset of scale degrees Graph's own grid lines are drawn from (see
+        // visibleScaleElements's own comment) - computed once here so all four border Ticks show
+        // ratio labels only for degrees that actually have a visible line right now, instead of
+        // always labelling the full scale regardless of "Filter Grid to Z".
+        let visibleElements = visibleScaleElements(scale: scale, tetradLayers: tetradLayers, settings: settings)
 
         VStack(alignment: .leading, spacing:0){// group of all graph elements
-            
+
             HStack(alignment: .top, spacing:0){  // top border
                 // top left corner
                 Corner(border: settings.border)
                 // top tick marks
-                Ticks(border: settings.border, alignment: .top, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized, scale: scale, labelStyle: settings.tickLabelStyle)
+                Ticks(border: settings.border, alignment: .top, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized, scale: scale, elements: visibleElements, labelStyle: settings.tickLabelStyle)
                     .frame(height: settings.border)
                 // top right corner
                 Corner(border: settings.border)
             }
-            
+
             HStack(alignment: .center, spacing:0){  // middle including left border, graph and right border
                 // left border
-                Ticks(border: settings.border, alignment: .leading, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized, scale: scale, labelStyle: settings.tickLabelStyle)
+                Ticks(border: settings.border, alignment: .leading, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized, scale: scale, elements: visibleElements, labelStyle: settings.tickLabelStyle)
                     .frame(width: settings.border)
                 ZStack(){
                     // dissonance field, drawn first so it sits behind the grid/diamonds -
@@ -63,21 +68,47 @@ struct GraphView: View {
                 }.border(.white)
 
                 // right border
-                Ticks(border: settings.border, alignment: .trailing, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized, scale: scale, labelStyle: settings.tickLabelStyle)
+                Ticks(border: settings.border, alignment: .trailing, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized, scale: scale, elements: visibleElements, labelStyle: settings.tickLabelStyle)
                     .frame(width: settings.border)
             }
-            
+
             HStack(alignment: .bottom, spacing:0){  // bottom border
                 // bottom left corner
                 Corner(border: settings.border)
                 // bottom tick marks
-                Ticks(border: settings.border, alignment: .bottom, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized, scale: scale, labelStyle: settings.tickLabelStyle)
+                Ticks(border: settings.border, alignment: .bottom, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized, scale: scale, elements: visibleElements, labelStyle: settings.tickLabelStyle)
                     .frame(height: settings.border)
                 // bottom right corner
                 Corner(border: settings.border)
             }
         }
     }
+}
+
+// The same "which scale degrees are visible right now" filter as Graph's own grid-line drawing
+// below (Tetrads.elementsPairing bracketed/snapped around the current Z) - factored out as a
+// plain function so Ticks (border ratio labels) can honor "Filter Grid to Z" too, without also
+// duplicating Graph's per-line fade-weight logic, which a border label doesn't need (a label is
+// either shown or not, no fading). Elements are deduped by valueNormalized since a degree valid
+// at both bracketing Z keys would otherwise appear (and be labelled) twice.
+func visibleScaleElements(scale: Scale, tetradLayers: TetradLayers, settings: AppSettings) -> [ScaleElement] {
+    guard settings.filterGraphLines else { return scale.scale }
+
+    let zValueNormalized = Tetrads.rounded(log2(settings.zFrequency / settings.rootFrequency))
+    let zKeys: [Double] = settings.snap
+        ? (tetradLayers.nearestZKey(to: zValueNormalized).map { [$0] } ?? [])
+        : tetradLayers.bracketingZKeys(around: zValueNormalized).map { $0.key }
+
+    var seen = Set<Double>()
+    var result: [ScaleElement] = []
+    for key in zKeys {
+        for interval in Tetrads.elementsPairing(withNormalizedValue: key, in: scale) {
+            if seen.insert(interval.valueNormalized).inserted {
+                result.append(interval)
+            }
+        }
+    }
+    return result
 }
 
 // filler for the corners of the border of the graph

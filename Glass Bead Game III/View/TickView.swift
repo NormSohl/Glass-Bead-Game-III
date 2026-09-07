@@ -24,9 +24,12 @@ struct Ticks: View {
     let alignment: TickAlignment
     let rangeBelow: Double
     let rangeAbove: Double
-    // Only needed for .ratios (the actual ScaleElements to label); .letters ignores it
-    // entirely and keeps drawing the fixed 12-EDO grid exactly as before.
+    // Only needed for .ratios; .letters ignores both and keeps drawing the fixed 12-EDO grid
+    // exactly as before. `scale` supplies the value->screen-position conversion; `elements` is
+    // the actual (already Z-filtered, see GraphView.visibleScaleElements) list of ScaleElements
+    // to label - not necessarily all of scale.scale.
     let scale: Scale
+    let elements: [ScaleElement]
     let labelStyle: TickLabelStyle
 
     var body: some View {
@@ -119,7 +122,6 @@ struct Ticks: View {
     // Dots/labels can end up close together wherever the scale itself is dense (high limit,
     // near unison) - kept deliberately small rather than thinned out, per Norm's ask.
     private func drawRatios(context: GraphicsContext, size: CGSize) {
-        let elements = scale.scale
         guard !elements.isEmpty else { return }
         let referenceSize = (alignment == .top || alignment == .bottom) ? size.width : size.height
         let fontSize = 9.0
