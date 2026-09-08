@@ -6,73 +6,56 @@ final class GBGSoundTests: XCTestCase {
         XCTAssertTrue(true)
     }
 
-    // Diagnostic, not a regression test: renders a single Tone's envelope sample-by-sample and
-    // prints it, to directly verify (rather than trust by ear) that the attack/decay/sustain
-    // shape and the onset click are actually doing what Tone.swift's comments say. Never calls
-    // incrementPhase(), so currentPhase stays at its initial 0 and Sine.getValue(phase: 0) is
-    // exactly 0 for every sample - that isolates getValue()'s raw return to just the click term
-    // (nextNoise() * clickEnvelope * clickGainFraction * peakAmplitude), with the tone term
-    // contributing nothing to interfere with reading it off directly.
-    func testCaptureOnsetEnvelope() {
+    // Covers the ADSR envelope (reintroduced 2026-09-07 without the noise-click transient that
+    // shipped alongside it the first time - see Tone.swift's own header comment), the onset-delay
+    // hold used for Triad's per-voice onset stagger, and a genuine re-strike via retrigger().
+    func testOnsetEnvelopeShape() {
         let sampleRate = 44100.0
         let peak = 1.0
-        let tone = Tone(sampleRate: sampleRate, frequency: 440, amplitude: 0, onsetDelaySeconds: 0, noiseSeed: 0xABCD_1234)
+        let onsetDelaySeconds = 0.02
+        let tone = Tone(sampleRate: sampleRate, frequency: 440, amplitude: 0, onsetDelaySeconds: onsetDelaySeconds)
         tone.setAmplitude(inAmplitude: peak) // simulate note-on
 
-        var amplitudeTrace: [(sample: Int, amplitude: Double)] = []
-        var clickMagnitudeTrace: [(sample: Int, click: Double)] = []
-        let sampleCount = Int(0.1 * sampleRate) // 100ms - comfortably past attack+decay+click
-
-        for i in 0..<sampleCount {
-            let rawValue = tone.getValue() // phase never advances, so this is the click alone
-            if i % 50 == 0 || i < 20 {
-                amplitudeTrace.append((i, tone.amplitude))
-                clickMagnitudeTrace.append((i, abs(rawValue)))
-            }
-        }
-
-        print("=== Tone envelope capture (peak=\(peak)) ===")
-        for (sample, amplitude) in amplitudeTrace {
-            let ms = Double(sample) / sampleRate * 1000
-            print(String(format: "sample %5d (%6.2fms): amplitude = %.4f", sample, ms, amplitude))
-        }
-        print("=== Click magnitude (|getValue()| with phase fixed at 0, i.e. tone term = 0) ===")
-        for (sample, click) in clickMagnitudeTrace {
-            let ms = Double(sample) / sampleRate * 1000
-            print(String(format: "sample %5d (%6.2fms): |click| = %.4f", sample, ms, click))
+        let onsetDelaySamples = Int((onsetDelaySeconds * sampleRate).rounded())
+        for i in 0..<onsetDelaySamples {
+            XCTAssertEqual(tone.getValue(), 0, "expected held silence through the onset delay (sample \(i))")
         }
 
         // Attack: amplitude should reach very close to peak within a few ms (attackSeconds ~3ms).
+        for _ in 0..<Int(0.01 * sampleRate) { _ = tone.getValue() }
+        XCTAssertGreaterThan(tone.amplitude, peak * 0.9, "expected amplitude to have reached near peak by 10ms after the onset delay")
+
         // Decay: a 30ms time constant needs ~5 time constants (~150ms) to settle within 1% of
-        // sustain, so the settling check needs a longer run than the 100ms capture above.
-        let attackCheckSample = Int(0.01 * sampleRate) // 10ms, several attack time-constants in
-        let decaySettleSampleCount = Int(0.25 * sampleRate) // 250ms
-        var toneAtAttackCheck = 0.0
-        let tone2 = Tone(sampleRate: sampleRate, frequency: 440, amplitude: 0, onsetDelaySeconds: 0, noiseSeed: 0xABCD_1234)
-        tone2.setAmplitude(inAmplitude: peak)
-        for i in 0..<decaySettleSampleCount {
-            _ = tone2.getValue()
-            if i == attackCheckSample { toneAtAttackCheck = tone2.amplitude }
-        }
-        let toneAfterDecay = tone2.amplitude
+        // sustain (55% of peak).
+        for _ in 0..<Int(0.25 * sampleRate) { _ = tone.getValue() }
+        XCTAssertEqual(tone.amplitude, peak * 0.55, accuracy: peak * 0.01, "expected amplitude to have settled at the 55% sustain level")
 
-        XCTAssertGreaterThan(toneAtAttackCheck, peak * 0.9, "expected amplitude to have reached near peak by 10ms")
-        XCTAssertEqual(toneAfterDecay, peak * 0.55, accuracy: peak * 0.01, "expected amplitude to have settled at the 55% sustain level by 250ms")
+        // retrigger() should force a fresh attack even though the voice never went silent - the
+        // pedal-hold re-strike case.
+        tone.retrigger()
+        for _ in 0..<Int(0.01 * sampleRate) { _ = tone.getValue() }
+        XCTAssertGreaterThan(tone.amplitude, peak * 0.9, "expected retrigger() to force a fresh attack back toward peak")
+    }
 
-        // Click: should be large (order of clickGainFraction * peak) in the first sample, and
-        // negligible (settled well below 1% of its starting scale) by clickSeconds' tail.
-        let tone3 = Tone(sampleRate: sampleRate, frequency: 440, amplitude: 0, onsetDelaySeconds: 0, noiseSeed: 0xABCD_1234)
-        tone3.setAmplitude(inAmplitude: peak)
-        let firstClick = abs(tone3.getValue())
-        for _ in 0..<Int(0.08 * sampleRate) { _ = tone3.getValue() } // run out past the click's decay
-        let lateClick = abs(tone3.getValue())
+    func testFrequencyPortamentoGlidesRatherThanSnaps() {
+        let sampleRate = 44100.0
+        let tone = Tone(sampleRate: sampleRate, frequency: 440, amplitude: 1)
+        tone.setAmplitude(inAmplitude: 1)
+        for _ in 0..<Int(0.05 * sampleRate) { _ = tone.getValue(); tone.incrementPhase() }
 
-        print("=== Click first-sample magnitude: \(firstClick), late (80ms) magnitude: \(lateClick) ===")
-        // Threshold is well below clickGainFraction (currently 0.075, halved twice by ear since
-        // this test was written) rather than tied to it, since a uniform -1...1 noise sample's
-        // magnitude is only ~half of that gain on average and this seed's actual first sample
-        // (~0.0415) should stay comfortably clear of it.
-        XCTAssertGreaterThan(firstClick, 0.02, "expected an audible click magnitude right at onset")
-        XCTAssertLessThan(lateClick, firstClick * 0.05, "expected the click to have decayed away well before 80ms")
+        let phaseIncrementBefore = tone.phaseIncrement
+        tone.setPitch(inFrequency: 880) // an octave jump
+        _ = tone.getValue()
+        tone.incrementPhase()
+        let phaseIncrementAfterOneSample = tone.phaseIncrement
+
+        // A true instant snap would already equal the target on the very next sample; the
+        // portamento should still be partway there.
+        let targetPhaseIncrement = (2 * Double.pi / sampleRate) * 880
+        XCTAssertNotEqual(phaseIncrementAfterOneSample, targetPhaseIncrement, "expected the frequency change to glide, not snap, on the first sample")
+        XCTAssertGreaterThan(phaseIncrementAfterOneSample, phaseIncrementBefore, "expected phaseIncrement to be moving toward the higher target frequency")
+
+        for _ in 0..<Int(0.05 * sampleRate) { _ = tone.getValue(); tone.incrementPhase() }
+        XCTAssertEqual(tone.phaseIncrement, targetPhaseIncrement, accuracy: targetPhaseIncrement * 0.01, "expected the glide to have settled at the target frequency well within 50ms")
     }
 }

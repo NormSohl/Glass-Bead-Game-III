@@ -34,6 +34,28 @@ public class Audio {
 
     public init(){
         if audioTrace {print("Audio init")}
+        #if os(iOS)
+        // No AVAudioSession configuration existed anywhere in this codebase before 2026-09-07 -
+        // AVAudioEngine runs on top of it on iOS (macOS has no equivalent; CoreAudio talks to
+        // hardware directly there), so without this the app was stuck with the session category
+        // iOS defaults an app to before it ever touches AVAudioSession (ambient-like, not tuned
+        // for continuous low-latency synthesis) and whatever I/O buffer duration the system
+        // happened to pick - a highly suspect cause for an audible pop reported only on iPad,
+        // never on an identical Mac build of this same engine code (confirmed side-by-side
+        // 2026-09-07): a bigger/inconsistent hardware buffer means more real time between render
+        // callbacks for a touch-driven UI hitch to actually cause an audible glitch in. .playback
+        // (not .playAndRecord) is correct here - this app only ever plays its own synthesized
+        // audio and talks MIDI via CoreMIDI, which doesn't go through AVAudioSession's record
+        // path at all, even for IDAM-based USB MIDI (see gbg_ipad_usb_midi_idam memory).
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default)
+            try session.setPreferredIOBufferDuration(0.005) // ~5ms, well under audible-glitch territory
+            try session.setActive(true)
+        } catch {
+            if audioTrace {print("Audio: AVAudioSession setup failed: \(error)")}
+        }
+        #endif
         // create the nodes for the audio chain
         engine = AVAudioEngine()
         mainMixer = engine.mainMixerNode

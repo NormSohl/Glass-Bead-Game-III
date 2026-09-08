@@ -165,19 +165,18 @@ class Sound {
         // Every pen-down is a fresh strike, even for a voice the pedal is already sustaining
         // from a previous note - the enable calls just above only retrigger a voice that was
         // actually silent (see Tone.setAmplitude's onset detection); a pedal-held voice never
-        // goes silent, so without this its attack/click wouldn't fire again on a new touch,
-        // only its pitch would change. Confirmed live 2026-09-05.
+        // goes silent, so without this its attack wouldn't fire again on a new touch, only its
+        // pitch would change.
         audio.triad.retriggerAll()
         if activeTouchCount == 1 { startEngine(amp: amp) }
     }
 
-    /// Forces a fresh attack+click on the graph's held voices without any of beginGraphTouch's
-    /// other bookkeeping (activeTouchCount, enable re-application, engine start) - for a new
-    /// physical touch-down that lands while the pedal is already holding a previous note
-    /// sounding. beginGraphTouch itself doesn't get called at all in that case at the gesture
-    /// layer, since the engine is already running and isSound never got reset (see
-    /// HitTestView's own isSound/isTouchDown comment) - but the new touch is still a fresh
-    /// strike and should re-articulate.
+    /// Forces a fresh attack on the graph's held voices without any of beginGraphTouch's other
+    /// bookkeeping (activeTouchCount, enable re-application, engine start) - for a new physical
+    /// touch-down that lands while the pedal is already holding a previous note sounding.
+    /// beginGraphTouch itself doesn't get called at all in that case at the gesture layer, since
+    /// the engine is already running and isSound never got reset (see HitTestView's own isSound/
+    /// isTouchDown comment) - but the new touch is still a fresh strike and should re-articulate.
     func retriggerTouch() {
         audio.triad.retriggerAll()
     }

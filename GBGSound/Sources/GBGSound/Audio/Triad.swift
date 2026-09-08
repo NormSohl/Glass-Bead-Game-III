@@ -63,10 +63,10 @@ public class Triad{
     public init() {
         // property initializers can't reference sibling instance properties (self isn't
         // available yet), so tone1/2/3/4 are built here instead, off the amplitude constants above
-        tone1 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: rootAmplitude, onsetDelaySeconds: Triad.rootOnsetDelaySeconds, noiseSeed: 0x1234_5678)
-        tone2 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: xAmplitude, onsetDelaySeconds: Triad.xOnsetDelaySeconds, noiseSeed: 0x2468_ACE1)
-        tone3 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: yAmplitude, onsetDelaySeconds: Triad.yOnsetDelaySeconds, noiseSeed: 0x3579_BDF2)
-        tone4 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: zAmplitude, onsetDelaySeconds: Triad.zOnsetDelaySeconds, noiseSeed: 0x48AC_E024)
+        tone1 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: rootAmplitude, onsetDelaySeconds: Triad.rootOnsetDelaySeconds)
+        tone2 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: xAmplitude, onsetDelaySeconds: Triad.xOnsetDelaySeconds)
+        tone3 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: yAmplitude, onsetDelaySeconds: Triad.yOnsetDelaySeconds)
+        tone4 = Tone(sampleRate: 44100, frequency: rootPitch, amplitude: zAmplitude, onsetDelaySeconds: Triad.zOnsetDelaySeconds)
     }
 
     func setTriadSampleRate (sampleRate:Double){
@@ -117,11 +117,11 @@ public class Triad{
         }
     }
 
-    /// Forces a fresh attack+click on every voice currently meant to be sounding - see
-    /// Tone.retrigger's own comment. For a genuine new strike gesture (the pen touching the
-    /// graph) that should always re-articulate, even for a voice the pedal is already
-    /// sustaining from a previous note (which enableTriad*Tone's own onset detection alone
-    /// wouldn't retrigger, since that voice's amplitude never actually reached silence).
+    /// Forces a fresh attack on every voice currently meant to be sounding - see Tone.retrigger's
+    /// own comment. For a genuine new strike gesture (the pen touching the graph) that should
+    /// always re-articulate, even for a voice the pedal is already sustaining from a previous
+    /// note (which enableTriad*Tone's own onset detection alone wouldn't retrigger, since that
+    /// voice's amplitude never actually reached silence).
     public func retriggerAll() {
         tone1.retrigger()
         tone2.retrigger()
