@@ -36,10 +36,18 @@ struct Ticks: View {
         Canvas(){
             context, size in
             switch labelStyle {
+            case .ratios:
+                // Nothing drawn here at all in Ratios mode - both the fixed 12-EDO dots and the
+                // ratio-fraction labels moved to ReferenceDotsOverlay (GraphView.swift), a single
+                // Canvas spanning the ENTIRE border+graph layout. A label near the very edge of
+                // the visible range needs to render into where the (separate, unrelated) Corner
+                // view sits - this strip's own Canvas can only ever draw within its own frame, so
+                // no amount of position tuning here could stop that text from being clipped right
+                // at the corners (confirmed live 2026-09-07). Only the overlay's shared canvas,
+                // with no strip/corner boundaries inside it at all, can avoid that.
+                break
             case .letters:
                 drawLetters(context: context, size: size)
-            case .ratios:
-                drawRatios(context: context, size: size)
             }
         }
     }
@@ -116,86 +124,4 @@ struct Ticks: View {
         }
     }
 
-    // One dot + ratio label per scale degree (Scale.scale's own ScaleElements - the exact same
-    // ratios Graph draws its grid lines from), positioned by the element's real just-intonation
-    // value rather than a fixed 12-EDO spacing, so a label sits level with the line it names.
-    // Dots/labels can end up close together wherever the scale itself is dense (high limit,
-    // near unison) - kept deliberately small rather than thinned out, per Norm's ask.
-    private func drawRatios(context: GraphicsContext, size: CGSize) {
-        guard !elements.isEmpty else { return }
-        let referenceSize = (alignment == .top || alignment == .bottom) ? size.width : size.height
-        let fontSize = 9.0
-        let dotRadius = 2.0
-        let mcolor: Color = .white
-
-        for (index, element) in elements.enumerated() {
-            var nudge = 0.0
-            if index == 0 { nudge = 1.0 }
-            if index == elements.count - 1 { nudge = -1.0 }
-
-            let screenPosition = scale.convertScaleValueToScreenUnits(
-                normalizedValue: element.valueNormalized,
-                screenSize: referenceSize
-            )
-
-            var dotLocation = CGPoint(x: 0, y: 0)
-            var textLocation = CGPoint(x: 0, y: 0)
-            var textAnchor: UnitPoint = .center
-
-            switch alignment {
-            case .leading:
-                let tickLocation = size.height - screenPosition
-                dotLocation = CGPoint(x: border - 6.0, y: tickLocation - nudge)
-                textLocation = CGPoint(x: dotLocation.x - 6, y: dotLocation.y)
-                textAnchor = .trailing
-
-            case .trailing:
-                let tickLocation = size.height - screenPosition
-                dotLocation = CGPoint(x: 6.0, y: tickLocation - nudge)
-                textLocation = CGPoint(x: dotLocation.x + 6, y: dotLocation.y)
-                textAnchor = .leading
-
-            case .top:
-                let tickLocation = screenPosition
-                dotLocation = CGPoint(x: tickLocation + nudge, y: border - 6.0)
-                textLocation = CGPoint(x: dotLocation.x, y: dotLocation.y - 8)
-                textAnchor = .bottom
-
-            case .bottom:
-                let tickLocation = screenPosition
-                dotLocation = CGPoint(x: tickLocation + nudge, y: 6.0)
-                textLocation = CGPoint(x: dotLocation.x, y: dotLocation.y + 8)
-                textAnchor = .top
-            }
-
-            context.fill(
-                Path(ellipseIn: CGRect(
-                    x: dotLocation.x - dotRadius, y: dotLocation.y - dotRadius,
-                    width: dotRadius * 2, height: dotRadius * 2
-                )),
-                with: .color(mcolor)
-            )
-
-            let label = ratioText(numerator: element.numerator, denominator: element.denominator, fontSize: fontSize, color: mcolor)
-            context.draw(label, at: textLocation, anchor: textAnchor)
-        }
-    }
-
-    // Superscript numerator / slash / subscript denominator, built as one concatenated Text so
-    // Canvas can draw it in a single context.draw call - each segment carries its own font size
-    // and baseline offset, which SwiftUI's Text concatenation (+) preserves per-segment.
-    private func ratioText(numerator: Int, denominator: Int, fontSize: Double, color: Color) -> Text {
-        let digitFontSize = fontSize * 0.78
-        return Text("\(numerator)")
-            .font(.custom("SFPro", size: digitFontSize))
-            .baselineOffset(fontSize * 0.32)
-            .foregroundStyle(color)
-        + Text("/")
-            .font(.custom("SFPro", size: fontSize))
-            .foregroundStyle(color)
-        + Text("\(denominator)")
-            .font(.custom("SFPro", size: digitFontSize))
-            .baselineOffset(-fontSize * 0.12)
-            .foregroundStyle(color)
-    }
 }

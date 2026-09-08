@@ -67,6 +67,17 @@ private struct FirstClickCatcher: NSViewRepresentable {
             self.onFirstClick = onFirstClick
             monitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
                 guard let self, let view = self.view else { return event }
+                // addLocalMonitorForEvents fires for every left-mouse-down anywhere in the app,
+                // not just this window - a click on the Settings popover (its own separate
+                // NSWindow/NSPanel) or a menu was being misread as a click in the main window,
+                // since view.convert(_:from:nil) blindly reinterprets event.locationInWindow as
+                // if it belonged to `view`'s own window regardless of which window the event
+                // actually came from - a coordinate collision that could land inside the graph's
+                // bounds by coincidence and fire a note. Confirmed live 2026-09-07 ("menu clicks
+                // also trigger graph notes"). Requiring the event's own window to match view's
+                // window first is the fix - only a click truly in this window is worth converting
+                // at all.
+                guard event.window === view.window else { return event }
                 let locationInView = view.convert(event.locationInWindow, from: nil)
                 if view.bounds.contains(locationInView) {
                     self.onFirstClick?(locationInView, event.modifierFlags.contains(.shift))

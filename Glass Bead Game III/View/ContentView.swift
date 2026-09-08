@@ -35,6 +35,12 @@ struct ContentView: View {
     // mapping.
     @State private var graphSquareHeight: CGFloat = 0
 
+    // The graph square's own on-screen frame within this view's "contentRoot" coordinate
+    // space, captured the same way graphSquareHeight is - needed so the ratio-labels overlay
+    // below can be positioned and sized to exactly match the square regardless of which side
+    // the Z-slider/ControlColumn currently sit on.
+    @State private var graphSquareFrame: CGRect = .zero
+
     // graphSquareHeight, clamped to always be finite and non-negative before it's ever
     // multiplied into anything - see graphSquare's own offset comment for why this exists (a
     // crash, not just defensive style).
@@ -72,7 +78,14 @@ struct ContentView: View {
                 // alone, so the iPad ControlColumn (leading in the .right/default case here)
                 // always ends up on whichever side the Z-slider isn't - one setting moves both,
                 // per Norm's ask, instead of two that could drift out of sync.
-                HStack(spacing: 0) {
+                // Ratios mode reserves real space here (see ratioLabelGap's own comment) for the
+                // ratio-fraction labels' deliberate bleed past the graph square's own edge -
+                // painting that bleed on top of the Z-slider/ControlColumn (the first attempt at
+                // this fix) put the label text right on top of THEIR own content instead of
+                // merely being clipped by it, which is no better - confirmed live 2026-09-07,
+                // "the ratios now overlay the z slider." Letters mode has no bleed, so this stays
+                // zero there, matching that mode's original tight layout exactly.
+                HStack(spacing: ratioLabelGap(settings: settings)) {
                     if settings.zSliderSide == .right {
                         #if os(iOS)
                         ControlColumn(settings: settings, recordingState: recordingState)
@@ -88,7 +101,34 @@ struct ContentView: View {
                     }
                 }
             }
+
+            // Ratio-fraction labels for the graph's border, painted here - after (on top of)
+            // the whole HStack above - rather than inside GraphSquareView itself. That overlay
+            // deliberately bleeds outside the graph square's own bounds so label text isn't
+            // squeezed into the border (see RatioLabelsOverlay's own comment), but the
+            // Z-slider and (on iPad) ControlColumn sit right beside the square with zero
+            // HStack spacing - whichever of those was declared after graphSquare painted over
+            // that bleed wherever it reached them, reading as "the outer column of ratios are
+            // still clipped" (confirmed live 2026-09-07, right after fixing the earlier true
+            // .clipped()-cuts-it-off bug - this is a second, distinct occlusion problem, not
+            // the same one recurring). Being the LAST thing drawn in this outermost ZStack
+            // guarantees it paints over every sibling regardless of which side the Z-slider is
+            // on. GraphSquareView.drawsRatioLabelsInternally is false for this call for exactly
+            // this reason - AudienceGraphView has no such siblings and keeps drawing it
+            // internally.
+            if settings.tickLabelStyle == .ratios, graphSquareFrame != .zero {
+                // Same constant as the HStack's own reserved spacing above - the bleed exactly
+                // fills that reserved dead space on the left/right (and matches vertically too,
+                // where there's no neighboring sibling to protect, just empty window margin).
+                let labelBleed = ratioLabelGap(settings: settings)
+                let inputs = graphRatioLabelInputs(scale: scale, tetradLayers: tetradLayers, settings: settings)
+                RatioLabelsOverlay(scale: scale, elements: inputs.elements, rangeBelow: scale.lowestRatioNormalized, rangeAbove: scale.highestRatioNormalized, tickBorderH: inputs.tickBorderH, tickBorderV: inputs.tickBorderV, labelBleed: labelBleed, trueSize: graphSquareFrame.size, showLabels: true)
+                    .frame(width: graphSquareFrame.width + 2 * labelBleed, height: graphSquareFrame.height + 2 * labelBleed)
+                    .position(x: graphSquareFrame.midX, y: graphSquareFrame.midY)
+                    .allowsHitTesting(false)
+            }
         }
+        .coordinateSpace(name: "contentRoot")
         .animation(.easeInOut(duration: 0.2), value: recordingState.feedbackMessage)
         .frame (minWidth: 800, minHeight: 500)
         // Live Recording's Save panel - driven by RecordingState.pendingExportData rather than
@@ -250,7 +290,7 @@ struct ContentView: View {
         // .windowResizability(.contentSize) measures this view with an unconstrained/extreme
         // proposed size on at least one pass, and a GeometryReader caught in that pass could in
         // principle report one.
-        GraphSquareView(scale: scale, tetradLayers: tetradLayers, settings: settings, recordingState: recordingState, squareHeight: safeGraphSquareHeight)
+        GraphSquareView(scale: scale, tetradLayers: tetradLayers, settings: settings, recordingState: recordingState, squareHeight: safeGraphSquareHeight, drawsRatioLabelsInternally: false)
         .layoutPriority(1)
         .background(
             GeometryReader { proxy in
@@ -262,8 +302,12 @@ struct ContentView: View {
                 // wrapper, so a non-finite value stored here would reach AppKit's layout engine
                 // from there too - better to never store one at all.
                 Color.clear
-                    .onAppear { if proxy.size.height.isFinite { graphSquareHeight = proxy.size.height } }
+                    .onAppear {
+                        if proxy.size.height.isFinite { graphSquareHeight = proxy.size.height }
+                        graphSquareFrame = proxy.frame(in: .named("contentRoot"))
+                    }
                     .onChange(of: proxy.size.height) { if proxy.size.height.isFinite { graphSquareHeight = proxy.size.height } }
+                    .onChange(of: proxy.frame(in: .named("contentRoot"))) { _, newFrame in graphSquareFrame = newFrame }
             }
         )
     }
@@ -464,8 +508,21 @@ private struct WindowAspectLockView: NSViewRepresentable {
         private weak var attachedWindow: NSWindow?
 
         func attach(to window: NSWindow?, aspectSize: CGSize) {
+            // windowWillResize below only reacts to a resize the user (or the system) already
+            // initiated - it can keep the window square once it's dragged, but does nothing to
+            // an already-wrong CURRENT size, which is exactly what happens whenever aspectSize
+            // itself changes out from under an already-open window (Letters <-> Ratios, since
+            // the two modes need different border thickness - see tickBorderSizes) or when macOS
+            // restores a previous session's frame from before this aspect existed. Force a
+            // resize to match right away whenever the target aspect actually changes, rather
+            // than only ever preventing it from getting worse.
+            let aspectChanged = self.aspectSize != aspectSize
             self.aspectSize = aspectSize
-            guard let window, attachedWindow !== window else { return }
+            guard let window else { return }
+            if aspectChanged {
+                window.setContentSize(aspectSize)
+            }
+            guard attachedWindow !== window else { return }
             attachedWindow = window
             window.delegate = self
         }

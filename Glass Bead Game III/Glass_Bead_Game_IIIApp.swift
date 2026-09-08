@@ -99,7 +99,25 @@ func idealWindowSize() -> CGSize {
 
     let screenHeight = NSScreen.main?.visibleFrame.height ?? 1000
     let graphHeight = screenHeight - titleBarAllowance
-    let width = graphHeight + zSliderWidth
+    // Ratios mode's border isn't the same thickness on every side (see tickBorderSizes) - the
+    // window has to widen by exactly that horizontal-vs-vertical difference, doubled (both left
+    // and right edges), or the graph square stops being square once its own borders no longer
+    // subtract the same amount from width as from height.
+    let (tickBorderH, tickBorderV) = tickBorderSizes(settings: appSettings)
+    // Ratios mode's ratio-fraction labels bleed past the graph square's own edge into real
+    // reserved HStack spacing on the Z-slider side (see ratioLabelGap's own comment) - the
+    // window has to be that much wider or the square itself would shrink to make room for it,
+    // same reasoning as the tickBorderH/V compensation below.
+    let labelGap = ratioLabelGap(settings: appSettings)
+    // A few points of slack on top of the exact math - the graph square itself is now also
+    // guarded by .aspectRatio(1, contentMode: .fit) (GraphView.swift), which always produces a
+    // true square by taking min(available width, available height) regardless of any imprecision
+    // here. Norm's priority is explicit: squareness is sacrosanct, and height should be the
+    // dimension that's maximized - so width deliberately errs generous rather than exact, to
+    // make sure it's never the accidentally-tighter dimension that shrinks the square below the
+    // full available height.
+    let widthSlack: CGFloat = 4
+    let width = graphHeight + zSliderWidth + 2 * (tickBorderH - tickBorderV) + labelGap + widthSlack
     let height = graphHeight
     return CGSize(width: width, height: height)
 }
