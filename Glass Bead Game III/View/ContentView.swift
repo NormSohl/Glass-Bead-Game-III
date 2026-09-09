@@ -624,25 +624,12 @@ private struct ControlColumn: View {
             // Always red, unlike the toggle buttons above - this isn't a mode toggle, it's a
             // "stop everything now" action, worth visually standing out (matches macOS's own
             // Panic button).
-            Button {
+            iconButton(systemName: "exclamationmark.octagon.fill", tint: .red, label: "Panic") {
                 sound.panic()
-            } label: {
-                Image(systemName: "exclamationmark.octagon.fill")
-                    .font(.title2)
-                    .foregroundStyle(.red)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
             }
-            .accessibilityLabel("Panic")
-            Button {
+            iconButton(systemName: "gearshape.fill", tint: nil, label: "Settings") {
                 settings.showSettings = true
-            } label: {
-                Image(systemName: "gearshape.fill")
-                    .font(.title2)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
             }
-            .accessibilityLabel("Settings")
             .popover(isPresented: $settings.showSettings) {
                 ControlView(settings: settings, recordingState: recordingState)
                     .frame(minWidth: 340, idealWidth: 380, minHeight: 480, idealHeight: 650)
@@ -650,19 +637,31 @@ private struct ControlColumn: View {
 
             Spacer(minLength: 0)
         }
-        .buttonStyle(.plain)
         .frame(width: 60)
     }
 
     private func button(_ systemName: String, active: Bool, label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.title2)
-                .foregroundStyle(active ? TetradView.uiAccentColor : Color.primary)
-                .frame(width: 44, height: 44)
-                .contentShape(Rectangle())
-        }
-        .accessibilityLabel(label)
+        iconButton(systemName: systemName, tint: active ? TetradView.uiAccentColor : nil, label: label, action: action)
+    }
+
+    // Renders the same icon a plain SwiftUI Button would, but with its own hit-testing turned
+    // off (.allowsHitTesting(false)) and a FingerAndPencilTapCatcher (FingerAndPencilOnly.swift)
+    // overlaid instead - real finger/Pencil only by default (a connected mouse turned out to be
+    // able to tap these buttons exactly like a finger too, confirmed live 2026-09-08: "the mouse
+    // cursor does interact with icons... still"), but mouse-only while settings.mouseDrivesGraph
+    // is on - with the mouse acting as the graph's own primary input in that mode, leaving these
+    // buttons finger-only meant there was no way to reach them at all ("we have no way of
+    // interacting with the controls, since we are not using touch"). Same acceptMouseInstead
+    // flip HitTestView's own graph drag and ZSliderView's drag already use.
+    private func iconButton(systemName: String, tint: Color?, label: String, action: @escaping () -> Void) -> some View {
+        Image(systemName: systemName)
+            .font(.title2)
+            .foregroundStyle(tint ?? Color.primary)
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+            .allowsHitTesting(false)
+            .overlay(FingerAndPencilTapCatcher(acceptMouseInstead: settings.mouseDrivesGraph, onTap: action))
+            .accessibilityLabel(label)
     }
 }
 
@@ -765,24 +764,26 @@ private struct KeyboardMonitor: UIViewRepresentable {
 // reaching around the back of the case, gives buttons that work regardless. Button presses feed
 // the identical KeyActionDispatcher.handlePhysicalInput path a keyboard key does - Pedal/
 // Portamento/etc. are remappable to a mouse button through the same Keyboard Mapping UI, no
-// separate binding model. Mouse movement (Y axis) additionally drives Z continuously - no
-// separate "engage" gesture needed, since Z can't itself start or stop sound any more (see
-// Sound.applyZVoiceEnables/Sound.sustained) - a stray movement with nothing else playing is
-// silent, exactly like dragging the on-screen Z-slider with nothing touched.
+// separate binding model. Z is driven by the scroll wheel only, one scale step per detent (see
+// handleScroll below) - raw pointer-drag-driven Z was tried first and dropped after a live test
+// (Norm, 2026-09-08): "far too touchy" to control with any precision.
 //
 // Deliberately iOS-only: on macOS, HitTestView already uses mouse drag to move X/Y on the graph
 // itself - giving the mouse a second, unrelated meaning there would be a real conflict, not a
 // feature, so this whole type only exists in the iOS build.
 //
-// Locks/hides the system pointer for as long as a mouse is connected, via UIViewController's
-// prefersPointerLocked - Apple's own recommended pattern (WWDC20 "Build for the iPadOS
-// pointer") for an app that wants a mouse's raw relative movement/buttons as a game-style
-// controller rather than a normal on-screen pointer. Without this, the system pointer would
-// still be free to tap/click through to the graph or any button as the mouse moves - exactly
-// the conflict Norm flagged, just on iOS instead of macOS. NOT YET VERIFIED LIVE: this is the
-// one piece of this feature that needs confirming with a real mouse in hand - specifically,
-// that prefersPointerLocked set on a child view controller embedded via
-// UIViewControllerRepresentable actually engages the system-wide pointer lock as expected.
+// Requests the system pointer be locked/hidden for as long as a mouse is connected, via
+// UIViewController's prefersPointerLocked - Apple's own recommended pattern (WWDC20 "Build for
+// the iPadOS pointer") for an app that wants a mouse's raw relative movement/buttons as a
+// game-style controller rather than a normal on-screen pointer. CONFIRMED LIVE 2026-09-08 this
+// does NOT actually work as intended here: the system pointer stayed fully visible and active
+// throughout extensive live testing regardless, most likely because a child view controller
+// embedded via UIViewControllerRepresentable (nested deep in SwiftUI's own hosting hierarchy) is
+// never the "front-most" controller the system consults for pointer-lock arbitration. Left in
+// place as harmless (it's a request, not a guarantee, and costs nothing when ignored) - the
+// actual mouse-vs-touch conflict this was meant to prevent is instead solved at the touch-type
+// level now (see FingerAndPencilOnly.swift), which doesn't depend on pointer-lock succeeding at
+// all.
 private struct MouseMonitor: UIViewControllerRepresentable {
     @ObservedObject var settings: AppSettings
     let recordingState: RecordingState
@@ -830,12 +831,6 @@ private struct MouseMonitor: UIViewControllerRepresentable {
         private var disconnectObserver: Any?
         weak var viewController: PointerLockingViewController?
 
-        // Cents of Z movement per raw GCMouse delta unit - a starting guess, not a measured
-        // value. GCMouse's own deltas scale with the system's pointer-speed setting, which
-        // this can't query, so the right constant can only really be picked by feel once a
-        // real mouse is actually being used this way - expect to need to tune this.
-        private let zCentsPerDelta = 4.0
-
         // Norm's concern (2026-09-04, before any live test): pressing a physical mouse button
         // tends to jostle the mouse itself very slightly - felt only as an ignorable stray
         // pixel or two normally, but here it would land straight in Z and detune a note at the
@@ -844,7 +839,7 @@ private struct MouseMonitor: UIViewControllerRepresentable {
         // while Pedal holds a note), only movement arriving in the brief instant right at a
         // button transition is discarded - a deliberate drag a moment later still goes through
         // untouched. 60ms is a guess at "longer than a click's mechanical settle, shorter than
-        // any real intentional movement"; tune alongside zCentsPerDelta once tested live.
+        // any real intentional movement."
         private let jostleSuppressionWindow: TimeInterval = 0.06
         private var jostleSuppressedUntil = Date.distantPast
 
@@ -875,10 +870,30 @@ private struct MouseMonitor: UIViewControllerRepresentable {
             guard let input = mouse?.mouseInput else { return }
             viewController?.locked = true
 
+            // Left button is reserved for the graph itself while settings.mouseDrivesGraph is on
+            // - bypassing KeyMapping's Pedal binding for this button entirely, exactly mirroring
+            // how Mac's own left-mouse-drag plays the graph directly rather than being a
+            // remappable action button there either. Nothing further to do here at all: clicking
+            // and dragging the mouse over the graph generates a genuine `.indirectPointer` touch
+            // in parallel with this button event (confirmed live 2026-09-08 - that's exactly
+            // what was driving the graph before any filtering existed), which HitTestView's own
+            // FingerAndPencilDragCatcher now explicitly accepts while this mode is on, running
+            // through the exact same handleGraphInputChanged/Ended path real touch always has -
+            // position, begin/end sound, and Portamento-live-tracking all come free from that,
+            // no separate mechanism needed here. Off (the default), this button dispatches
+            // through KeyMapping like the other two always do.
             input.leftButton.pressedChangedHandler = { [weak self] _, _, pressed in
-                self?.suppressJostle()
-                self?.dispatcher.handlePhysicalInput(token: "mouseLeft", pressed: pressed)
+                guard let self else { return }
+                self.suppressJostle()
+                if !self.settings.mouseDrivesGraph {
+                    self.dispatcher.handlePhysicalInput(token: "mouseLeft", pressed: pressed)
+                }
             }
+            // Right button always dispatches through KeyMapping regardless of mode - its default
+            // binding is already Portamento (hold), the same token macOS's own KeyCommandMonitor
+            // uses for its right-mouse-button case, so Mac-style mode gets "right button glides"
+            // for free with no special-casing here at all (HitTestView's own hoverLocation-based
+            // write-gate reads settings.snap live, same as its plain touch/pen path does).
             input.rightButton?.pressedChangedHandler = { [weak self] _, _, pressed in
                 self?.suppressJostle()
                 self?.dispatcher.handlePhysicalInput(token: "mouseRight", pressed: pressed)
@@ -887,49 +902,41 @@ private struct MouseMonitor: UIViewControllerRepresentable {
                 self?.suppressJostle()
                 self?.dispatcher.handlePhysicalInput(token: "mouseMiddle", pressed: pressed)
             }
-            input.mouseMovedHandler = { [weak self] _, _, deltaY in
-                self?.handleMove(deltaY: deltaY)
-            }
-            // Second, independent Z path for the same test session (Norm, 2026-09-05): a
-            // mechanical wheel reports one discrete, fairly large step per detent-click (no
-            // sub-notch data at all - unlike raw pointer movement, which is effectively
-            // continuous), while the Magic Mouse's touch-sensitive scroll ball and a trackpad's
-            // two-finger scroll are NOT detented and behave more like continuous movement.
-            // Which of those two feels this delivers can't be known without the actual hardware
-            // in hand, so this is wired up as its own tunable path (zCentsPerScrollTick,
-            // separate from drag's zCentsPerDelta) rather than assumed to behave like drag.
-            // Live alongside handleMove rather than replacing it, so both can be A/B'd freely -
-            // whichever wins can have the other's binding removed later.
-            input.scroll.valueChangedHandler = { [weak self] _, _, deltaY in
-                self?.handleScroll(deltaY: deltaY)
+            // Deliberately no mouseMovedHandler at all - Mac-style mode's own X/Y comes entirely
+            // from the real `.indirectPointer` touch HitTestView's own FingerAndPencilDragCatcher
+            // now accepts while this mode is on (see leftButton's own comment above), which
+            // carries genuine absolute position for the whole press. A relative-delta approach
+            // built on these raw movement deltas was tried and reverted twice, 2026-09-08 - it
+            // never actually corresponded to the mouse's own physical movement no matter how it
+            // was scaled ("does not snap to mouse position"; later, even after anchoring it to a
+            // real starting point, "cursor appears to move more quickly than the mouse pointer"
+            // persisted regardless of the scale factor tried) - the touch itself needs no such
+            // approximation at all.
+            //
+            // One detent = one scale step (Norm, 2026-09-05): each scroll event just moves Z to
+            // the next/previous element of the actual scale, same ScaleElement list ZSliderView
+            // draws its gridlines/diamonds from - musically exact by construction (always lands
+            // precisely on a real scale degree) rather than an approximation that happens to be
+            // close. Built on the assumption that one scroll callback == one physical notch, true
+            // for a mechanical wheel but very likely NOT true for a non-detented continuous
+            // surface (Magic Mouse ball, trackpad two-finger scroll), which fires many small
+            // callbacks per finger-length of motion - expect that combination to zip through many
+            // scale steps almost instantly, and to need an accumulate-then-step threshold added
+            // here if that's how it actually feels.
+            input.scroll.valueChangedHandler = { [weak self] _, deltaX, deltaY in
+                self?.handleScroll(deltaX: deltaX, deltaY: deltaY)
             }
         }
 
-        // Mirrors ZSliderView's own bottom-up convention (screenLocation increases upward
-        // there too) - a positive deltaY here is meant to raise pitch. Unverified without a
-        // real mouse in hand; flip the sign below if it feels backwards live.
-        private func handleMove(deltaY: Float) {
+        // Reacts to whichever of the two scroll axes actually moved - some third-party mice/
+        // trackpads report a vertical wheel through the X axis instead of Y. Confirmed live
+        // 2026-09-08 to work correctly as written.
+        private func handleScroll(deltaX: Float, deltaY: Float) {
             guard Date() >= jostleSuppressedUntil else { return }
-            applyZCents(Double(deltaY) * zCentsPerDelta)
-        }
-
-        // One detent = one scale step (Norm, 2026-09-05) - rather than guess a cents-per-tick
-        // constant (the earlier approach, and still what handleMove above does for drag), each
-        // scroll event just moves Z to the next/previous element of the actual scale, same
-        // ScaleElement list ZSliderView draws its gridlines/diamonds from. This sidesteps needing
-        // to know a wheel's per-click delta magnitude at all - only its sign matters - and it's
-        // musically exact by construction (always lands precisely on a real scale degree) rather
-        // than an approximation that happens to be close. Note this is still built on the
-        // assumption that one scroll callback == one physical notch, true for a mechanical wheel
-        // but very likely NOT true for a non-detented continuous surface (Magic Mouse ball,
-        // trackpad two-finger scroll), which fires many small callbacks per finger-length of
-        // motion - expect that combination to zip through many scale steps almost instantly, and
-        // to need an accumulate-then-step threshold added here if that's how it actually feels.
-        private func handleScroll(deltaY: Float) {
-            guard Date() >= jostleSuppressedUntil else { return }
-            if deltaY > 0 {
+            let delta = abs(deltaY) >= abs(deltaX) ? deltaY : deltaX
+            if delta > 0 {
                 stepZ(by: 1)
-            } else if deltaY < 0 {
+            } else if delta < 0 {
                 stepZ(by: -1)
             }
         }
@@ -952,15 +959,6 @@ private struct MouseMonitor: UIViewControllerRepresentable {
             }
             let newIndex = min(max(currentIndex + direction, 0), scale.scale.count - 1)
             let newFrequency = settings.rootFrequency * pow(2, scale.scale[newIndex].valueNormalized)
-            guard newFrequency != settings.zFrequency else { return }
-            settings.zFrequency = newFrequency
-            sound.setZPitch(frequency: newFrequency)
-        }
-
-        private func applyZCents(_ cents: Double) {
-            var normalized = log2(settings.zFrequency / settings.rootFrequency) + cents / 1200
-            normalized = min(max(normalized, settings.lowestRatioNormalized), settings.highestRatioNormalized)
-            let newFrequency = settings.rootFrequency * pow(2, normalized)
             guard newFrequency != settings.zFrequency else { return }
             settings.zFrequency = newFrequency
             sound.setZPitch(frequency: newFrequency)

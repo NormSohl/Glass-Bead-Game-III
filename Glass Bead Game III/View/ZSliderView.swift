@@ -31,12 +31,6 @@ struct ZSliderView: View {
     @ObservedObject var recordingState: RecordingState
 
     @State private var hoverLocation: CGPoint = .zero
-    // Guards against the canvas overwriting settings.zFrequency on its very first render, before
-    // any real touch - hoverLocation starts at .zero (screenLocation 0, the low end of the
-    // slider), so without this the untouched slider would silently drag zFrequency down to the
-    // scale's lowest ratio the instant it mounts, undoing ControlView's "reset to unison when
-    // the 3rd moving tone toggles on" behavior before the user ever touches it.
-    @State private var hasTouched = false
 
     var body: some View {
         // Mirrors GraphView's own 3-row structure (top border spacer, middle Ticks+content,
@@ -66,10 +60,20 @@ struct ZSliderView: View {
                 // AppSettings.externallyDrivenVoices. When incoming MIDI (Seq, or any other
                 // controller) owns Z - see Sound.handleIncomingMidi - the marker is drawn from
                 // whatever was already written into settings.zFrequency instead of from touch.
-                // Same read-only treatment applies before the first real touch (see hasTouched
-                // above).
+                //
+                // Gated on settings.zDragActive, not hasTouched (used to be the latter, which
+                // only ever asked "has Z EVER been touched this session," not "is it being
+                // touched RIGHT NOW") - confirmed live 2026-09-08: with hasTouched once true,
+                // this branch recomputed from the same frozen hoverLocation on EVERY render
+                // regardless of whether a drag was active, so an unrelated global settings.snap
+                // change elsewhere (Portamento engaging via the graph's own right-click, nothing
+                // to do with Z at all) silently re-derived Z's position from snapped to
+                // continuous at that same frozen location, audible as a small unwanted "bump."
+                // zDragActive starts false and is only ever true during a real drag, so it also
+                // still covers the original "before the first touch" case hasTouched existed for
+                // - hasTouched itself removed as fully redundant once this replaced it.
                 let markerY: Double
-                if settings.externallyDrivenVoices.contains(.z) || !hasTouched {
+                if settings.externallyDrivenVoices.contains(.z) || !settings.zDragActive {
                     let zNormalized = log2(settings.zFrequency / settings.rootFrequency)
                     let crosshair = scale.convertScaleValueToScreenUnits(normalizedValue: zNormalized, screenSize: size.height)
                     markerY = size.height - crosshair
@@ -178,31 +182,34 @@ struct ZSliderView: View {
                 }
             }
             .background(.white.opacity(0.08))
+            // macOS: a plain SwiftUI DragGesture, same as always - the mouse IS the legitimate
+            // touch-equivalent input there, nothing to filter out.
+            //
+            // iOS: FingerAndPencilDragCatcher (FingerAndPencilOnly.swift) instead - a connected
+            // mouse turned out to drive this exactly like a finger too (same root cause as
+            // HitTestView's own graph drag, confirmed live 2026-09-08 - "the mouse cursor does
+            // interact with... z slider still"). NOT a DragGesture at all on iOS, so there's no
+            // separate SwiftUI gesture recognizer left to race against. acceptMouseInstead flips
+            // to mouse-only while settings.mouseDrivesGraph is on - with the mouse acting as the
+            // graph's own primary input in that mode, leaving this finger-only left no way to
+            // move Z at all ("we have no way of interacting with the controls, since we are not
+            // using touch") - same flip HitTestView's own graph drag and ControlColumn's icon
+            // buttons already use.
+            #if os(macOS)
             .gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
-                    .onChanged { value in
-                        hasTouched = true
-                        settings.zDragActive = true
-                        hoverLocation = value.location
-                        hoverLocation.y = zSliderHeight - hoverLocation.y
-                        // No sound.beginZTouch(amp:) here - Norm: after practicing with it, the
-                        // Z-slider must never start a note on its own (so levels can be changed
-                        // silently); only the pen (HitTestView's graph touch) may trigger sound.
-                        // recordingState.beginZTouch() is called every frame, not gated behind a
-                        // "first touch of this drag" flag the way sound.beginGraphTouch is
-                        // elsewhere - it's cheap to call repeatedly (RecordingState's own
-                        // beginGesture no-ops once a gesture is already in progress) and being
-                        // unconditional means it also re-evaluates RecordingState's own "is this
-                        // actually audible right now" check on every frame, so a drag that starts
-                        // before the graph/pedal makes Z audible correctly starts being captured
-                        // the moment it does, rather than only at drag-start.
-                        recordingState.beginZTouch()
-                    }
-                    .onEnded { _ in
-                        settings.zDragActive = false
-                        recordingState.endZTouch()
-                    }
+                    .onChanged { value in handleZDragChanged(location: value.location) }
+                    .onEnded { _ in handleZDragEnded() }
             )
+            #else
+            .overlay(
+                FingerAndPencilDragCatcher(
+                    acceptMouseInstead: settings.mouseDrivesGraph,
+                    onChanged: { location in handleZDragChanged(location: location) },
+                    onEnded: { handleZDragEnded() }
+                )
+            )
+            #endif
 
             Color.clear.frame(height: settings.border)
         }
@@ -210,5 +217,27 @@ struct ZSliderView: View {
 #if os(iOS)
         .defersSystemGestures(on: .all)
 #endif
+    }
+
+    // Shared by the drag gesture/catcher above, on both platforms.
+    private func handleZDragChanged(location: CGPoint) {
+        settings.zDragActive = true
+        hoverLocation = location
+        hoverLocation.y = zSliderHeight - hoverLocation.y
+        // No sound.beginZTouch(amp:) here - Norm: after practicing with it, the Z-slider must
+        // never start a note on its own (so levels can be changed silently); only the pen
+        // (HitTestView's graph touch) may trigger sound. recordingState.beginZTouch() is called
+        // every frame, not gated behind a "first touch of this drag" flag the way
+        // sound.beginGraphTouch is elsewhere - it's cheap to call repeatedly (RecordingState's
+        // own beginGesture no-ops once a gesture is already in progress) and being unconditional
+        // means it also re-evaluates RecordingState's own "is this actually audible right now"
+        // check on every frame, so a drag that starts before the graph/pedal makes Z audible
+        // correctly starts being captured the moment it does, rather than only at drag-start.
+        recordingState.beginZTouch()
+    }
+
+    private func handleZDragEnded() {
+        settings.zDragActive = false
+        recordingState.endZTouch()
     }
 }

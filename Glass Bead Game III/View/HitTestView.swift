@@ -117,7 +117,55 @@ struct HitTestView: View {
     // never went silent - confirmed live 2026-09-05 ("does fire on pen down... but does not
     // fire on pen down when pedal is on").
     @State private var isTouchDown = false
-    
+
+    // Shared by the plain (no-Shift) DragGesture/FingerAndPencilDragCatcher below, on both
+    // platforms - no penEnabledOnGraph guard needed here any more: the iOS catcher itself is now
+    // the single source of truth for which touch type (real finger/Pencil, or mouse while
+    // Mac-style mode is on) is allowed to reach this at all, so by the time either of those
+    // calls this, it's already the right one for the current mode.
+    private func handleGraphInputChanged(location: CGPoint) {
+        if hitTestTrace {print("HitTestView: DragGesture .onChanged called without shift")}
+        hoverLocation = location
+        hoverLocation.y = height - hoverLocation.y
+        isDrag = true
+
+        // Mirrors settings.snap on every touch-move frame, not just once at the start of the
+        // drag (the original if isShift == false guard here only ever synced it the first time)
+        // - Norm found that releasing the new momentary-Portamento Shift key mid-drag correctly
+        // flipped settings.snap (and the toolbar icon) but the ongoing drag's own Portamento
+        // effect never let go, since nothing re-checked it again for the rest of that same
+        // touch. Now it tracks live, so a mid-drag Shift release (or press) takes effect
+        // immediately instead of only at the next touch's start.
+        isShift = !settings.snap
+        if !isTouchDown {
+            isTouchDown = true
+            if isSound == false{
+                sound.beginGraphTouch(amp: 1)
+                recordingState.beginGraphTouch()
+                isSound = true
+            } else {
+                sound.retriggerTouch() // pedal already had it sounding - still a fresh strike
+            }
+        }
+        if hitTestTrace {print("HitTestView: DragGesture .onChanged called. isDrag = \(isDrag), isShift = \(isShift), isSound = \(isSound)")}
+    }
+
+    private func handleGraphInputEnded() {
+        //hoverLocation = .zero  // this has been causing occasional bad values leaking into drag gestures. Don't think it is actually needed.
+        isDrag = false
+        isTouchDown = false
+        // See the shift-modifier gesture's own onEnded, just above #endif, for why this
+        // reflects settings.snap rather than hardcoding false.
+        isShift = !settings.snap
+        // if pedal is true, sound keeps going until the pedal itself is released
+        sound.endGraphTouch(pedal: settings.pedal)
+        recordingState.endGraphTouch()
+        if !settings.pedal {
+            isSound = false
+        }
+        if hitTestTrace {print("HitTestView: DragGesture: .onEnded called. Drag ended without shift. isDrag = \(isDrag), isShift = \(isShift), isSound = \(isSound)")}
+    }
+
     var body: some View {
         Canvas(){context, size in
             var crosshairPoint:CGPoint = .zero
@@ -125,6 +173,10 @@ struct HitTestView: View {
 
             if hitTestTrace {print("HitTestView: isHovering")}
             let rootFrequency = settings.rootFrequency
+            // Mac-style mode's own mouse-as-touch (see FingerAndPencilDragCatcher's own comment)
+            // calls this exact same handleGraphInputChanged real touch does, on every move, which
+            // already keeps isShift live from settings.snap - so Portamento (right-click hold or
+            // the toolbar icon) now affects this correctly with no special-casing needed here.
             let snapped = !isShift
 
             // x: touch-driven, unless incoming MIDI (Seq, or any other controller) is currently
@@ -158,6 +210,10 @@ struct HitTestView: View {
                 // the way they used to be while graphTouchCount was 0 - crosshairPoint.x below
                 // still uses the live hover position unconditionally, so the on-screen preview
                 // keeps working exactly as before; only the audible/exported pitch is gated.
+                //
+                // Mac-style mode's own mouse-as-touch sets isDrag exactly like real touch does
+                // (handleGraphInputChanged, called from FingerAndPencilDragCatcher below), so no
+                // separate write-gate condition is needed for it here at all.
                 if isDrag, xHit.frequency != settings.xFrequency {
                     sound.setXPitch(frequency: xHit.frequency)
                     settings.xFrequency = xHit.frequency
@@ -197,8 +253,10 @@ struct HitTestView: View {
         }
         #if os(macOS)
         .background(FirstClickCatcher(onFirstClick: handleFirstClick))
-        #endif
-        // only needed for mouse input, so that crosshair is updated on hover
+        // only needed for mouse input, so that crosshair is updated on hover - iOS gets this
+        // from FingerAndPencilDragCatcher's own onHover instead (see its own comment for why:
+        // that view sits in front of this Canvas for hit-testing, which silently blocks this
+        // exact modifier from ever firing there).
         .onContinuousHover { phase in
             if hitTestTrace {print("HitTestView: onContinuousHover")}
             switch phase {
@@ -214,7 +272,8 @@ struct HitTestView: View {
             if hitTestTrace {print("HitTestView: onHover")}
         }
     )
-        
+        #endif
+
 #if os(macOS)
         .gesture(
             // with shift pressed find a better solution for pen, since this is not implemented on iPad (yet?)
@@ -261,54 +320,42 @@ struct HitTestView: View {
 #endif
         // for touch and pen
         // only called without shift pressed
+        //
+        // macOS: a plain SwiftUI DragGesture, same as always - the mouse IS the legitimate
+        // touch-equivalent input there, nothing to filter out.
+        //
+        // iOS: FingerAndPencilDragCatcher (FingerAndPencilOnly.swift - see its own header
+        // comment) - NOT a DragGesture at all, so there's no separate SwiftUI gesture recognizer
+        // left to race against. Placed via .overlay() so it actually receives touches (a
+        // .background() placement was an earlier failed attempt's mistake) - attached
+        // unconditionally now (an intermediate version only attached it while Mac-style mode was
+        // off, which broke that mode's own position tracking outright, since this overlay also
+        // wins hit-testing for hover, not just touches - confirmed live 2026-09-08, "cursor does
+        // not move at all now"). acceptMouseInstead flips which touch type it admits: real
+        // finger/Pencil when Mac-style mode is off, mouse-as-touch when it's on - so it's always
+        // exactly the right filter for whichever mode is currently active. Its own onHover
+        // (unconditional, not tied to acceptMouseInstead - see its own comment) restores the
+        // pre-press crosshair preview this same overlay's hit-testing priority was blocking.
+        #if os(macOS)
         .gesture(
             DragGesture(minimumDistance: 0, coordinateSpace: .local)
-                .onChanged { value in
-                    if hitTestTrace {print("HitTestView: DragGesture .onChanged called without shift")}
-                    hoverLocation = value.location
-                    hoverLocation.y = height - hoverLocation.y
-                    isDrag = true
-                    
-                    // Mirrors settings.snap on every touch-move frame, not just once at the
-                    // start of the drag (the original if isShift == false guard here only ever
-                    // synced it the first time) - Norm found that releasing the new momentary-
-                    // Portamento Shift key mid-drag correctly flipped settings.snap (and the
-                    // toolbar icon) but the ongoing drag's own Portamento effect never let go,
-                    // since nothing re-checked it again for the rest of that same touch. Now it
-                    // tracks live, so a mid-drag Shift release (or press) takes effect
-                    // immediately instead of only at the next touch's start.
-                    isShift = !settings.snap
-                    if !isTouchDown {
-                        isTouchDown = true
-                        if isSound == false{
-                            sound.beginGraphTouch(amp: 1)
-                            recordingState.beginGraphTouch()
-                            isSound = true
-                        } else {
-                            sound.retriggerTouch() // pedal already had it sounding - still a fresh strike
-                        }
-                    }
-                    if hitTestTrace {print("HitTestView: DragGesture .onChanged called. isDrag = \(isDrag), isShift = \(isShift), isSound = \(isSound)")}
-                }
-                .onEnded { _ in
-                    //hoverLocation = .zero  // this has been causing occasional bad values leaking into drag gestures. Don't think it is actually needed.
-                    isDrag = false
-                    isTouchDown = false
-                    // See the shift-modifier gesture's own onEnded, just above #endif, for why
-                    // this reflects settings.snap rather than hardcoding false.
-                    isShift = !settings.snap
-                    // if pedal is true, sound keeps going until the pedal itself is released
-                    sound.endGraphTouch(pedal: settings.pedal)
-                    recordingState.endGraphTouch()
-                    if !settings.pedal {
-                        isSound = false
-                    }
-                    if hitTestTrace {print("HitTestView: DragGesture: .onEnded called. Drag ended without shift. isDrag = \(isDrag), isShift = \(isShift), isSound = \(isSound)")}
-                }
+                .onChanged { value in handleGraphInputChanged(location: value.location) }
+                .onEnded { _ in handleGraphInputEnded() }
         )
-#if os(iOS)
+        #else
+        .overlay(
+            FingerAndPencilDragCatcher(
+                acceptMouseInstead: settings.mouseDrivesGraph,
+                onChanged: { location in handleGraphInputChanged(location: location) },
+                onEnded: { handleGraphInputEnded() },
+                onHover: { location in
+                    hoverLocation = location
+                    hoverLocation.y = height - hoverLocation.y
+                }
+            )
+        )
         .defersSystemGestures(on: .all)
-#endif
+        #endif
         // A touch's own onEnded only resets isSound to false when settings.pedal is already
         // false at that moment (see both gestures above) - deliberately, so a pedal-held touch
         // leaves isSound true and doesn't get double-triggered. But if the pedal is released
