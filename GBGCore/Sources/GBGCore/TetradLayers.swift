@@ -34,6 +34,17 @@ public struct TetradLayers {
             let key = Tetrads.rounded(tetrad.zElement.valueNormalized)
             grouped[key, default: []].append(tetrad)
         }
+        // Pre-sorted largest-to-smallest by sizeNormalized here, once, rather than TetradView
+        // re-sorting its own combined draw list from scratch on every single frame during a
+        // Z-slider drag - TetradView only ever needs to merge the (at most two) already-sorted
+        // layers it's currently cross-fading between, an O(n) merge instead of an O(n log n)
+        // sort repeated every frame. Confirmed live 2026-09-09 as part of the same investigation
+        // into hangs building up during rapid Z dragging. Safe to do once and never again: the
+        // tetrads within one layer never change after this - only which layers are active, and
+        // their cross-fade weight, changes as Z moves.
+        for key in grouped.keys {
+            grouped[key]?.sort { $0.sizeNormalized > $1.sizeNormalized }
+        }
         self.tetradsByZ = grouped
         self.sortedZValues = grouped.keys.sorted()
     }

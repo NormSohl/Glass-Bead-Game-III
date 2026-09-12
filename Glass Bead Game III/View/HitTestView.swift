@@ -124,6 +124,7 @@ struct HitTestView: View {
     // Mac-style mode is on) is allowed to reach this at all, so by the time either of those
     // calls this, it's already the right one for the current mode.
     private func handleGraphInputChanged(location: CGPoint) {
+      HangProfiler.shared.measure("HitTestView.handleGraphInputChanged") {
         if hitTestTrace {print("HitTestView: DragGesture .onChanged called without shift")}
         hoverLocation = location
         hoverLocation.y = height - hoverLocation.y
@@ -148,6 +149,7 @@ struct HitTestView: View {
             }
         }
         if hitTestTrace {print("HitTestView: DragGesture .onChanged called. isDrag = \(isDrag), isShift = \(isShift), isSound = \(isSound)")}
+      }
     }
 
     private func handleGraphInputEnded() {
@@ -168,6 +170,7 @@ struct HitTestView: View {
 
     var body: some View {
         Canvas(){context, size in
+          HangProfiler.shared.measure("HitTestView.body.Canvas") {
             var crosshairPoint:CGPoint = .zero
             height = size.height
 
@@ -250,6 +253,7 @@ struct HitTestView: View {
                 }, with: .color(.white),
                 lineWidth: 3
             )
+          }
         }
         #if os(macOS)
         .background(FirstClickCatcher(onFirstClick: handleFirstClick))

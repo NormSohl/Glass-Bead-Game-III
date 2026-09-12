@@ -128,6 +128,7 @@ struct FingerAndPencilDragCatcher: UIViewRepresentable {
         }
 
         override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+            HangProfiler.shared.recordRawEvent("TouchFilteringView.touchesMoved.raw")
             guard let activeTouch, touches.contains(activeTouch) else { return }
             report(activeTouch)
         }

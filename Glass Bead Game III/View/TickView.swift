@@ -47,9 +47,29 @@ struct Ticks: View {
                 // with no strip/corner boundaries inside it at all, can avoid that.
                 break
             case .letters:
-                drawLetters(context: context, size: size)
+                HangProfiler.shared.measure("Ticks.drawLetters") {
+                    drawLetters(context: context, size: size)
+                }
             }
         }
+    }
+
+    // Note-name labels ("C", "D", ...) never change, but `context.draw(Text(...))` re-runs
+    // SwiftUI's full attributed-string/font resolution from scratch on every call. drawLetters
+    // used to build and draw a fresh Text per tick (up to ~13 per strip, x4 strips) on every
+    // single frame this Canvas redraws - confirmed live via `sample` profiling 2026-09-09 during
+    // the reported rapid-Z-drag hang investigation: this one function accounted for ~21% of all
+    // main-thread CPU over an 18s synthetic drag. Caching the resolved text once per (label,
+    // fontSize) - stable across frames as long as the window size doesn't change - turns each
+    // draw call back into cheap glyph blitting instead of a full text-layout pass.
+    private static var resolvedLabelCache: [String: GraphicsContext.ResolvedText] = [:]
+
+    private func resolvedLabel(_ text: String, fontSize: Double, context: GraphicsContext) -> GraphicsContext.ResolvedText {
+        let key = "\(text)-\(fontSize)"
+        if let cached = Ticks.resolvedLabelCache[key] { return cached }
+        let resolved = context.resolve(Text(text).font(.custom("SFPro", size: fontSize)).foregroundStyle(.white))
+        Ticks.resolvedLabelCache[key] = resolved
+        return resolved
     }
 
     private func drawLetters(context: GraphicsContext, size: CGSize) {
@@ -120,7 +140,7 @@ struct Ticks: View {
             while myTick < 0 {myTick = myTick + 12}
             while myTick > 12 {myTick = myTick - 12}
 
-            let _ = context.draw(Text(noteNames[myTick]).font(.custom("SFPro", size: fontSize)).foregroundStyle(.white),at: textLocation)
+            context.draw(resolvedLabel(noteNames[myTick], fontSize: fontSize, context: context), at: textLocation)
         }
     }
 

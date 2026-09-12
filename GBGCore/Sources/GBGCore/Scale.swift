@@ -52,6 +52,17 @@ public struct Scale {
     // total range of scale between highest and lowest elements. Needed to properly scale the graph to the view size
     public var rangeNormalized: Double = 0.0  // positive value
 
+    // Precomputed once here, at the same point `scale` itself is finalized, rather than rebuilt
+    // from scratch by every caller that needs it - Tetrads.elementsPairing used to rebuild this
+    // exact dictionary from `scale.scale` on every single call, and GraphView called it twice
+    // redundantly on every touch-move frame during a Z-slider drag (visibleScaleElements, then
+    // Graph.body's own drawLine loop computing the identical thing again) - confirmed live
+    // 2026-09-09 as the likely cause of hangs building up over sustained rapid Z dragging. This
+    // dictionary depends only on `scale` itself, which only changes on a limit/range rebuild
+    // (rare), so computing it once here and having every caller read it instead is a pure win.
+    // Same rounding convention as Tetrads.rounded, shared here so both stay in exact agreement.
+    public var scaleElementByRoundedValue: [Double: ScaleElement] = [:]
+
     public init (limit:Int, highestRatio: Double, lowestRatio:Double) {
         
         // positive
@@ -121,6 +132,10 @@ public struct Scale {
         }
         // and do the final upper bounds which is set to the valueNormalized since there is no higher scale element in the list.  Similar to the first scale element
         scale[scale.count-1].upperBounds = scale[scale.count-1].valueNormalized
+
+        for element in scale {
+            scaleElementByRoundedValue[Tetrads.rounded(element.valueNormalized)] = element
+        }
     }
     
     public func convertScaleValueToScreenUnits(

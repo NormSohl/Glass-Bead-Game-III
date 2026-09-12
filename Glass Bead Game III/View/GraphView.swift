@@ -19,11 +19,18 @@ struct GraphView: View {
     var interactive: Bool = true
 
     var body: some View {
-        // Same Z-filtered subset of scale degrees Graph's own grid lines are drawn from (see
-        // visibleScaleElements's own comment) - computed once here so all four border Ticks show
-        // ratio labels only for degrees that actually have a visible line right now, instead of
-        // always labelling the full scale regardless of "Filter Grid to Z".
-        let visibleElements = visibleScaleElements(scale: scale, tetradLayers: tetradLayers, settings: settings)
+        // Computed once here and shared by both the border Ticks' labeling (visibleElements,
+        // deduplicated below) and Graph's own drawLine loop (weightedPairings, passed straight
+        // through) - see weightedVisiblePairings' own comment for why these two used to each
+        // recompute this independently, calling Tetrads.elementsPairing with the same keys twice
+        // on every touch-move frame during a Z-slider drag.
+        let weightedPairings = HangProfiler.shared.measure("GraphView.body.weightedVisiblePairings") {
+            weightedVisiblePairings(scale: scale, tetradLayers: tetradLayers, settings: settings)
+        }
+        var seenElementValues = Set<Double>()
+        let visibleElements: [ScaleElement] = settings.filterGraphLines
+            ? weightedPairings.flatMap { $0.elements }.filter { seenElementValues.insert($0.valueNormalized).inserted }
+            : scale.scale
 
         // Ratios mode's leading/trailing columns need real room for a horizontal "135/128"-style
         // string; top/bottom only stack a short vertical near/far pair, which the modest default
@@ -69,7 +76,7 @@ struct GraphView: View {
                     )
                     .equatable()
                     // graph
-                    Graph(scale: scale, tetradLayers: tetradLayers, settings: settings)
+                    Graph(scale: scale, tetradLayers: tetradLayers, settings: settings, weightedPairings: weightedPairings)
                     TetradView(tetradLayers: tetradLayers,
                                scale: scale,
                                settings: settings,
@@ -79,6 +86,18 @@ struct GraphView: View {
                         HitTestView(scale:scale, settings: settings, recordingState: recordingState)
                     }
                 }
+                // Purely graphical Canvas drawing with no meaningful screen-reader semantics -
+                // hundreds of rapidly-shifting diamonds/gridlines have nothing sensible to
+                // announce anyway. Diagnostic hypothesis 2026-09-10: a live LLDB capture during
+                // the rapid-Z-drag hang investigation caught the main thread stuck inside the
+                // OS's own AXUIContextDrawingAnnotation/-[NSMutableArray removeObject:] - an O(n)
+                // scan - and the user's own report of the hang progressively worsening the longer
+                // continuous dragging continues matches an unbounded-growth pattern in whatever
+                // that array is tracking, not anything in this app's own (separately measured,
+                // sub-2ms-per-call) code. Excluding this whole subtree from the accessibility
+                // tree costs nothing (nothing here needs to BE accessible) and tests/fixes that
+                // theory in one shot without needing Developer Mode toggled off to isolate it.
+                .accessibilityHidden(true)
                 // Squareness here isn't just cosmetic - Graph.body's own drawLine deliberately
                 // cross-uses size.width for the horizontal line's position and size.height for
                 // the vertical line's, a shortcut that is only correct when width == height
@@ -340,18 +359,37 @@ func tickBorderSizes(settings: AppSettings) -> (horizontal: Double, vertical: Do
     return (horizontal, vertical)
 }
 
+// Computes each active Z bracketing key's own weight and paired scale elements exactly once -
+// shared by visibleScaleElements below (which flattens/dedupes this for the border Ticks'
+// labeling) and Graph's own drawLine loop (GraphView.swift), which needs the SAME keys/elements
+// but per-key, not deduplicated, since a line valid at both bracketing keys is meant to be drawn
+// twice (alpha stacking, matching how the diamonds themselves cross-fade). The two call sites
+// used to independently recompute zKeys and call Tetrads.elementsPairing themselves, calling it
+// with the exact same key twice on every single touch-move frame during a Z-slider drag -
+// wasted work even after Tetrads.elementsPairing itself stopped rebuilding its own lookup
+// dictionary from scratch each call (see Scale.scaleElementByRoundedValue's own comment).
+// Confirmed live 2026-09-09 as part of the same investigation into hangs building up over
+// sustained rapid Z dragging.
+func weightedVisiblePairings(scale: Scale, tetradLayers: TetradLayers, settings: AppSettings) -> [(elements: [ScaleElement], weight: Double)] {
+    guard settings.filterGraphLines else { return [] }
+
+    let zValueNormalized = Tetrads.rounded(log2(settings.zFrequency / settings.rootFrequency))
+    let zKeys: [(key: Double, weight: Double)] = settings.snap
+        ? (tetradLayers.nearestZKey(to: zValueNormalized).map { [(key: $0, weight: 1.0)] } ?? [])
+        : tetradLayers.bracketingZKeys(around: zValueNormalized)
+
+    return zKeys.map { key, weight in
+        (elements: Tetrads.elementsPairing(withNormalizedValue: key, in: scale), weight: weight)
+    }
+}
+
 func visibleScaleElements(scale: Scale, tetradLayers: TetradLayers, settings: AppSettings) -> [ScaleElement] {
     guard settings.filterGraphLines else { return scale.scale }
 
-    let zValueNormalized = Tetrads.rounded(log2(settings.zFrequency / settings.rootFrequency))
-    let zKeys: [Double] = settings.snap
-        ? (tetradLayers.nearestZKey(to: zValueNormalized).map { [$0] } ?? [])
-        : tetradLayers.bracketingZKeys(around: zValueNormalized).map { $0.key }
-
     var seen = Set<Double>()
     var result: [ScaleElement] = []
-    for key in zKeys {
-        for interval in Tetrads.elementsPairing(withNormalizedValue: key, in: scale) {
+    for pairing in weightedVisiblePairings(scale: scale, tetradLayers: tetradLayers, settings: settings) {
+        for interval in pairing.elements {
             if seen.insert(interval.valueNormalized).inserted {
                 result.append(interval)
             }
@@ -387,9 +425,16 @@ struct Graph: View {
     var scale: Scale
     var tetradLayers: TetradLayers
     @ObservedObject var settings: AppSettings
+    // Computed once by GraphView.body and passed straight through - see
+    // weightedVisiblePairings' own comment for why this used to be recomputed independently
+    // here (same Z-keys, same Tetrads.elementsPairing calls GraphView's own visibleElements
+    // already made). Empty when settings.filterGraphLines is false; the else branch below
+    // draws the full unfiltered scale in that case, same as always.
+    var weightedPairings: [(elements: [ScaleElement], weight: Double)]
 
     var body: some View {
         Canvas(){context, size in
+          HangProfiler.shared.measure("Graph.body.Canvas") {
             func drawLine(for interval: ScaleElement, weight: Double) {
                 // Horizontal line
                 var yIntervalInScreenUnits = scale.convertScaleValueToScreenUnits(
@@ -425,14 +470,9 @@ struct Graph: View {
             // than snapping on/off abruptly. A line valid at both keys is drawn twice, once per
             // key's weight - alpha stacks, same as two overlapping diamonds would.
             if settings.filterGraphLines {
-                let zValueNormalized = Tetrads.rounded(log2(settings.zFrequency / settings.rootFrequency))
-                let zKeys: [(key: Double, weight: Double)] = settings.snap
-                    ? tetradLayers.nearestZKey(to: zValueNormalized).map { [(key: $0, weight: 1.0)] } ?? []
-                    : tetradLayers.bracketingZKeys(around: zValueNormalized)
-
-                for (key, weight) in zKeys {
-                    for interval in Tetrads.elementsPairing(withNormalizedValue: key, in: scale) {
-                        drawLine(for: interval, weight: weight)
+                for pairing in weightedPairings {
+                    for interval in pairing.elements {
+                        drawLine(for: interval, weight: pairing.weight)
                     }
                 }
             } else {
@@ -440,6 +480,7 @@ struct Graph: View {
                     drawLine(for: interval, weight: 1.0)
                 }
             }
+          }
         }
     }
 }

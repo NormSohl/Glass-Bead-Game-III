@@ -65,15 +65,11 @@ public struct Tetrads {
     public init(scale: Scale) {
         self.scale = scale
 
-        // Shared by all three interval checks below, rather than three copies of the same
-        // linear search - same rounding convention Diamonds already uses for floating-point
-        // interval matching. Keyed to the actual ScaleElement (not just a membership Set),
-        // because the size rule below needs that element's own numerator/denominator - the
-        // X:Y/X:Z/Y:Z ratio itself, not just whether it exists in the scale.
-        var scaleElementByRoundedValue: [Double: ScaleElement] = [:]
-        for element in scale.scale {
-            scaleElementByRoundedValue[Tetrads.rounded(element.valueNormalized)] = element
-        }
+        // Precomputed once by Scale itself (see its own scaleElementByRoundedValue comment) -
+        // this used to rebuild the identical dictionary here too, redundant with Scale's own
+        // copy even though this particular call site is only a one-time per-scale cost, not a
+        // per-frame one; reusing it removes the duplicate logic for free while we're here.
+        let scaleElementByRoundedValue = scale.scaleElementByRoundedValue
 
         for x in scale.scale {
             for y in scale.scale {
@@ -139,13 +135,16 @@ public struct Tetrads {
     /// matching the "identical to the unfiltered default at Z=unison" invariant TetradsTests
     /// already verifies for the tetrads themselves.
     public static func elementsPairing(withNormalizedValue zValueNormalized: Double, in scale: Scale) -> [ScaleElement] {
-        var scaleElementByRoundedValue: [Double: ScaleElement] = [:]
-        for element in scale.scale {
-            scaleElementByRoundedValue[rounded(element.valueNormalized)] = element
-        }
+        // Used to rebuild this exact lookup from scratch on every single call - GraphView calls
+        // this (both directly, and via visibleScaleElements) on every touch-move frame during a
+        // Z-slider drag, so that rebuild was happening dozens of times a second for no reason:
+        // the dictionary depends only on `scale`, which Scale itself now precomputes once (see
+        // its own scaleElementByRoundedValue comment) and never changes except on an actual
+        // limit/range rebuild. Confirmed live 2026-09-09 as the likely cause of hangs building
+        // up over sustained rapid Z dragging.
         return scale.scale.filter { element in
             let diff = abs(element.valueNormalized - zValueNormalized)
-            return scaleElementByRoundedValue[rounded(diff)] != nil
+            return scale.scaleElementByRoundedValue[rounded(diff)] != nil
         }
     }
 }

@@ -14,7 +14,6 @@
 		06824BFC2B886963002E9661 /* DissonanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF52B886962002E9661 /* DissonanceView.swift */; };
 		06824BFD2B886963002E9661 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF62B886962002E9661 /* ContentView.swift */; };
 		06824BFE2B886963002E9661 /* HitTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BF72B886962002E9661 /* HitTestView.swift */; };
-		794DD60BA4DD450523F851E3 /* FingerAndPencilOnly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 078263106BB44838E14BD925 /* FingerAndPencilOnly.swift */; };
 		06824C012B886963002E9661 /* GraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BFA2B886963002E9661 /* GraphView.swift */; };
 		06824C022B886963002E9661 /* ControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06824BFB2B886963002E9661 /* ControlView.swift */; };
 		06D0626C2BAA9A9000C68262 /* ControlData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06D062682BAA9A9000C68262 /* ControlData.swift */; };
@@ -29,6 +28,7 @@
 		647B50C93934404799447CE2 /* GBGCore in Frameworks */ = {isa = PBXBuildFile; productRef = 04B162C5595040048C6852EF /* GBGCore */; };
 		6CD18EB7875F4D6D83FA672A /* GBGCore in Frameworks */ = {isa = PBXBuildFile; productRef = 04B162C5595040048C6852EF /* GBGCore */; };
 		751E2CD4B179416AA331E175 /* ExternalDisplaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3254C2ACD7B49B292C8D1F9 /* ExternalDisplaySceneDelegate.swift */; };
+		794DD60BA4DD450523F851E3 /* FingerAndPencilOnly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 078263106BB44838E14BD925 /* FingerAndPencilOnly.swift */; };
 		8878126A0E2B457A823BFDAD /* SequencerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA574CC535E9488087FE433B /* SequencerState.swift */; };
 		8948E67C5DBAEC3899D80AE1 /* KeyMappingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778271CF9DA6CEB34CCEC947 /* KeyMappingView.swift */; };
 		8CFA26E61CFF41F3AE63BE38 /* TetradView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6DF75EF1C024FBCA782C7AE /* TetradView.swift */; };
@@ -44,6 +44,7 @@
 		F360FFA894604821B07976E7 /* RootIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04CFF1117DA340028AAA74C8 /* RootIndicatorView.swift */; };
 		F4CDD0102BD145C7BD92A70B /* SeqApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F35D5C9D9E84298AE75468E /* SeqApp.swift */; };
 		FE88F8752F854C75871D6C00 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F71E89B896DE4710A56E4B62 /* Assets.xcassets */; };
+		FF3242B34ED98AD652BAA3B5 /* HangProfiler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F1C0DE9AAC56B6A598764CC /* HangProfiler.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -58,14 +59,15 @@
 		06824BF52B886962002E9661 /* DissonanceView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DissonanceView.swift; sourceTree = "<group>"; };
 		06824BF62B886962002E9661 /* ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		06824BF72B886962002E9661 /* HitTestView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HitTestView.swift; sourceTree = "<group>"; };
-		078263106BB44838E14BD925 /* FingerAndPencilOnly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FingerAndPencilOnly.swift; sourceTree = "<group>"; };
 		06824BFA2B886963002E9661 /* GraphView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GraphView.swift; sourceTree = "<group>"; };
 		06824BFB2B886963002E9661 /* ControlView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControlView.swift; sourceTree = "<group>"; };
 		06D062312BAA953300C68262 /* Overview.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Overview.md; sourceTree = "<group>"; };
 		06D062682BAA9A9000C68262 /* ControlData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControlData.swift; sourceTree = "<group>"; };
 		06D0626F2BAA9C4E00C68262 /* Sound.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sound.swift; sourceTree = "<group>"; };
+		078263106BB44838E14BD925 /* FingerAndPencilOnly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FingerAndPencilOnly.swift; sourceTree = "<group>"; };
 		09830CF05D1A4289498E8A7B /* LiveCaptureState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveCaptureState.swift; sourceTree = "<group>"; };
 		11652339D95D45C69024E258 /* AudienceGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudienceGraphView.swift; sourceTree = "<group>"; };
+		1F1C0DE9AAC56B6A598764CC /* HangProfiler.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HangProfiler.swift; sourceTree = "<group>"; };
 		290A597C9AA1404D82BB59FA /* ScoreCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreCapture.swift; sourceTree = "<group>"; };
 		2C54886396D84BE08EF97D59 /* Seq.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Seq.entitlements; sourceTree = "<group>"; };
 		4A8E917E593A42A893FBEA9C /* PitchHitTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PitchHitTest.swift; sourceTree = "<group>"; };
@@ -138,6 +140,7 @@
 				06824BE12B881E3D002E9661 /* Assets.xcassets */,
 				06824BE32B881E3D002E9661 /* Glass_Bead_Game_III.entitlements */,
 				06824C092B886A5C002E9661 /* Preview Content */,
+				1F1C0DE9AAC56B6A598764CC /* HangProfiler.swift */,
 			);
 			path = "Glass Bead Game III";
 			sourceTree = SOURCE_ROOT;
@@ -368,6 +371,7 @@
 				8CFA26E61CFF41F3AE63BE38 /* TetradView.swift in Sources */,
 				EE645A5026D54B47871B55B4 /* ScoreCapture.swift in Sources */,
 				8948E67C5DBAEC3899D80AE1 /* KeyMappingView.swift in Sources */,
+				FF3242B34ED98AD652BAA3B5 /* HangProfiler.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

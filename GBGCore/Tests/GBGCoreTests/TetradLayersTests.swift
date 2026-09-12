@@ -156,4 +156,26 @@ final class TetradLayersTests: XCTestCase {
         XCTAssertEqual(key, above)
         XCTAssertTrue(fromLayer.tetrads.allSatisfy { Tetrads.rounded($0.zElement.valueNormalized) == key })
     }
+
+    // Locks in an invariant TetradView now depends on for correctness, not just performance:
+    // it merges the (at most two) active layers' own tetrad arrays under the assumption that
+    // each one already arrives sorted largest-to-smallest by sizeNormalized (see
+    // TetradLayers.init's own comment - added 2026-09-09 to replace TetradView's own from-
+    // scratch per-frame sort with an O(n) merge of two pre-sorted lists). If this invariant
+    // ever broke silently, TetradView's merge would produce the wrong draw order (larger
+    // tetrads could overprint smaller ones) with no visible crash - this test exists so that
+    // regression is caught here instead.
+    func testEachLayersTetradsAreSortedLargestToSmallest() {
+        let scale = Scale(limit: 9, highestRatio: 3/1, lowestRatio: 1/2)
+        let layers = TetradLayers(scale: scale)
+        for key in layers.sortedZValues {
+            let tetrads = layers.nearestLayer(atZNormalized: key).tetrads
+            for i in 1..<tetrads.count {
+                XCTAssertGreaterThanOrEqual(
+                    tetrads[i - 1].sizeNormalized, tetrads[i].sizeNormalized,
+                    "layer at Z=\(key) is not sorted largest-to-smallest at index \(i)"
+                )
+            }
+        }
+    }
 }

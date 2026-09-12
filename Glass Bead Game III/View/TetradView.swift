@@ -30,6 +30,7 @@ struct TetradView: View {
     var body: some View {
         if showDiamonds {
             Canvas { context, size in
+              HangProfiler.shared.measure("TetradView.body.Canvas") {
                 let zRatio = settings.zFrequency / settings.rootFrequency
                 // Rounded to the same precision TetradLayers groups its Z keys at
                 // (Tetrads.rounded, 5 decimal places) - without this, an exactly-snapped Z
@@ -55,21 +56,57 @@ struct TetradView: View {
                     ? [tetradLayers.nearestLayer(atZNormalized: zValueNormalized)]
                     : tetradLayers.bracketingLayers(atZNormalized: zValueNormalized)
 
-                // Collected across both bracketing layers and drawn smallest-last (on top),
-                // not layer-order - Norm: "the smaller overprints the larger." Layer order
-                // alone (below-Z first, above-Z second) doesn't guarantee that; size does.
+                // Norm: size should stay put during a cross-fade, only opacity fades (see the
+                // fill/stroke calls below), so a fading-in tetrad reads as "becoming visible"
+                // rather than "growing."
+                func tetradSize(for tetrad: TetradElement) -> Double {
+                    var value = (size.width / 35) * tetrad.sizeNormalized * 0.85
+                    if value < 4 { value = 4 }
+                    return value
+                }
+
+                // Collected across both bracketing layers and drawn smallest-last (on top), not
+                // layer-order - Norm: "the smaller overprints the larger." Layer order alone
+                // (below-Z first, above-Z second) doesn't guarantee that; size does. Each
+                // layer's own tetrads arrive here already sorted largest-to-smallest (see
+                // TetradLayers.init's own comment), so this only needs to merge the (at most
+                // two) active layers - an O(n) merge instead of building one combined list and
+                // sorting it from scratch every single frame, which used to be the case here.
                 var toDraw: [(tetrad: TetradElement, weight: Double, size: Double)] = []
-                for layer in activeLayers {
-                    for tetrad in layer.tetrads {
-                        // Norm: size should stay put during a cross-fade, only opacity fades
-                        // (see the fill/stroke calls below), so a fading-in tetrad reads as
-                        // "becoming visible" rather than "growing."
-                        var tetradSize = (size.width / 35) * tetrad.sizeNormalized * 0.85
-                        if tetradSize < 4 { tetradSize = 4 }
-                        toDraw.append((tetrad, layer.weight, tetradSize))
+                if activeLayers.count == 2 {
+                    let first = activeLayers[0]
+                    let second = activeLayers[1]
+                    toDraw.reserveCapacity(first.tetrads.count + second.tetrads.count)
+                    var i = 0, j = 0
+                    while i < first.tetrads.count && j < second.tetrads.count {
+                        if first.tetrads[i].sizeNormalized >= second.tetrads[j].sizeNormalized {
+                            let tetrad = first.tetrads[i]
+                            toDraw.append((tetrad, first.weight, tetradSize(for: tetrad)))
+                            i += 1
+                        } else {
+                            let tetrad = second.tetrads[j]
+                            toDraw.append((tetrad, second.weight, tetradSize(for: tetrad)))
+                            j += 1
+                        }
+                    }
+                    while i < first.tetrads.count {
+                        let tetrad = first.tetrads[i]
+                        toDraw.append((tetrad, first.weight, tetradSize(for: tetrad)))
+                        i += 1
+                    }
+                    while j < second.tetrads.count {
+                        let tetrad = second.tetrads[j]
+                        toDraw.append((tetrad, second.weight, tetradSize(for: tetrad)))
+                        j += 1
+                    }
+                } else {
+                    for layer in activeLayers {
+                        toDraw.reserveCapacity(toDraw.count + layer.tetrads.count)
+                        for tetrad in layer.tetrads {
+                            toDraw.append((tetrad, layer.weight, tetradSize(for: tetrad)))
+                        }
                     }
                 }
-                toDraw.sort { $0.size > $1.size }
 
                 for entry in toDraw {
                     let tetrad = entry.tetrad
@@ -109,6 +146,7 @@ struct TetradView: View {
                     context.fill(tetradPath, with: .color(color.opacity(entry.weight)))
                     context.stroke(tetradPath, with: .color(.gray.opacity(entry.weight)))
                 }
+              }
             }
         }
     }

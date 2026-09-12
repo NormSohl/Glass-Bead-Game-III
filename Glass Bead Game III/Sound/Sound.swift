@@ -253,24 +253,38 @@ class Sound {
         stopEngine()
     }
 
+    // outputToMidi gates every MIDI call below, matching startEngine's own
+    // `if outputToMidi {midi.startMidi()}` - these four used to call straight into `midi`
+    // unconditionally, regardless of the toggle, an inconsistency confirmed live 2026-09-09
+    // while investigating a rapid-Z-slider-dragging hang (updatePitchBend's own `guard isPlaying`
+    // already no-ops most of these calls in practice, so this wasn't the hang's actual cause,
+    // but it's a real bug on its own: turning MIDI off was never actually stopping these calls).
     func setRootPitch(frequency: Double){
+      HangProfiler.shared.measure("Sound.setRootPitch") {
         audio.triad.setTriadRootPitch (frequency: frequency)
-        midi.setMidiReferencePitch(frequency: frequency)
+        if outputToMidi { midi.setMidiReferencePitch(frequency: frequency) }
+      }
     }
-    
+
     func setXPitch(frequency: Double){
+      HangProfiler.shared.measure("Sound.setXPitch") {
         audio.triad.setTriadXPitch(frequency: frequency)
-        midi.setMidiXPitch(frequency: frequency)
+        if outputToMidi { midi.setMidiXPitch(frequency: frequency) }
+      }
     }
-    
+
     func setYPitch(frequency: Double){
+      HangProfiler.shared.measure("Sound.setYPitch") {
         audio.triad.setTriadYPitch(frequency: frequency)
-        midi.setMidiYPitch(frequency: frequency)
+        if outputToMidi { midi.setMidiYPitch(frequency: frequency) }
+      }
     }
 
     func setZPitch(frequency: Double){
+      HangProfiler.shared.measure("Sound.setZPitch") {
         audio.triad.setTriadZPitch(frequency: frequency)
-        midi.setMidiZPitch(frequency: frequency)
+        if outputToMidi { midi.setMidiZPitch(frequency: frequency) }
+      }
     }
     
     func setPitchBendRangeMPE(pitchBendRange: Int){

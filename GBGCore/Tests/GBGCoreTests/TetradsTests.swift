@@ -171,4 +171,47 @@ final class TetradsTests: XCTestCase {
 
         XCTAssertTrue(valuesUsedByLayer.isSubset(of: filteredValues))
     }
+
+    // Regression test for a real hang reported live 2026-09-09: rapid Z-slider dragging on iPad
+    // caused the app to hang for a second or more after a couple of rounds of rapid dragging.
+    // Root cause: elementsPairing used to rebuild its own O(n) lookup dictionary from scratch on
+    // every single call, and GraphView called it multiple times per touch-move frame
+    // (visibleScaleElements, and again independently in Graph's own drawLine loop) - dozens of
+    // times a second during a real drag. Fixed by precomputing the lookup once in Scale.init
+    // instead (Scale.scaleElementByRoundedValue) and having elementsPairing read it rather than
+    // rebuild it, plus sharing one computation between GraphView's two former call sites
+    // (weightedVisiblePairings). This simulates that same repeated-call pattern - many calls in
+    // a tight loop, sweeping Z smoothly across the whole scale (not a fixed value, since a
+    // constant Z would let an unrelated single-entry cache mask a real per-call-rebuild
+    // regression) - at a realistic harmonic limit, and checks two things: each batch completes
+    // well within a generous ceiling, and no batch is dramatically slower than the first (which
+    // would indicate some new unbounded per-call state, e.g. a cache with no eviction).
+    func testElementsPairingPerformanceStaysFlatUnderRapidRepeatedCalls() {
+        let scale = Scale(limit: 19, highestRatio: 3/1, lowestRatio: 1/2)
+        let callsPerBatch = 2000
+        let batchCount = 5
+
+        var batchDurations: [TimeInterval] = []
+        for _ in 0..<batchCount {
+            let start = Date()
+            for i in 0..<callsPerBatch {
+                let t = Double(i) / Double(callsPerBatch)
+                let zValueNormalized = scale.lowestRatioNormalized + t * scale.rangeNormalized
+                _ = Tetrads.elementsPairing(withNormalizedValue: zValueNormalized, in: scale)
+            }
+            batchDurations.append(Date().timeIntervalSince(start))
+        }
+
+        // Absolute ceiling: comfortably above what the current O(1)-lookup implementation needs
+        // in practice, but far below what a from-scratch-dictionary-per-call implementation
+        // would take at this limit/call count - catches a real regression, not just noise.
+        for duration in batchDurations {
+            XCTAssertLessThan(duration, 0.5, "elementsPairing batch took \(duration)s - investigate for a reintroduced per-call dictionary rebuild")
+        }
+
+        guard let first = batchDurations.first, first > 0 else { return }
+        for duration in batchDurations.dropFirst() {
+            XCTAssertLessThan(duration, first * 5, "elementsPairing batch degraded to \(duration)s vs first batch's \(first)s - possible growing-state regression")
+        }
+    }
 }
