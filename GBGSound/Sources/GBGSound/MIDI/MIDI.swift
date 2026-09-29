@@ -193,19 +193,26 @@ public class Midi{
     // default (often 2 semitones on plain GM-style gear, or 48 on many MPE-oriented
     // instruments), which won't match pitchBendRangeMPE and renders every bend at the wrong
     // interval. Norm: real devices often ignore this and need manual configuration anyway, but
-    // it's still the right thing to send. This is zone-wide - one message on the zone's master
-    // channel covers every member channel, same as the MPE Configuration message above - so
-    // it's called from the same places that resend that (destination changes). Deliberately
+    // it's still the right thing to send. Sent on every voice channel as well as the master
+    // (2026-09-28): per the MPE spec, RPN 0 on the master channel sets only the master's own
+    // range - the member channels' range has to be set on a member channel - and a non-MPE
+    // receiver applies RPN 0 per channel anyway. Sending it only on the master (the original
+    // version) left MPE synths at their 48-semitone default and plain synths at theirs.
+    // Called from the same places that resend the MPE Configuration message above
+    // (destination changes), plus whenever the range setting changes. Deliberately
     // NOT called from inside enableMPE() itself: enableMPE's very first call happens from
     // initMidi(), at app launch, before AppSettings has ever pushed a real pitchBendRangeMPE
     // value - sending 0 there would tell a receiver to actually zero out its bend range, worse
     // than not telling it anything. Every call site below runs after a real value is guaranteed
     // to be set.
     private func sendPitchBendSensitivity(){
-        sendMidiRPN(channel: mpeChannel.lowerZoneMasterChannel,
-                    rpn: registeredParameterNumbers.pitchBendSensitivity,
-                    msb: UInt8(pitchBendRangeMPE),
-                    lsb: 0)
+        let voiceChannels = [rootMidiMPEChannel, xMidiMPEChannel, yMidiMPEChannel, zMidiMPEChannel].map { UInt8($0) }
+        for channel in [mpeChannel.lowerZoneMasterChannel] + voiceChannels {
+            sendMidiRPN(channel: channel,
+                        rpn: registeredParameterNumbers.pitchBendSensitivity,
+                        msb: UInt8(pitchBendRangeMPE),
+                        lsb: 0)
+        }
     }
 
     // Shared by startMidi's four voices below - each one only differs in which channel/note/
@@ -303,6 +310,12 @@ public class Midi{
         pitchBendRangeMPE = pitchBendRange
         //print("\nMidi: SetMidiPitchBendRangeMPE: Range = \(pitchBendRangeMPE)")
         sendPitchBendSensitivity()
+        // Anything already sounding was bent against the old range - re-send each playing
+        // voice's bend so it stays at the same pitch under the new one (Settings change).
+        updatePitchBend(isPlaying: rootMidiIsPlaying, channel: rootMidiMPEChannel, frequency: rootMidiFrequency, pitchBend: &rootMidiPitchBend)
+        updatePitchBend(isPlaying: xMidiIsPlaying, channel: xMidiMPEChannel, frequency: xMidiFrequency, pitchBend: &xMidiPitchBend)
+        updatePitchBend(isPlaying: yMidiIsPlaying, channel: yMidiMPEChannel, frequency: yMidiFrequency, pitchBend: &yMidiPitchBend)
+        updatePitchBend(isPlaying: zMidiIsPlaying, channel: zMidiMPEChannel, frequency: zMidiFrequency, pitchBend: &zMidiPitchBend)
     }
 
     public func setRootNote(note: Int){

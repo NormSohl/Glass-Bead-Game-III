@@ -217,11 +217,13 @@ reserved as the MPE zone's master channel.
 
 ### Pitch bend range
 
-GBG III declares a ±24 semitone pitch bend range to the receiver automatically, using the
-standard MIDI RPN 0 message, sent zone-wide per the MPE spec. Well-behaved gear picks this up
-on its own. **Real analog/modular gear often doesn't** — if notes sound in the wrong octave or
-with a squashed/exaggerated bend, you'll likely need to set your receiving instrument's own
-pitch bend range by hand to ±24 semitones to match.
+**Pitch Bend Range** (under Use Midi MPE) chooses ±24 semitones (the default) or ±48, the MPE
+standard's own default. GBG III announces the chosen range to the receiver automatically with
+the standard MIDI RPN 0 message on every voice channel, and uses the same range to read
+incoming notes from your **MIDI Source**. Well-behaved gear picks this up on its own. **Real
+analog/modular gear often doesn't** — if notes sound in the wrong octave or with a
+squashed/exaggerated bend, either set your instrument's own pitch bend range by hand to match,
+or switch GBG III to whichever range your instrument already uses.
 
 ### Tune Midi
 

@@ -167,6 +167,23 @@ struct ControlView: View {
                     .onChange(of: settings.useMIDI) {sound.outputToMidi = settings.useMIDI}
                     .foregroundStyle(.white)
 
+                // Must match the receiving synth - 48 is the MPE spec's default, 24 is common on
+                // gear set up by hand. Changing it re-announces the range over MIDI right away
+                // (see AppSettings.pitchBendRangeMPE's didSet).
+                HStack {
+                    Text("Pitch Bend Range").foregroundStyle(.white)
+                    Spacer()
+                    Picker("Pitch Bend Range", selection: $settings.pitchBendRangeMPE) {
+                        ForEach(AppSettings.pitchBendRangeChoices, id: \.self) { range in
+                            Text("±\(range)").tag(range)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .fixedSize()
+                }
+                .disabled(!settings.useMIDI)
+
 #if os(iOS)
                 // iPadOS has no system-level "Network MIDI" panel the way macOS's Audio MIDI
                 // Setup does, so this is the only way to reach that transport at all on iPad -

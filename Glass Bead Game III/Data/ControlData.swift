@@ -166,7 +166,21 @@ class AppSettings: ObservableObject{
     @Published var border: Double = 40
     
     // MIDI data
-    @Published var pitchBendRangeMPE: Int = 24
+    // Semitones either way that a full pitch bend covers, for outgoing MIDI (announced to the
+    // receiver via RPN 0) and for decoding incoming MIDI Source notes. A Settings choice
+    // (2026-09-28): 24 (default) or 48, the MPE spec's own default for member channels. Both
+    // cover the graph's default span (~+19/-12 semitones). Persisted - it describes the
+    // external gear, not the session.
+    static let pitchBendRangeChoices = [24, 48]
+    @Published var pitchBendRangeMPE: Int = {
+        let saved = UserDefaults.standard.integer(forKey: "GlassBeadGameIII.pitchBendRangeMPE")
+        return AppSettings.pitchBendRangeChoices.contains(saved) ? saved : 24
+    }() {
+        didSet {
+            UserDefaults.standard.set(pitchBendRangeMPE, forKey: "GlassBeadGameIII.pitchBendRangeMPE")
+            sound.setPitchBendRangeMPE(pitchBendRange: pitchBendRangeMPE)
+        }
+    }
     
     init(){
         self.highestRatioNormalized = log(self.highestRatio) / log(2)
