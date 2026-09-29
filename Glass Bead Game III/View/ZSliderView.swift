@@ -189,16 +189,10 @@ struct ZSliderView: View {
             // macOS: a plain SwiftUI DragGesture, same as always - the mouse IS the legitimate
             // touch-equivalent input there, nothing to filter out.
             //
-            // iOS: FingerAndPencilDragCatcher (FingerAndPencilOnly.swift) instead - a connected
-            // mouse turned out to drive this exactly like a finger too (same root cause as
-            // HitTestView's own graph drag, confirmed live 2026-09-08 - "the mouse cursor does
-            // interact with... z slider still"). NOT a DragGesture at all on iOS, so there's no
-            // separate SwiftUI gesture recognizer left to race against. acceptMouseInstead flips
-            // to mouse-only while settings.mouseDrivesGraph is on - with the mouse acting as the
-            // graph's own primary input in that mode, leaving this finger-only left no way to
-            // move Z at all ("we have no way of interacting with the controls, since we are not
-            // using touch") - same flip HitTestView's own graph drag and ControlColumn's icon
-            // buttons already use.
+            // iOS: FingerAndPencilDragCatcher (FingerAndPencilOnly.swift) instead, same as
+            // HitTestView's own graph drag - NOT a DragGesture at all on iOS, so there's no
+            // separate SwiftUI gesture recognizer left to race against. Finger, Pencil, and mouse
+            // drag all move Z, matching the Mac.
             #if os(macOS)
             .gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
@@ -208,7 +202,6 @@ struct ZSliderView: View {
             #else
             .overlay(
                 FingerAndPencilDragCatcher(
-                    acceptMouseInstead: settings.mouseDrivesGraph,
                     onChanged: { location in handleZDragChanged(location: location) },
                     onEnded: { handleZDragEnded() }
                 )

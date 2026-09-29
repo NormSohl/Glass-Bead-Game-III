@@ -679,13 +679,7 @@ private struct ControlColumn: View {
 
     // Renders the same icon a plain SwiftUI Button would, but with its own hit-testing turned
     // off (.allowsHitTesting(false)) and a FingerAndPencilTapCatcher (FingerAndPencilOnly.swift)
-    // overlaid instead - real finger/Pencil only by default (a connected mouse turned out to be
-    // able to tap these buttons exactly like a finger too, confirmed live 2026-09-08: "the mouse
-    // cursor does interact with icons... still"), but mouse-only while settings.mouseDrivesGraph
-    // is on - with the mouse acting as the graph's own primary input in that mode, leaving these
-    // buttons finger-only meant there was no way to reach them at all ("we have no way of
-    // interacting with the controls, since we are not using touch"). Same acceptMouseInstead
-    // flip HitTestView's own graph drag and ZSliderView's drag already use.
+    // overlaid instead - finger, Pencil, and mouse clicks all tap it.
     private func iconButton(systemName: String, tint: Color?, label: String, action: @escaping () -> Void) -> some View {
         Image(systemName: systemName)
             .font(.title2)
@@ -693,7 +687,7 @@ private struct ControlColumn: View {
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())
             .allowsHitTesting(false)
-            .overlay(FingerAndPencilTapCatcher(acceptMouseInstead: settings.mouseDrivesGraph, onTap: action))
+            .overlay(FingerAndPencilTapCatcher(onTap: action))
             .accessibilityLabel(label)
     }
 }
@@ -789,57 +783,31 @@ private struct KeyboardMonitor: UIViewRepresentable {
     }
 }
 
-// Bridges a Bluetooth/USB mouse into the same KeyMapping-driven dispatch as KeyboardMonitor -
-// Norm's back-of-iPad-case controller idea: Apple Pencil Pro's squeeze gesture doesn't fire
-// reliably while the pencil is actively touching the graph (see PencilSqueezeMonitor's own
-// comment and the memory notes on this), so a small mouse operated by the free hand's fingers,
-// reaching around the back of the case, gives buttons that work regardless. Button presses feed
-// the identical KeyActionDispatcher.handlePhysicalInput path a keyboard key does - Pedal/
-// Portamento/etc. are remappable to a mouse button through the same Keyboard Mapping UI, no
-// separate binding model. Z is driven by the scroll wheel only, one scale step per detent (see
-// handleScroll below) - raw pointer-drag-driven Z was tried first and dropped after a live test
-// (Norm, 2026-09-08): "far too touchy" to control with any precision.
+// A Bluetooth/USB mouse on iPad works the same as on the Mac (Norm, 2026-09-28 - the separate
+// iPad-only mouse modes were removed): left-drag plays the graph and Z-slider and taps buttons,
+// all through the ordinary `.indirectPointer` touch a mouse click already generates (see
+// FingerAndPencilOnly.swift), so the left button needs nothing here. What this adds on top is
+// the rest of the Mac's mouse: the right/middle buttons feed the identical
+// KeyActionDispatcher.handlePhysicalInput path a keyboard key does (right = Portamento hold by
+// default, remappable through Keyboard Mapping), and the scroll wheel steps Z one scale degree
+// per detent (the shared stepZ, same as macOS's KeyCommandMonitor).
 //
-// Deliberately iOS-only: on macOS, HitTestView already uses mouse drag to move X/Y on the graph
-// itself - giving the mouse a second, unrelated meaning there would be a real conflict, not a
-// feature, so this whole type only exists in the iOS build.
-//
-// Requests the system pointer be locked/hidden for as long as a mouse is connected, via
-// UIViewController's prefersPointerLocked - Apple's own recommended pattern (WWDC20 "Build for
-// the iPadOS pointer") for an app that wants a mouse's raw relative movement/buttons as a
-// game-style controller rather than a normal on-screen pointer. CONFIRMED LIVE 2026-09-08 this
-// does NOT actually work as intended here: the system pointer stayed fully visible and active
-// throughout extensive live testing regardless, most likely because a child view controller
-// embedded via UIViewControllerRepresentable (nested deep in SwiftUI's own hosting hierarchy) is
-// never the "front-most" controller the system consults for pointer-lock arbitration. Left in
-// place as harmless (it's a request, not a guarantee, and costs nothing when ignored) - the
-// actual mouse-vs-touch conflict this was meant to prevent is instead solved at the touch-type
-// level now (see FingerAndPencilOnly.swift), which doesn't depend on pointer-lock succeeding at
-// all.
+// An earlier version also requested pointer lock (prefersPointerLocked) for back-of-case mouse
+// control; confirmed live 2026-09-08 that it never took effect from a controller nested inside
+// SwiftUI's hosting hierarchy, and a normal visible pointer is exactly what Mac-style use
+// wants, so it's gone.
 private struct MouseMonitor: UIViewControllerRepresentable {
     @ObservedObject var settings: AppSettings
     // For scroll-driven Z stepping (handleScroll below) - the same Scale instance GraphView/
     // ZSliderView already draw their gridlines from, not a separate copy.
     let scale: Scale
 
-    final class PointerLockingViewController: UIViewController {
-        var locked = false {
-            didSet {
-                guard locked != oldValue else { return }
-                setNeedsUpdateOfPrefersPointerLocked()
-            }
-        }
-        override var prefersPointerLocked: Bool { locked }
-    }
-
-    func makeUIViewController(context: Context) -> PointerLockingViewController {
-        let controller = PointerLockingViewController()
-        context.coordinator.viewController = controller
+    func makeUIViewController(context: Context) -> UIViewController {
         context.coordinator.install()
-        return controller
+        return UIViewController()
     }
 
-    func updateUIViewController(_ uiViewController: PointerLockingViewController, context: Context) {
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
         context.coordinator.settings = settings
         // scale is rebuilt (a new value, not mutated in place) whenever settings.selectedLimit
         // changes - GraphScaleState.rebuild(for:) - so this has to be re-pushed here on every
@@ -859,8 +827,6 @@ private struct MouseMonitor: UIViewControllerRepresentable {
         var scale: Scale
         private let dispatcher: KeyActionDispatcher
         private var connectObserver: Any?
-        private var disconnectObserver: Any?
-        weak var viewController: PointerLockingViewController?
 
         // Norm's concern (2026-09-04, before any live test): pressing a physical mouse button
         // tends to jostle the mouse itself very slightly - felt only as an ignorable stray
@@ -892,39 +858,17 @@ private struct MouseMonitor: UIViewControllerRepresentable {
             connectObserver = NotificationCenter.default.addObserver(forName: .GCMouseDidConnect, object: nil, queue: .main) { [weak self] notification in
                 self?.attach(notification.object as? GCMouse)
             }
-            disconnectObserver = NotificationCenter.default.addObserver(forName: .GCMouseDidDisconnect, object: nil, queue: .main) { [weak self] _ in
-                self?.viewController?.locked = false
-            }
         }
 
         private func attach(_ mouse: GCMouse?) {
             guard let input = mouse?.mouseInput else { return }
-            viewController?.locked = true
 
-            // Left button is reserved for the graph itself while settings.mouseDrivesGraph is on
-            // - bypassing KeyMapping's Pedal binding for this button entirely, exactly mirroring
-            // how Mac's own left-mouse-drag plays the graph directly rather than being a
-            // remappable action button there either. Nothing further to do here at all: clicking
-            // and dragging the mouse over the graph generates a genuine `.indirectPointer` touch
-            // in parallel with this button event (confirmed live 2026-09-08 - that's exactly
-            // what was driving the graph before any filtering existed), which HitTestView's own
-            // FingerAndPencilDragCatcher now explicitly accepts while this mode is on, running
-            // through the exact same handleGraphInputChanged/Ended path real touch always has -
-            // position, begin/end sound, and Portamento-live-tracking all come free from that,
-            // no separate mechanism needed here. Off (the default), this button dispatches
-            // through KeyMapping like the other two always do.
-            input.leftButton.pressedChangedHandler = { [weak self] _, _, pressed in
-                guard let self else { return }
-                self.suppressJostle()
-                if !self.settings.mouseDrivesGraph {
-                    self.dispatcher.handlePhysicalInput(token: "mouseLeft", pressed: pressed)
-                }
+            // Left button: nothing to dispatch - its click-and-drag already arrives as an
+            // ordinary touch on whatever it's over (graph, Z-slider, buttons). Still marks the
+            // jostle window, so the tiny bump of clicking doesn't nudge Z via the wheel.
+            input.leftButton.pressedChangedHandler = { [weak self] _, _, _ in
+                self?.suppressJostle()
             }
-            // Right button always dispatches through KeyMapping regardless of mode - its default
-            // binding is already Portamento (hold), the same token macOS's own KeyCommandMonitor
-            // uses for its right-mouse-button case, so Mac-style mode gets "right button glides"
-            // for free with no special-casing here at all (HitTestView's own hoverLocation-based
-            // write-gate reads settings.snap live, same as its plain touch/pen path does).
             input.rightButton?.pressedChangedHandler = { [weak self] _, _, pressed in
                 self?.suppressJostle()
                 self?.dispatcher.handlePhysicalInput(token: "mouseRight", pressed: pressed)
@@ -933,10 +877,10 @@ private struct MouseMonitor: UIViewControllerRepresentable {
                 self?.suppressJostle()
                 self?.dispatcher.handlePhysicalInput(token: "mouseMiddle", pressed: pressed)
             }
-            // Deliberately no mouseMovedHandler at all - Mac-style mode's own X/Y comes entirely
-            // from the real `.indirectPointer` touch HitTestView's own FingerAndPencilDragCatcher
-            // now accepts while this mode is on (see leftButton's own comment above), which
-            // carries genuine absolute position for the whole press. A relative-delta approach
+            // Deliberately no mouseMovedHandler at all - mouse-driven X/Y comes entirely from
+            // the real `.indirectPointer` touch HitTestView's own FingerAndPencilDragCatcher
+            // accepts (see leftButton's own comment above), which carries genuine absolute
+            // position for the whole press. A relative-delta approach
             // built on these raw movement deltas was tried and reverted twice, 2026-09-08 - it
             // never actually corresponded to the mouse's own physical movement no matter how it
             // was scaled ("does not snap to mouse position"; later, even after anchoring it to a
@@ -974,7 +918,6 @@ private struct MouseMonitor: UIViewControllerRepresentable {
 
         deinit {
             if let connectObserver { NotificationCenter.default.removeObserver(connectObserver) }
-            if let disconnectObserver { NotificationCenter.default.removeObserver(disconnectObserver) }
         }
     }
 }

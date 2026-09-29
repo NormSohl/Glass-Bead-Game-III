@@ -44,13 +44,12 @@ public enum KeyAction: String, CaseIterable, Codable {
 // ("shift"/"option"/"control"/"command") instead, which can never collide with a single-
 // character token, so nothing else is needed to tell the two kinds apart. Mouse button tokens
 // follow the same convention - multi-character names that can't collide with a single letter.
-// "mouseLeft"/"mouseMiddle" are iOS-only (see MouseMonitor in ContentView.swift - macOS's mouse
-// is already spoken for by HitTestView's graph drag). "mouseRight" is the one exception: it's
-// unused by graph drag on either platform, so it's live on both - MouseMonitor on iOS,
-// KeyCommandMonitor's right-mouse-button case on macOS.
+// The left button is never a token: on both platforms it's the pointer itself (graph drag,
+// buttons). "mouseRight" is live on both - MouseMonitor on iOS, KeyCommandMonitor's
+// right-mouse-button case on macOS; "mouseMiddle" is iOS-only (MouseMonitor).
 public typealias KeyToken = String
 public let modifierKeyTokens: Set<KeyToken> = ["shift", "option", "control", "command"]
-public let mouseButtonTokens: Set<KeyToken> = ["mouseLeft", "mouseRight", "mouseMiddle"]
+public let mouseButtonTokens: Set<KeyToken> = ["mouseRight", "mouseMiddle"]
 
 public func displayLabel(forKeyToken token: KeyToken) -> String {
     switch token {
@@ -59,7 +58,6 @@ public func displayLabel(forKeyToken token: KeyToken) -> String {
     case "option": return "Option"
     case "control": return "Control"
     case "command": return "Command"
-    case "mouseLeft": return "Mouse Left"
     case "mouseRight": return "Mouse Right"
     case "mouseMiddle": return "Mouse Middle"
     default: return token.uppercased()
@@ -76,15 +74,14 @@ public struct KeyMapping: Codable, Equatable {
         self.bindings = bindings
     }
 
-    // mouseLeft/mouseRight defaults are here specifically for Norm's back-of-case mouse
-    // controller idea (squeeze doesn't fire reliably while the pencil is touching the graph -
-    // see the memory notes) - immediately testable without a trip to Keyboard Mapping first,
-    // same reasoning as every other default here.
+    // mouseRight's default (Portamento hold) matches the Mac's right-click-to-glide -
+    // immediately usable without a trip to Keyboard Mapping first, same reasoning as every other
+    // default here.
     public static let defaultMapping = KeyMapping(bindings: [
         KeyAction.drone.rawValue: ["d", "k"],
         KeyAction.portamentoToggle.rawValue: ["g", "h"],
         KeyAction.portamentoMomentary.rawValue: ["shift", "mouseRight"],
-        KeyAction.pedal.rawValue: [" ", "f", "j", "mouseLeft"],
+        KeyAction.pedal.rawValue: [" ", "f", "j"],
     ])
 
     public func tokens(for action: KeyAction) -> Set<KeyToken> {
@@ -127,12 +124,20 @@ extension KeyMapping {
         return decoded.droppingRemovedActions().mergingNewDefaults()
     }
 
+    /// Tokens that can no longer be pressed as a binding - the left mouse button became the
+    /// pointer itself on iPad too (2026-09-28), so an old "mouseLeft" binding would sit in the
+    /// remap UI doing nothing.
+    private static let retiredTokens: Set<KeyToken> = ["mouseLeft"]
+
     /// Drops entries for actions that no longer exist (Live Recording's recordToggle/save,
     /// removed 2026-09-28) - otherwise their tokens stay parked under a dead key, invisible in
-    /// the remap UI but still blocking mergingNewDefaults from ever reusing them.
+    /// the remap UI but still blocking mergingNewDefaults from ever reusing them - and any
+    /// retired tokens.
     private func droppingRemovedActions() -> KeyMapping {
         let known = Set(KeyAction.allCases.map(\.rawValue))
-        return KeyMapping(bindings: bindings.filter { known.contains($0.key) })
+        return KeyMapping(bindings: bindings
+            .filter { known.contains($0.key) }
+            .mapValues { $0.subtracting(Self.retiredTokens) })
     }
 
     /// Fills in an action's own default token(s) only when a saved mapping predates that action

@@ -27,29 +27,22 @@
 //  iOS to race against at all, placed via .overlay() (like #2) so it actually receives touches.
 //  Confirmed live on HitTestView's own graph drag; reused for any other iOS surface with the same
 //  problem (Z-slider, ControlColumn's icon buttons).
+//
+//  Update 2026-09-28 (Norm): the iPad's separate mouse modes were removed - a mouse now behaves
+//  exactly as on the Mac (left-drag plays the graph/Z-slider and taps buttons) alongside Pencil and
+//  touch, so these catchers no longer filter by touch type at all. They're kept rather than
+//  reverted to plain SwiftUI gestures because they still own single-touch tracking and the hover
+//  preview (see handleHover). Known risk Norm accepted: mouse and Pencil moving X/Y at the same
+//  moment fight over the pitch (seen live 2026-09-08 as apparent snapping flicker).
 
 #if os(iOS)
 import SwiftUI
 import UIKit
 
-// For a continuous drag surface (the graph, the Z-slider) - real finger/Pencil touches
-// (.direct/.pencil) drive onChanged/onEnded exactly like a DragGesture would; `.indirectPointer`
-// touches (mouse, or a trackpad acting as one) are silently ignored.
-//
-// acceptMouseInstead flips that: HitTestView's own graph drag needs mouse-as-touch to work
-// while Mac-style mode is on (settings.mouseDrivesGraph) - a click-and-drag with a mouse turns
-// out to ALSO generate a genuine `.indirectPointer` UITouch in parallel with GCMouse's own
-// separate button/movement events (confirmed live 2026-09-08: that's exactly what was driving
-// the graph before this file existed at all, when nothing filtered it out yet). That touch
-// carries the real absolute position continuously for the whole press - unlike hover, which
-// pauses once a button is held - so it needs no scale factor or anchor point to approximate
-// anything: mouse position maps to a graph point exactly, the same way finger position already
-// does. A relative-delta approach built on GCMouse's own raw movement deltas was tried first and
-// reverted, 2026-09-08 ("There should not be scaling involved at all, mouse position should map
-// to graph point exactly") - GCMouse deltas don't correspond 1:1 to screen points at all, so
-// nothing built on them could ever be exact, only tuned closer.
+// For a continuous drag surface (the graph, the Z-slider) - any touch (finger, Pencil, or a
+// mouse's `.indirectPointer` click-and-drag, which carries the real absolute position for the
+// whole press) drives onChanged/onEnded exactly like a DragGesture would.
 struct FingerAndPencilDragCatcher: UIViewRepresentable {
-    var acceptMouseInstead: Bool = false
     let onChanged: (CGPoint) -> Void
     let onEnded: () -> Void
     // Read-only crosshair-preview position, reported continuously whenever a pointer (mouse, or
@@ -60,7 +53,6 @@ struct FingerAndPencilDragCatcher: UIViewRepresentable {
 
     func makeUIView(context: Context) -> TouchFilteringView {
         let view = TouchFilteringView()
-        view.acceptMouseInstead = acceptMouseInstead
         view.onChanged = onChanged
         view.onEnded = onEnded
         view.onHover = onHover
@@ -72,14 +64,12 @@ struct FingerAndPencilDragCatcher: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: TouchFilteringView, context: Context) {
-        uiView.acceptMouseInstead = acceptMouseInstead
         uiView.onChanged = onChanged
         uiView.onEnded = onEnded
         uiView.onHover = onHover
     }
 
     final class TouchFilteringView: UIView {
-        var acceptMouseInstead = false
         var onChanged: ((CGPoint) -> Void)?
         var onEnded: (() -> Void)?
         var onHover: ((CGPoint) -> Void)?
@@ -90,24 +80,13 @@ struct FingerAndPencilDragCatcher: UIViewRepresentable {
 
         // This view sits in front of the Canvas for hit-testing (that's the whole point - see
         // this file's own header comment), which was silently blocking the Canvas's own plain
-        // SwiftUI .onContinuousHover from ever firing in EITHER mode, not just Mac-style -
-        // confirmed live 2026-09-08 ("For a moment we had the cursor updating while the mouse
-        // was moving... it is gone now" - it broke the moment this view started being attached
-        // unconditionally, to fix the earlier "cursor does not move at all" Mac-style bug).
+        // SwiftUI .onContinuousHover from ever firing - confirmed live 2026-09-08 ("For a moment
+        // we had the cursor updating while the mouse was moving... it is gone now").
         // Attaching a UIHoverGestureRecognizer directly to this view instead - since it's already
         // the one actually receiving pointer interactions - and forwarding through onHover fixes
-        // that without giving up any hit-testing this view still needs for touches. Deliberately
-        // unconditional regardless of acceptMouseInstead: a hover preview is read-only (nothing
-        // audible follows from it, only an actual accepted touch does that), so there's no reason
-        // to filter which pointer type triggers it - real Pencil hover before touching (touch
-        // mode) and mouse hover before clicking (Mac-style mode) are the same feature for two
-        // different input types, both wanted ("Similar features although different modes"). Also
-        // not something that COULD be filtered even if wanted: unlike UITouch, a
-        // UIHoverGestureRecognizer carries no device-type property, so there's no way to tell a
-        // mouse hover apart from a Pencil hover here the way touchesBegan can for real touches.
-        // Norm confirmed live 2026-09-08 that mouse hover previewing the crosshair in touch mode
-        // too (not just Mac-style mode) is fine to leave as-is, given this constraint and that
-        // it's harmless either way.
+        // that without giving up any hit-testing this view still needs for touches. A hover
+        // preview is read-only (nothing audible follows from it), so Pencil hover before touching
+        // and mouse hover before clicking are the same feature for two input types.
         @objc func handleHover(_ recognizer: UIHoverGestureRecognizer) {
             switch recognizer.state {
             case .began, .changed:
@@ -118,11 +97,7 @@ struct FingerAndPencilDragCatcher: UIViewRepresentable {
         }
 
         override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-            guard activeTouch == nil else { return }
-            let touch = acceptMouseInstead
-                ? touches.first(where: { $0.type == .indirectPointer })
-                : touches.first(where: { $0.type != .indirectPointer })
-            guard let touch else { return }
+            guard activeTouch == nil, let touch = touches.first else { return }
             activeTouch = touch
             report(touch)
         }
@@ -157,21 +132,14 @@ struct FingerAndPencilDragCatcher: UIViewRepresentable {
 }
 
 // Same idea, for a plain tap target (ControlColumn's icon buttons) instead of a continuous drag
-// - a real finger/Pencil touch-down-then-up inside the view's own bounds fires `onTap`; a touch
-// that started or ended outside those bounds (a drag-away cancel, matching a plain SwiftUI
-// Button's own behavior) does not. `.indirectPointer` touches are ignored the same as above,
-// unless acceptMouseInstead is true - Norm, 2026-09-08: with Mac-style mode using the mouse as
-// the graph's own primary input, the icon buttons (and Z-slider, see FingerAndPencilDragCatcher's
-// own acceptMouseInstead) still being finger/Pencil-only left no way to reach them at all while
-// actually using that mode ("we have no way of interacting with the controls, since we are not
-// using touch").
+// - a touch-down-then-up inside the view's own bounds fires `onTap`; a touch that started or
+// ended outside those bounds (a drag-away cancel, matching a plain SwiftUI Button's own
+// behavior) does not.
 struct FingerAndPencilTapCatcher: UIViewRepresentable {
-    var acceptMouseInstead: Bool = false
     let onTap: () -> Void
 
     func makeUIView(context: Context) -> TapFilteringView {
         let view = TapFilteringView()
-        view.acceptMouseInstead = acceptMouseInstead
         view.onTap = onTap
         view.backgroundColor = .clear
         view.isOpaque = false
@@ -179,20 +147,16 @@ struct FingerAndPencilTapCatcher: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: TapFilteringView, context: Context) {
-        uiView.acceptMouseInstead = acceptMouseInstead
         uiView.onTap = onTap
     }
 
     final class TapFilteringView: UIView {
-        var acceptMouseInstead = false
         var onTap: (() -> Void)?
         private weak var activeTouch: UITouch?
 
         override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
             guard activeTouch == nil else { return }
-            activeTouch = acceptMouseInstead
-                ? touches.first(where: { $0.type == .indirectPointer })
-                : touches.first(where: { $0.type != .indirectPointer })
+            activeTouch = touches.first
         }
 
         override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {

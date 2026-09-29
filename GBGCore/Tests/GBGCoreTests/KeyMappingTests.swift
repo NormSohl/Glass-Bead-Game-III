@@ -11,7 +11,7 @@ final class KeyMappingTests: XCTestCase {
 
     func testDefaultMappingBindsExpectedActions() {
         let mapping = KeyMapping.defaultMapping
-        XCTAssertEqual(mapping.tokens(for: .pedal), [" ", "f", "j", "mouseLeft"])
+        XCTAssertEqual(mapping.tokens(for: .pedal), [" ", "f", "j"])
         XCTAssertEqual(mapping.tokens(for: .portamentoMomentary), ["shift", "mouseRight"])
         XCTAssertEqual(mapping.tokens(for: .drone), ["d", "k"])
         XCTAssertEqual(mapping.tokens(for: .portamentoToggle), ["g", "h"])
@@ -20,7 +20,8 @@ final class KeyMappingTests: XCTestCase {
     func testActionForReturnsOwningActionOrNil() {
         let mapping = KeyMapping.defaultMapping
         XCTAssertEqual(mapping.action(for: "d"), .drone)
-        XCTAssertEqual(mapping.action(for: "mouseLeft"), .pedal)
+        XCTAssertEqual(mapping.action(for: "mouseRight"), .portamentoMomentary)
+        XCTAssertNil(mapping.action(for: "mouseLeft"))
         XCTAssertNil(mapping.action(for: "q"))
     }
 
@@ -98,6 +99,18 @@ final class KeyMappingTests: XCTestCase {
         XCTAssertNil(reloaded.action(for: "r"))
     }
 
+    // A mapping saved before the left mouse button became the pointer on iPad (2026-09-28) still
+    // binds "mouseLeft" to Pedal - that token must be dropped, leaving Pedal's other keys intact.
+    func testLoadFromDefaultsDropsTheRetiredMouseLeftToken() {
+        var bindings = KeyMapping.defaultMapping.bindings
+        bindings[KeyAction.pedal.rawValue, default: []].insert("mouseLeft")
+        storeLegacy(bindings)
+
+        let reloaded = KeyMapping.loadFromDefaults()
+        XCTAssertNil(reloaded.action(for: "mouseLeft"))
+        XCTAssertEqual(reloaded.tokens(for: .pedal), [" ", "f", "j"])
+    }
+
     private func storeLegacy(_ bindings: [String: Set<KeyToken>]) {
         guard let data = try? JSONEncoder().encode(KeyMapping(bindings: bindings)) else {
             return XCTFail("failed to encode legacy mapping")
@@ -108,7 +121,6 @@ final class KeyMappingTests: XCTestCase {
     func testDisplayLabelNamesForNonCharacterTokens() {
         XCTAssertEqual(displayLabel(forKeyToken: " "), "Space")
         XCTAssertEqual(displayLabel(forKeyToken: "shift"), "Shift")
-        XCTAssertEqual(displayLabel(forKeyToken: "mouseLeft"), "Mouse Left")
         XCTAssertEqual(displayLabel(forKeyToken: "mouseRight"), "Mouse Right")
         XCTAssertEqual(displayLabel(forKeyToken: "mouseMiddle"), "Mouse Middle")
         XCTAssertEqual(displayLabel(forKeyToken: "d"), "D")

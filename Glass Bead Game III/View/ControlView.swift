@@ -82,21 +82,6 @@ struct ControlView: View {
                     KeyMappingView(settings: settings)
                 }
 
-#if os(iOS)
-                // Off by default - a connected mouse only reads its buttons (via Keyboard
-                // Mapping above) and scroll wheel (Z, one scale step per detent) until this is
-                // switched on. Norm, 2026-09-08: raw mouse-drag-driven Z was too touchy to keep
-                // as the default, so this is opt-in rather than something to disable after the
-                // fact. Once on, left-button-drag plays the graph's X/Y like touch/Pencil would,
-                // and the right button is Portamento-momentary the same way it already is on Mac.
-                Toggle("Mouse Drag Controls Graph (Mac-style)", isOn: $settings.mouseDrivesGraph)
-                    .tint(tintcolor)
-                    .foregroundStyle(.white)
-                Text("Off: mouse buttons and scroll wheel only, no dragging. On: left-button-drag plays the graph, right button holds Portamento - and Pencil/touch on the graph are disabled while this is on, since both driving X/Y at once fought over the same pitch (confirmed live 2026-09-08: looked like snapping flicker, was actually two input sources stomping on each other).")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-#endif
-
                 Divider()
 #if os(iOS)
                 Text("Harmonics:").foregroundStyle(.white)

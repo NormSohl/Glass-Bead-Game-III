@@ -118,10 +118,7 @@ struct HitTestView: View {
     @State private var isTouchDown = false
 
     // Shared by the plain (no-Shift) DragGesture/FingerAndPencilDragCatcher below, on both
-    // platforms - no penEnabledOnGraph guard needed here any more: the iOS catcher itself is now
-    // the single source of truth for which touch type (real finger/Pencil, or mouse while
-    // Mac-style mode is on) is allowed to reach this at all, so by the time either of those
-    // calls this, it's already the right one for the current mode.
+    // platforms - finger, Pencil, and mouse drag all arrive here the same way.
     private func handleGraphInputChanged(location: CGPoint) {
       HangProfiler.shared.measure("HitTestView.handleGraphInputChanged") {
         if hitTestTrace {print("HitTestView: DragGesture .onChanged called without shift")}
@@ -173,10 +170,10 @@ struct HitTestView: View {
 
             if hitTestTrace {print("HitTestView: isHovering")}
             let rootFrequency = settings.rootFrequency
-            // Mac-style mode's own mouse-as-touch (see FingerAndPencilDragCatcher's own comment)
-            // calls this exact same handleGraphInputChanged real touch does, on every move, which
-            // already keeps isShift live from settings.snap - so Portamento (right-click hold or
-            // the toolbar icon) now affects this correctly with no special-casing needed here.
+            // A mouse drag on iPad (see FingerAndPencilDragCatcher's own comment) calls this
+            // exact same handleGraphInputChanged real touch does, on every move, which already
+            // keeps isShift live from settings.snap - so Portamento (right-click hold or the
+            // toolbar icon) affects it with no special-casing needed here.
             let snapped = !isShift
 
             // x: touch-driven, unless incoming MIDI (Seq, or any other controller) is currently
@@ -211,9 +208,9 @@ struct HitTestView: View {
                 // still uses the live hover position unconditionally, so the on-screen preview
                 // keeps working exactly as before; only the audible/exported pitch is gated.
                 //
-                // Mac-style mode's own mouse-as-touch sets isDrag exactly like real touch does
-                // (handleGraphInputChanged, called from FingerAndPencilDragCatcher below), so no
-                // separate write-gate condition is needed for it here at all.
+                // A mouse drag sets isDrag exactly like real touch does (handleGraphInputChanged,
+                // called from FingerAndPencilDragCatcher below), so no separate write-gate
+                // condition is needed for it here at all.
                 if isDrag, xHit.frequency != settings.xFrequency {
                     sound.setXPitch(frequency: xHit.frequency)
                     settings.xFrequency = xHit.frequency
@@ -330,11 +327,9 @@ struct HitTestView: View {
         // unconditionally now (an intermediate version only attached it while Mac-style mode was
         // off, which broke that mode's own position tracking outright, since this overlay also
         // wins hit-testing for hover, not just touches - confirmed live 2026-09-08, "cursor does
-        // not move at all now"). acceptMouseInstead flips which touch type it admits: real
-        // finger/Pencil when Mac-style mode is off, mouse-as-touch when it's on - so it's always
-        // exactly the right filter for whichever mode is currently active. Its own onHover
-        // (unconditional, not tied to acceptMouseInstead - see its own comment) restores the
-        // pre-press crosshair preview this same overlay's hit-testing priority was blocking.
+        // not move at all now"). It admits finger, Pencil, and mouse alike (the iPad's separate
+        // mouse modes were removed 2026-09-28). Its own onHover restores the pre-press crosshair
+        // preview this same overlay's hit-testing priority was blocking.
         #if os(macOS)
         .gesture(
             DragGesture(minimumDistance: 0, coordinateSpace: .local)
@@ -344,7 +339,6 @@ struct HitTestView: View {
         #else
         .overlay(
             FingerAndPencilDragCatcher(
-                acceptMouseInstead: settings.mouseDrivesGraph,
                 onChanged: { location in handleGraphInputChanged(location: location) },
                 onEnded: { handleGraphInputEnded() },
                 onHover: { location in

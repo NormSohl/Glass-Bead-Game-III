@@ -83,14 +83,14 @@ final class KeyActionDispatcherTests: XCTestCase {
     }
 
     // The exact path every physical input - keyboard, and a mouse button bound the same way
-    // (see KeyMapping's mouseLeft/mouseRight/mouseMiddle tokens) - goes through. Mouse buttons
+    // (see KeyMapping's mouseRight/mouseMiddle tokens) - goes through. Mouse buttons
     // aren't a separate code path from keyboard keys; they're just another KeyToken string,
     // so this one test covers both.
     func testHandlePhysicalInputDispatchesTheBoundActionRegardlessOfTokenKind() {
-        dispatcher.handlePhysicalInput(token: "mouseLeft", pressed: true) // default: Pedal
-        XCTAssertTrue(settings.pedal)
-        dispatcher.handlePhysicalInput(token: "mouseLeft", pressed: false)
-        XCTAssertFalse(settings.pedal)
+        dispatcher.handlePhysicalInput(token: "mouseRight", pressed: true) // default: Portamento (hold)
+        XCTAssertFalse(settings.snap)
+        dispatcher.handlePhysicalInput(token: "mouseRight", pressed: false)
+        XCTAssertTrue(settings.snap)
 
         dispatcher.handlePhysicalInput(token: "d", pressed: true) // default: Drone (toggle)
         XCTAssertTrue(settings.playDrone)
@@ -113,7 +113,7 @@ final class KeyActionDispatcherTests: XCTestCase {
 
     func testHandlePhysicalInputIsSuppressedWhileCapturingANewBinding() {
         settings.isCapturingKeyBinding = true
-        dispatcher.handlePhysicalInput(token: "mouseLeft", pressed: true)
+        dispatcher.handlePhysicalInput(token: " ", pressed: true) // Space: Pedal
         XCTAssertFalse(settings.pedal) // the live monitor must stand down during capture
     }
 

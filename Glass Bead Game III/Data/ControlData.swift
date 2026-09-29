@@ -99,18 +99,6 @@ class AppSettings: ObservableObject{
     // opt-in-each-session pattern and, more importantly, not silently advertising a network
     // service just because the app launched.
     @Published var useNetworkMIDI: Bool = false
-    // iOS only - opts a connected Bluetooth/USB mouse into Mac-style graph control (left-button
-    // drag plays X/Y, right button is Portamento-momentary exactly like macOS's own default
-    // KeyMapping binding already gives Mac's mouse for free) instead of the default behavior
-    // (buttons/scroll only, no dragging at all - see ContentView's MouseMonitor). Off by default
-    // and persisted like zSliderSide/keyMapping - a real physical-setup preference for whichever
-    // mouse is plugged in, not a session toggle that should reset every launch. Norm, 2026-09-08:
-    // dragging Z via raw mouse movement was "far too touchy" to keep as the default at all, so
-    // the untouched default now does nothing with mouse movement whatsoever; this toggle is where
-    // Mac-style drag control opts back in for whoever wants to try it on iPad too.
-    @Published var mouseDrivesGraph: Bool = UserDefaults.standard.bool(forKey: "GlassBeadGameIII.mouseDrivesGraph") {
-        didSet { UserDefaults.standard.set(mouseDrivesGraph, forKey: "GlassBeadGameIII.mouseDrivesGraph") }
-    }
     @Published var tuneMidi: Bool = false
     // nil = not sounding; 1.0/1.5/2.0 = unison/fifth/octave currently held on all four voices
     // (Midi.verifyRangeSet/verifyRangeStop) - a plain @Published var here, not @State on

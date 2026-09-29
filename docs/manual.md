@@ -76,6 +76,18 @@ on iPad, Pencil squeeze — see below).
 
 All of these are remappable — see **Keyboard Mapping** under Settings.
 
+### Mouse and trackpad
+
+A mouse works the same on Mac and iPad (on iPad, connect any Bluetooth or USB mouse):
+
+- **Click and drag** on the graph to play X and Y, or on the Z-slider to move Z — the same as a
+  finger or pencil. On iPad, the pencil and touch keep working alongside the mouse; just don't
+  drive the graph with both at the same moment.
+- **Right button** — Portamento, held (remappable in Keyboard Mapping, as is a middle button on
+  iPad).
+- **Scroll wheel** — steps Z up or down one scale degree per notch. On a Mac trackpad or Magic
+  Mouse, a short swipe moves one step; on iPad, a mouse with a clicking wheel works best.
+
 ### Apple Pencil Pro squeeze
 
 On iPad with an Apple Pencil Pro, squeezing the pencil toggles the Pedal — a gesture on the
