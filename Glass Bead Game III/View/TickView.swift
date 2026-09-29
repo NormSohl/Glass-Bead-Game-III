@@ -47,9 +47,7 @@ struct Ticks: View {
                 // with no strip/corner boundaries inside it at all, can avoid that.
                 break
             case .letters:
-                HangProfiler.shared.measure("Ticks.drawLetters") {
                     drawLetters(context: context, size: size)
-                }
             }
         }
     }

@@ -54,7 +54,6 @@ struct ZSliderView: View {
             // same height now that the two are aligned; a second copy of the same letters right
             // next to it was redundant. The canvas takes the full width freed up by removing it.
             Canvas { context, size in
-              HangProfiler.shared.measure("ZSliderView.body.Canvas") {
                 if interactive { zSliderHeight = size.height }
 
                 // Cursor drawn first, diamonds after (and gridlines after that too, in the loop
@@ -186,7 +185,6 @@ struct ZSliderView: View {
                         context.stroke(diamondPath, with: .color(.gray))
                     }
                 }
-              }
             }
             .background(.white.opacity(0.08))
             // See GraphView's own matching .accessibilityHidden(true) comment - same reasoning,
@@ -225,14 +223,12 @@ struct ZSliderView: View {
 
     // Shared by the drag gesture/catcher above, on both platforms.
     private func handleZDragChanged(location: CGPoint) {
-      HangProfiler.shared.measure("ZSliderView.handleZDragChanged") {
         settings.zDragActive = true
         hoverLocation = location
         hoverLocation.y = zSliderHeight - hoverLocation.y
         // No sound.beginZTouch(amp:) here - Norm: after practicing with it, the Z-slider must
         // never start a note on its own (so levels can be changed silently); only the pen
         // (HitTestView's graph touch) may trigger sound.
-      }
     }
 
     private func handleZDragEnded() {

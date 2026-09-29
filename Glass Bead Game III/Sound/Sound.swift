@@ -247,31 +247,23 @@ class Sound {
     // already no-ops most of these calls in practice, so this wasn't the hang's actual cause,
     // but it's a real bug on its own: turning MIDI off was never actually stopping these calls).
     func setRootPitch(frequency: Double){
-      HangProfiler.shared.measure("Sound.setRootPitch") {
         audio.triad.setTriadRootPitch (frequency: frequency)
         if outputToMidi { midi.setMidiReferencePitch(frequency: frequency) }
-      }
     }
 
     func setXPitch(frequency: Double){
-      HangProfiler.shared.measure("Sound.setXPitch") {
         audio.triad.setTriadXPitch(frequency: frequency)
         if outputToMidi { midi.setMidiXPitch(frequency: frequency) }
-      }
     }
 
     func setYPitch(frequency: Double){
-      HangProfiler.shared.measure("Sound.setYPitch") {
         audio.triad.setTriadYPitch(frequency: frequency)
         if outputToMidi { midi.setMidiYPitch(frequency: frequency) }
-      }
     }
 
     func setZPitch(frequency: Double){
-      HangProfiler.shared.measure("Sound.setZPitch") {
         audio.triad.setTriadZPitch(frequency: frequency)
         if outputToMidi { midi.setMidiZPitch(frequency: frequency) }
-      }
     }
     
     func setPitchBendRangeMPE(pitchBendRange: Int){

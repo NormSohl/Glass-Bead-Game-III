@@ -239,7 +239,3 @@ result actually sounds right — real gear doesn't always respond exactly as dec
 **Unison / Fifth / Octave** to sound all four voices together at those exact just-intonation
 intervals (not the tempered approximations most gear defaults to), and listen for whether your
 instrument's actual response matches. **Stop** returns to normal playing.
-
----
-
-*Feedback on this manual, or on GBG III itself, welcome — [contact info / link].*

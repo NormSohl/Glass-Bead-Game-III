@@ -23,9 +23,7 @@ struct GraphView: View {
         // through) - see weightedVisiblePairings' own comment for why these two used to each
         // recompute this independently, calling Tetrads.elementsPairing with the same keys twice
         // on every touch-move frame during a Z-slider drag.
-        let weightedPairings = HangProfiler.shared.measure("GraphView.body.weightedVisiblePairings") {
-            weightedVisiblePairings(scale: scale, tetradLayers: tetradLayers, settings: settings)
-        }
+        let weightedPairings = weightedVisiblePairings(scale: scale, tetradLayers: tetradLayers, settings: settings)
         var seenElementValues = Set<Double>()
         let visibleElements: [ScaleElement] = settings.filterGraphLines
             ? weightedPairings.flatMap { $0.elements }.filter { seenElementValues.insert($0.valueNormalized).inserted }
@@ -436,7 +434,6 @@ struct Graph: View {
 
     var body: some View {
         Canvas(){context, size in
-          HangProfiler.shared.measure("Graph.body.Canvas") {
             func drawLine(for interval: ScaleElement, weight: Double) {
                 // Horizontal line
                 var yIntervalInScreenUnits = scale.convertScaleValueToScreenUnits(
@@ -482,7 +479,6 @@ struct Graph: View {
                     drawLine(for: interval, weight: 1.0)
                 }
             }
-          }
         }
     }
 }

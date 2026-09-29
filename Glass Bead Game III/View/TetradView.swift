@@ -30,7 +30,6 @@ struct TetradView: View {
     var body: some View {
         if showDiamonds {
             Canvas { context, size in
-              HangProfiler.shared.measure("TetradView.body.Canvas") {
                 let zRatio = settings.zFrequency / settings.rootFrequency
                 // Rounded to the same precision TetradLayers groups its Z keys at
                 // (Tetrads.rounded, 5 decimal places) - without this, an exactly-snapped Z
@@ -146,7 +145,6 @@ struct TetradView: View {
                     context.fill(tetradPath, with: .color(color.opacity(entry.weight)))
                     context.stroke(tetradPath, with: .color(.gray.opacity(entry.weight)))
                 }
-              }
             }
         }
     }

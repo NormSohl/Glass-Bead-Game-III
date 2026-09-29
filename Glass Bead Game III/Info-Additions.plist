@@ -9,6 +9,10 @@
 	     array value like NSBonjourServices - this is Apple's own documented way to combine the
 	     two. macOS ignores both keys harmlessly (no equivalent permission gate there), so this
 	     applies safely to Graph's single universal target. -->
+	<!-- The app uses no encryption beyond what the OS itself provides, so App Store Connect
+	     doesn't need to ask the export-compliance question on every upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>GBG III uses your local network to connect to MIDI gear and other apps over Network MIDI, for live performance.</string>
 	<key>NSBonjourServices</key>

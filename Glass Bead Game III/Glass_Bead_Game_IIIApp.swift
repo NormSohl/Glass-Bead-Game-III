@@ -30,7 +30,6 @@ struct GlassBeadGameIIIApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
-        HangProfiler.shared.startIfRequested()
         sound.initSound()
         #if os(macOS)
         // AppKit's tooltip hover delay (NSInitialToolTipDelay, milliseconds) isn't exposed as a
