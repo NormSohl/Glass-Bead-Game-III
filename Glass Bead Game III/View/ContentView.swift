@@ -116,7 +116,7 @@ struct ContentView: View {
         // Keyboard access to Portamento/Pedal, per Norm - "third party pedals can be configured
         // to work with them" (many cheap USB foot pedals emulate a plain keystroke). See
         // KeyCommandMonitor's own header comment for the toggle-vs-momentary distinction.
-        .background(KeyCommandMonitor(settings: settings))
+        .background(KeyCommandMonitor(settings: settings, scale: scale))
         #endif
         #if os(iOS)
         // Apple Pencil Pro squeeze -> Pedal toggle, for live performance: the graphic-entry
@@ -280,6 +280,33 @@ struct ContentView: View {
     }
 }
 
+// Scroll-wheel Z stepping, shared by macOS's KeyCommandMonitor and iOS's MouseMonitor: one call
+// moves Z to the next/previous element of the actual scale - the same ScaleElement list
+// ZSliderView draws its gridlines/diamonds from - so it always lands precisely on a real scale
+// degree. The nearest-degree lookup means it works even when Z isn't currently sitting exactly
+// on one (e.g. right after a drag). Deliberately ignores Portamento (Norm, 2026-09-05): scroll
+// always hard-jumps to an exact degree.
+private func stepZ(by direction: Int, settings: AppSettings, scale: Scale) {
+    guard !scale.scale.isEmpty else { return }
+    let currentNormalized = log2(settings.zFrequency / settings.rootFrequency)
+    // scale.scale is kept sorted ascending by valueNormalized (see Scale.init in GBGCore), so
+    // the closest element by absolute distance is genuinely the nearest scale degree.
+    var currentIndex = 0
+    var closestDistance = Double.greatestFiniteMagnitude
+    for (index, element) in scale.scale.enumerated() {
+        let distance = abs(element.valueNormalized - currentNormalized)
+        if distance < closestDistance {
+            closestDistance = distance
+            currentIndex = index
+        }
+    }
+    let newIndex = min(max(currentIndex + direction, 0), scale.scale.count - 1)
+    let newFrequency = settings.rootFrequency * pow(2, scale.scale[newIndex].valueNormalized)
+    guard newFrequency != settings.zFrequency else { return }
+    settings.zFrequency = newFrequency
+    sound.setZPitch(frequency: newFrequency)
+}
+
 #if os(macOS)
 import AppKit
 
@@ -300,20 +327,30 @@ import AppKit
 // actually bound to it, or a remap capture is in progress - otherwise left alone so an unbound
 // right-click still falls through to its normal system behavior (e.g. a context menu, if one is
 // ever added here).
+//
+// And the scroll wheel (Norm, 2026-09-28): steps Z one scale degree at a time, same as iOS's
+// MouseMonitor - see handleScroll below for how a trackpad/Magic Mouse's continuous scrolling is
+// kept from racing through the scale.
 private struct KeyCommandMonitor: NSViewRepresentable {
     @ObservedObject var settings: AppSettings
+    // For scroll-driven Z stepping - re-pushed every update, since GraphScaleState rebuilds it as
+    // a new value whenever settings.selectedLimit changes (same reason as MouseMonitor's).
+    let scale: Scale
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(settings: settings)
+        Coordinator(settings: settings, scale: scale)
     }
 
     func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        context.coordinator.hostView = view
         context.coordinator.install()
-        return NSView()
+        return view
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
         context.coordinator.settings = settings
+        context.coordinator.scale = scale
     }
 
     final class Coordinator {
@@ -327,14 +364,29 @@ private struct KeyCommandMonitor: NSViewRepresentable {
         // new event to find what actually changed (see .flagsChanged below).
         private var heldModifierTokens: Set<KeyToken> = []
 
-        init(settings: AppSettings) {
+        var scale: Scale
+        // The main window's own background view - scroll events are only acted on when they
+        // land in its window, so scrolling inside the Settings/Keyboard Mapping popovers (their
+        // own separate windows, still seen by this app-wide local monitor) never moves Z.
+        weak var hostView: NSView?
+
+        // A mechanical wheel sends one event per notch (hasPreciseScrollingDeltas false) - one
+        // step each, like iOS. A trackpad or Magic Mouse sends many small precise deltas per
+        // swipe, so those accumulate here and step once per this many points of scrolling;
+        // otherwise even a small swipe would race through the whole scale. A starting guess -
+        // tune live.
+        private let preciseScrollPointsPerStep: CGFloat = 24
+        private var preciseScrollAccumulator: CGFloat = 0
+
+        init(settings: AppSettings, scale: Scale) {
             self.settings = settings
+            self.scale = scale
             self.dispatcher = KeyActionDispatcher(settings: settings)
         }
 
         func install() {
             guard monitor == nil else { return }
-            monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged, .rightMouseDown, .rightMouseUp]) { [weak self] event in
+            monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged, .rightMouseDown, .rightMouseUp, .scrollWheel]) { [weak self] event in
                 guard let self else { return event }
                 // Stand down entirely while KeyMappingView's own capture monitor is listening
                 // for a new binding - see AppSettings.isCapturingKeyBinding's own comment.
@@ -395,10 +447,35 @@ private struct KeyCommandMonitor: NSViewRepresentable {
                         self.dispatcher.handlePhysicalInput(token: "mouseRight", pressed: pressed)
                         return nil
                     }
+                case .scrollWheel:
+                    self.handleScroll(event)
                 default:
                     break
                 }
                 return event
+            }
+        }
+
+        private func handleScroll(_ event: NSEvent) {
+            guard let window = hostView?.window, event.window === window else { return }
+            // Inertial coasting after a trackpad flick isn't the performer's hand - ignore it.
+            guard event.momentumPhase.isEmpty else { return }
+            // Whichever axis actually moved - holding Shift (Portamento hold by default) makes
+            // macOS report a vertical wheel as horizontal. Un-inverted when "natural scrolling"
+            // is on, so wheel-away / fingers-up always means Z up, whatever that setting is.
+            var delta = abs(event.scrollingDeltaY) >= abs(event.scrollingDeltaX) ? event.scrollingDeltaY : event.scrollingDeltaX
+            if event.isDirectionInvertedFromDevice { delta = -delta }
+
+            guard event.hasPreciseScrollingDeltas else {
+                if delta != 0 { stepZ(by: delta > 0 ? 1 : -1, settings: settings, scale: scale) }
+                return
+            }
+            if event.phase == .began { preciseScrollAccumulator = 0 }
+            preciseScrollAccumulator += delta
+            while abs(preciseScrollAccumulator) >= preciseScrollPointsPerStep {
+                let direction = preciseScrollAccumulator > 0 ? 1 : -1
+                stepZ(by: direction, settings: settings, scale: scale)
+                preciseScrollAccumulator -= CGFloat(direction) * preciseScrollPointsPerStep
             }
         }
 
@@ -889,33 +966,10 @@ private struct MouseMonitor: UIViewControllerRepresentable {
             guard Date() >= jostleSuppressedUntil else { return }
             let delta = abs(deltaY) >= abs(deltaX) ? deltaY : deltaX
             if delta > 0 {
-                stepZ(by: 1)
+                stepZ(by: 1, settings: settings, scale: scale)
             } else if delta < 0 {
-                stepZ(by: -1)
+                stepZ(by: -1, settings: settings, scale: scale)
             }
-        }
-
-        private func stepZ(by direction: Int) {
-            guard !scale.scale.isEmpty else { return }
-            let currentNormalized = log2(settings.zFrequency / settings.rootFrequency)
-            // scale.scale is kept sorted ascending by valueNormalized (see Scale.init in
-            // GBGCore), so the closest element by absolute distance is genuinely the nearest
-            // scale degree to wherever Z currently sits, whether or not it's currently sitting
-            // exactly on one (e.g. right after a drag-driven move).
-            var currentIndex = 0
-            var closestDistance = Double.greatestFiniteMagnitude
-            for (index, element) in scale.scale.enumerated() {
-                let distance = abs(element.valueNormalized - currentNormalized)
-                if distance < closestDistance {
-                    closestDistance = distance
-                    currentIndex = index
-                }
-            }
-            let newIndex = min(max(currentIndex + direction, 0), scale.scale.count - 1)
-            let newFrequency = settings.rootFrequency * pow(2, scale.scale[newIndex].valueNormalized)
-            guard newFrequency != settings.zFrequency else { return }
-            settings.zFrequency = newFrequency
-            sound.setZPitch(frequency: newFrequency)
         }
 
         deinit {
