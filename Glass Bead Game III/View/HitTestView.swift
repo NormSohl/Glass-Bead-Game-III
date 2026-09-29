@@ -100,7 +100,6 @@ struct HitTestView: View {
     
     let scale: Scale
     @ObservedObject var settings: AppSettings
-    @ObservedObject var recordingState: RecordingState
 
     @State private var hoverLocation: CGPoint = .zero
     //@State private var isHovering = false
@@ -142,7 +141,6 @@ struct HitTestView: View {
             isTouchDown = true
             if isSound == false{
                 sound.beginGraphTouch(amp: 1)
-                recordingState.beginGraphTouch()
                 isSound = true
             } else {
                 sound.retriggerTouch() // pedal already had it sounding - still a fresh strike
@@ -161,7 +159,6 @@ struct HitTestView: View {
         isShift = !settings.snap
         // if pedal is true, sound keeps going until the pedal itself is released
         sound.endGraphTouch(pedal: settings.pedal)
-        recordingState.endGraphTouch()
         if !settings.pedal {
             isSound = false
         }
@@ -295,7 +292,6 @@ struct HitTestView: View {
                     isTouchDown = true
                     if isSound == false{
                         sound.beginGraphTouch(amp: 1)
-                        recordingState.beginGraphTouch()
                         isSound = true
                     } else {
                         sound.retriggerTouch() // pedal already had it sounding - still a fresh strike
@@ -315,7 +311,6 @@ struct HitTestView: View {
                 // write guards above), so this was a display-only glitch, not an audible one.
                 isShift = !settings.snap
                 sound.endGraphTouch(pedal: settings.pedal)
-                recordingState.endGraphTouch()
                 if !settings.pedal {
                     isSound = false
                 }
@@ -398,7 +393,6 @@ struct HitTestView: View {
             isShift = !settings.snap
         }
         sound.beginGraphTouch(amp: 1)
-        recordingState.beginGraphTouch()
         isSound = true
         isTouchDown = true // the real DragGesture's own onChanged, firing right after this for
                             // the same click, must see this already true - otherwise it would

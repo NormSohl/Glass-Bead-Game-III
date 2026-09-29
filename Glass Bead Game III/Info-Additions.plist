@@ -10,7 +10,7 @@
 	     two. macOS ignores both keys harmlessly (no equivalent permission gate there), so this
 	     applies safely to Graph's single universal target. -->
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>GBG III uses your local network to connect to Seq (or other MIDI gear) over Network MIDI, for live performance and recording.</string>
+	<string>GBG III uses your local network to connect to MIDI gear and other apps over Network MIDI, for live performance.</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_apple-midi._udp</string>

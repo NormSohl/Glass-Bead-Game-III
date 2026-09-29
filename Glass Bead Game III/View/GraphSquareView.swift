@@ -17,7 +17,6 @@ struct GraphSquareView: View {
     let scale: Scale
     let tetradLayers: TetradLayers
     @ObservedObject var settings: AppSettings
-    @ObservedObject var recordingState: RecordingState
     // false for a display-only audience view - see GraphView's own interactive flag.
     var interactive: Bool = true
     // The square's own rendered height from the previous layout pass, used to scale
@@ -51,7 +50,6 @@ struct GraphSquareView: View {
                 GraphView(scale: scale,
                           tetradLayers: tetradLayers,
                           settings: settings,
-                          recordingState: recordingState,
                           interactive: interactive
                 )
                 .rotationEffect(.degrees(settings.graphTransform.rotation))

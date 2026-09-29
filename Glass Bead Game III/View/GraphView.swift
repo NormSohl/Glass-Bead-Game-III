@@ -12,7 +12,6 @@ struct GraphView: View {
     let scale: Scale
     let tetradLayers: TetradLayers
     @ObservedObject var settings: AppSettings
-    @ObservedObject var recordingState: RecordingState
     // false for a display-only audience view (AudienceGraphView) - omits HitTestView entirely,
     // so a second screen showing this never intercepts/reacts to touches meant for the
     // performer's own window.
@@ -83,7 +82,7 @@ struct GraphView: View {
                                showDiamonds: settings.showDiamonds)
 
                     if interactive {
-                        HitTestView(scale:scale, settings: settings, recordingState: recordingState)
+                        HitTestView(scale:scale, settings: settings)
                     }
                 }
                 // Purely graphical Canvas drawing with no meaningful screen-reader semantics -

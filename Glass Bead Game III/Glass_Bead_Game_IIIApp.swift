@@ -17,7 +17,6 @@ var sound = Sound() // sound is a generic class that wraps both the audio out an
 // these same instances rather than constructing its own - see GraphScaleState.swift's own
 // header comment for the fuller reasoning.
 var appSettings = AppSettings()
-var appRecordingState = RecordingState(settings: appSettings, sampleRateProvider: { sound.audio.sampleRate })
 var graphScaleState = GraphScaleState(settings: appSettings)
 
 @main

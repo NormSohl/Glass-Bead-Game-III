@@ -4,11 +4,6 @@
 <dict>
     <key>com.apple.security.app-sandbox</key>
     <true/>
-    <!-- read-write, not read-only - the live-record feature (step 3) adds a Save flow, which
-         needs to write a user-selected file via .fileExporter, not just read one. Same change
-         Seq.entitlements already has for its own save/load. -->
-    <key>com.apple.security.files.user-selected.read-write</key>
-    <true/>
     <!-- On macOS, App Sandbox gates any audio-input device (including IDAM's composite
          audio+MIDI interface for a USB-connected iPad) behind this entitlement, separately
          from and in addition to the NSMicrophoneUsageDescription/TCC prompt - without it, a

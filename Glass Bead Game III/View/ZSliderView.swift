@@ -28,7 +28,6 @@ struct ZSliderView: View {
     // narrower canvas width. Norm: the diamonds should match the rest of the graph, in size as
     // well as color.
     let graphSquareSize: CGFloat
-    @ObservedObject var recordingState: RecordingState
 
     @State private var hoverLocation: CGPoint = .zero
 
@@ -232,19 +231,11 @@ struct ZSliderView: View {
         hoverLocation.y = zSliderHeight - hoverLocation.y
         // No sound.beginZTouch(amp:) here - Norm: after practicing with it, the Z-slider must
         // never start a note on its own (so levels can be changed silently); only the pen
-        // (HitTestView's graph touch) may trigger sound. recordingState.beginZTouch() is called
-        // every frame, not gated behind a "first touch of this drag" flag the way
-        // sound.beginGraphTouch is elsewhere - it's cheap to call repeatedly (RecordingState's
-        // own beginGesture no-ops once a gesture is already in progress) and being unconditional
-        // means it also re-evaluates RecordingState's own "is this actually audible right now"
-        // check on every frame, so a drag that starts before the graph/pedal makes Z audible
-        // correctly starts being captured the moment it does, rather than only at drag-start.
-        recordingState.beginZTouch()
+        // (HitTestView's graph touch) may trigger sound.
       }
     }
 
     private func handleZDragEnded() {
         settings.zDragActive = false
-        recordingState.endZTouch()
     }
 }

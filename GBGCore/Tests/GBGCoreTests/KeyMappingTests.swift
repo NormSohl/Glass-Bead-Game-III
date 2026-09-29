@@ -15,8 +15,6 @@ final class KeyMappingTests: XCTestCase {
         XCTAssertEqual(mapping.tokens(for: .portamentoMomentary), ["shift", "mouseRight"])
         XCTAssertEqual(mapping.tokens(for: .drone), ["d", "k"])
         XCTAssertEqual(mapping.tokens(for: .portamentoToggle), ["g", "h"])
-        XCTAssertEqual(mapping.tokens(for: .recordToggle), ["r"])
-        XCTAssertEqual(mapping.tokens(for: .save), ["s"])
     }
 
     func testActionForReturnsOwningActionOrNil() {
@@ -62,37 +60,49 @@ final class KeyMappingTests: XCTestCase {
     }
 
     // Exercises mergingNewDefaults (private, reached only through loadFromDefaults) via the real
-    // Codable/UserDefaults round trip - simulates a mapping saved before `.save` existed (no
-    // entry at all for it, not even an empty one).
+    // Codable/UserDefaults round trip - simulates a mapping saved before an action existed (no
+    // entry at all for it, not even an empty one). .drone stands in for "the newer action."
     func testLoadFromDefaultsFillsInAnActionMissingFromAnOlderSavedMapping() {
         var bindings = KeyMapping.defaultMapping.bindings
-        bindings.removeValue(forKey: KeyAction.save.rawValue)
-        let legacyMapping = KeyMapping(bindings: bindings)
-        guard let data = try? JSONEncoder().encode(legacyMapping) else {
-            return XCTFail("failed to encode legacy mapping")
-        }
-        UserDefaults.standard.set(data, forKey: defaultsKey)
+        bindings.removeValue(forKey: KeyAction.drone.rawValue)
+        storeLegacy(bindings)
 
         let reloaded = KeyMapping.loadFromDefaults()
-        XCTAssertEqual(reloaded.tokens(for: .save), KeyMapping.defaultMapping.tokens(for: .save))
         XCTAssertEqual(reloaded.tokens(for: .drone), KeyMapping.defaultMapping.tokens(for: .drone))
+        XCTAssertEqual(reloaded.tokens(for: .pedal), KeyMapping.defaultMapping.tokens(for: .pedal))
     }
 
-    // If an older saved mapping had already reassigned .save's own default token ("s") to a
-    // different action, filling in .save's default on load must not steal it back.
+    // If an older saved mapping had already reassigned one of the missing action's default
+    // tokens ("d") to a different action, filling in the default on load must not steal it back.
     func testLoadFromDefaultsNeverStealsADefaultTokenAlreadyUsedElsewhereInTheSavedMapping() {
         var bindings = KeyMapping.defaultMapping.bindings
-        bindings.removeValue(forKey: KeyAction.save.rawValue)
-        bindings[KeyAction.drone.rawValue, default: []].insert("s")
-        let legacyMapping = KeyMapping(bindings: bindings)
-        guard let data = try? JSONEncoder().encode(legacyMapping) else {
+        bindings.removeValue(forKey: KeyAction.drone.rawValue)
+        bindings[KeyAction.pedal.rawValue, default: []].insert("d")
+        storeLegacy(bindings)
+
+        let reloaded = KeyMapping.loadFromDefaults()
+        XCTAssertEqual(reloaded.tokens(for: .drone), ["k"])
+        XCTAssertEqual(reloaded.action(for: "d"), .pedal)
+    }
+
+    // A mapping saved while Live Recording existed still carries "recordToggle"/"save" entries -
+    // those must be dropped on load so their keys (R/S) aren't left parked under a dead action.
+    func testLoadFromDefaultsDropsEntriesForRemovedActions() {
+        var bindings = KeyMapping.defaultMapping.bindings
+        bindings["recordToggle"] = ["r"]
+        bindings["save"] = ["s"]
+        storeLegacy(bindings)
+
+        let reloaded = KeyMapping.loadFromDefaults()
+        XCTAssertEqual(reloaded, .defaultMapping)
+        XCTAssertNil(reloaded.action(for: "r"))
+    }
+
+    private func storeLegacy(_ bindings: [String: Set<KeyToken>]) {
+        guard let data = try? JSONEncoder().encode(KeyMapping(bindings: bindings)) else {
             return XCTFail("failed to encode legacy mapping")
         }
         UserDefaults.standard.set(data, forKey: defaultsKey)
-
-        let reloaded = KeyMapping.loadFromDefaults()
-        XCTAssertTrue(reloaded.tokens(for: .save).isEmpty)
-        XCTAssertEqual(reloaded.action(for: "s"), .drone)
     }
 
     func testDisplayLabelNamesForNonCharacterTokens() {

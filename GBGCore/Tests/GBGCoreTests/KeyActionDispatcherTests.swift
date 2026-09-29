@@ -1,10 +1,9 @@
 import XCTest
 @testable import GBGCore
 
-// Minimal stand-ins for the app target's AppSettings/RecordingState - conforming to exactly the
-// protocols KeyActionDispatcher actually depends on, the same way the real classes do via their
-// own `extension AppSettings: KeyActionPerforming {}` / `extension RecordingState:
-// RecordingActionPerforming {}` (ControlData.swift / RecordingState.swift).
+// Minimal stand-in for the app target's AppSettings - conforming to exactly the protocol
+// KeyActionDispatcher actually depends on, the same way the real class does via its own
+// `extension AppSettings: KeyActionPerforming {}` (ControlData.swift).
 private final class MockSettings: KeyActionPerforming {
     var pedal = false
     var snap = true
@@ -14,23 +13,14 @@ private final class MockSettings: KeyActionPerforming {
     var isCapturingKeyBinding = false
 }
 
-private final class MockRecorder: RecordingActionPerforming {
-    private(set) var toggleCount = 0
-    private(set) var saveCount = 0
-    func toggleRecording() { toggleCount += 1 }
-    func requestSave() { saveCount += 1 }
-}
-
 final class KeyActionDispatcherTests: XCTestCase {
     private var settings: MockSettings!
-    private var recorder: MockRecorder!
     private var dispatcher: KeyActionDispatcher!
 
     override func setUp() {
         super.setUp()
         settings = MockSettings()
-        recorder = MockRecorder()
-        dispatcher = KeyActionDispatcher(settings: settings, recordingState: recorder)
+        dispatcher = KeyActionDispatcher(settings: settings)
     }
 
     func testPedalKeyDownAndKeyUp() {
@@ -90,15 +80,6 @@ final class KeyActionDispatcherTests: XCTestCase {
         settings.snap = false
         dispatcher.applyKeyUp(.portamentoMomentary) // a redundant extra release - must no-op
         XCTAssertFalse(settings.snap)
-    }
-
-    func testRecordToggleAndSaveCallRecordingStateOnlyOnceEachForNonRepeat() {
-        dispatcher.applyKeyDown(.recordToggle, isARepeat: false)
-        dispatcher.applyKeyDown(.recordToggle, isARepeat: true)
-        XCTAssertEqual(recorder.toggleCount, 1)
-
-        dispatcher.applyKeyDown(.save, isARepeat: false)
-        XCTAssertEqual(recorder.saveCount, 1)
     }
 
     // The exact path every physical input - keyboard, and a mouse button bound the same way

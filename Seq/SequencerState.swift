@@ -16,7 +16,7 @@ import Foundation
 import GBGCore
 import GBGSound
 
-// All four of the sequencer's Parts, including drone (unlike Graph's SequencerVoice, which is
+// All four of the sequencer's Parts, including drone (unlike Graph's GraphAxis, which is
 // x/y/z only - the axes with a crosshair on the main graph). Seq has no crosshair at all, so
 // there's no equivalent "graphAxis" mapping to carry over here.
 enum PartVoice: Hashable, CaseIterable {

@@ -10,9 +10,9 @@ import SwiftUI
 import GBGCore
 
 // The graph's X/Y/Z axes - not the drone, which has no crosshair on the main graph. Used to
-// track which axes are currently being driven by the sequencer (playback/scrub/handle-editing)
-// rather than by touch - see AppSettings.sequencerDrivenVoices and the sequencer memory notes.
-enum SequencerVoice: Hashable {
+// track which axes are currently being driven by incoming MIDI rather than by touch - see
+// AppSettings.externallyDrivenVoices.
+enum GraphAxis: Hashable {
     case x, y, z
 }
 
@@ -122,20 +122,16 @@ class AppSettings: ObservableObject{
     // Which X/Y/Z axes are currently being driven by incoming MIDI (Seq, or any other MIDI
     // controller) rather than touch - see Sound.handleIncomingMidi. Read by HitTestView/
     // ZSliderView ("don't read touch for this axis's crosshair, use whatever's already been
-    // written into settings.xFrequency/yFrequency/zFrequency instead"). Used to be read
-    // alongside a second set, sequencerDrivenVoices, written by Graph's own in-app sequencer -
-    // removed once the standalone Seq app replaced it.
-    @Published var externallyDrivenVoices: Set<SequencerVoice> = []
+    // written into settings.xFrequency/yFrequency/zFrequency instead").
+    @Published var externallyDrivenVoices: Set<GraphAxis> = []
     
     // root pitch
     @Published var rootFrequency: Double = 261.6255653005986 // middle c  // no UI yet if ever. MIDI note number 60
     @Published var rootMidiNote: Int = 60  // middle c
 
     // X/Y/Z: the graph's three moving tones. HitTestView/ZSliderView publish the currently
-    // touched pitch here every frame (X/Y added alongside ScoreCapture, mirroring how
-    // ZSliderView already published zFrequency for TetradView to read) - this is the graph's
-    // one place to read "what's currently selected" from outside the touch-handling views
-    // themselves, e.g. for ScoreCapture to read when writing a chord into a Score.
+    // touched pitch here every frame - this is the graph's one place to read "what's currently
+    // selected" from outside the touch-handling views themselves.
     @Published var xFrequency: Double = 261.6255653005986 // starts at unison with the root
     @Published var yFrequency: Double = 261.6255653005986 // starts at unison with the root
     @Published var zFrequency: Double = 261.6255653005986 // starts at unison with the root

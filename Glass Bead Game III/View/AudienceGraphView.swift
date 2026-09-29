@@ -23,7 +23,6 @@ struct AudienceGraphView: View {
                 scale: graphScale.scale,
                 tetradLayers: graphScale.tetradLayers,
                 settings: appSettings,
-                recordingState: appRecordingState,
                 interactive: false
             )
         }

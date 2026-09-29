@@ -34,8 +34,8 @@ class Sound {
     var enableZ: Bool { settings?.playNoteZ ?? false }
 
     // How many touch zones are currently held down and able to start/stop the shared audio
-    // engine - the graph (X/Y, via beginGraphTouch/endGraphTouch) and the sequencer's own scrub/
-    // play (beginTouch/endTouch) below. The Z-slider is deliberately NOT one of these zones -
+    // engine - currently just the graph (X/Y, via beginGraphTouch/endGraphTouch). The Z-slider
+    // is deliberately NOT one of these zones -
     // Norm, after practicing with it: dragging Z must never sound (or silence) a note by itself,
     // only retune whatever's already audible because the graph or the pedal is holding it. Kept
     // as a reference count rather than a simple flag because more than one of these zones can be
@@ -49,7 +49,7 @@ class Sound {
     // touched at all (pedal pressed before playing a note): only in this genuine hand-off case
     // should a voice's own Play toggle be able to silence or re-sound it without a real touch -
     // otherwise pedal being merely *engaged*, with nothing ever played, would let a stray Play-
-    // toggle flip start a note out of nowhere. Set in endGraphTouch/endTouch the moment
+    // toggle flip start a note out of nowhere. Set in endGraphTouch the moment
     // activeTouchCount reaches 0 while pedal is held; cleared by releasePedal, the actual end
     // of a pedal-sustained passage.
     private var pedalIsSustaining = false
@@ -98,7 +98,7 @@ class Sound {
     // be silenced by some other zone's activity, the same property the original fix relied on.
     // (The Z-slider itself is no longer one of the zones that can change activeTouchCount at
     // all - see the note on that var's own declaration above - so this is now purely about the
-    // graph's and the sequencer's own touch/pedal interplay, not Z.)
+    // graph's own touch/pedal interplay, not Z.)
     private func applyGraphVoiceEnables(){
         audio.triad.enableTriadXTone(enable: enableX && (sustained || xExternallyDriven))
         audio.triad.enableTriadYTone(enable: enableY && (sustained || yExternallyDriven))
@@ -200,19 +200,6 @@ class Sound {
         }
     }
 
-    /// For touch sources that aren't a specific voice zone - currently just the sequencer's
-    /// play/scrub, which manages each voice's amplitude directly (ScorePlayer writes it every
-    /// sample, bypassing the enable-flag mechanism above entirely) and only needs the shared
-    /// engine gated, not applyLiveVoiceEnables.
-    func beginTouch(amp: Float) {
-        activeTouchCount += 1
-        if activeTouchCount == 1 { startEngine(amp: amp) }
-    }
-
-    func endTouch(pedal: Bool) {
-        activeTouchCount = max(0, activeTouchCount - 1)
-        if activeTouchCount == 0 && !pedal { stopEngine() }
-    }
 
     /// Call when the pedal toggle itself is released (not a touch ending) - Norm: a real damper
     /// pedal silences whatever it was sustaining the instant it's lifted, not on the next key
@@ -295,9 +282,9 @@ class Sound {
         midi.setRootNote(note: midiNote)
     }
 
-    // MARK: - External MIDI drive (generic MIDI input, step 3 of the standalone-sequencer plan)
+    // MARK: - External MIDI drive (generic MIDI input)
     //
-    // Lets an external MIDI source - a controller, or eventually a standalone Seq app - drive
+    // Lets an external MIDI source - a controller, a sequencer, a DAW - drive
     // X/Y/Z independently via note-on/note-off on that voice's own channel (see
     // Midi.onEvent/handleIncomingMidi below). Unlike a graph touch, which always moves X and Y
     // together as one crosshair, each externally-driven voice enables/disables on its own,
@@ -313,9 +300,9 @@ class Sound {
 
     // Remembers the most recent note-on per voice so a later pitch-bend-only message (which
     // carries no note number of its own) can still be decoded into a frequency.
-    private var lastIncomingNote: [SequencerVoice: Int] = [:]
+    private var lastIncomingNote: [GraphAxis: Int] = [:]
 
-    private func voiceForChannel(_ channel: Int) -> SequencerVoice? {
+    private func voiceForChannel(_ channel: Int) -> GraphAxis? {
         switch channel {
         case midi.xMidiMPEChannel: return .x
         case midi.yMidiMPEChannel: return .y
@@ -333,8 +320,7 @@ class Sound {
 
     /// Wired up as `midi.onEvent` in initSound() - the single entry point for everything this
     /// app does in response to incoming MIDI. Channel-to-voice interpretation lives here
-    /// (in the app target), not in GBGSound's Midi class, which reports events generically -
-    /// see the standalone-sequencer plan's step 3 notes on keeping that layer low-level.
+    /// (in the app target), not in GBGSound's Midi class, which reports events generically.
     func handleIncomingMidi(channel: Int, kind: Midi.MidiInputEvent.Kind) {
         // CC64 (Sustain Pedal) - standard convention is >=64 down, <64 up, and it isn't scoped
         // to any one voice's channel the way note-on/pitch-bend are (a real pedal sends it on
@@ -368,7 +354,7 @@ class Sound {
         }
     }
 
-    private func beginExternalDrive(voice: SequencerVoice, frequency: Double) {
+    private func beginExternalDrive(voice: GraphAxis, frequency: Double) {
         // A note-on for a voice that's already externally driven (e.g. a second note-on with
         // no intervening note-off - possible if a sender's own note tracking desyncs, as Seq's
         // polling-based MIDI-out can if a note shorter than its poll interval gets skipped)
@@ -408,7 +394,7 @@ class Sound {
         if activeTouchCount == 1 { startEngine(amp: 1) }
     }
 
-    private func updateExternalDrivePitch(voice: SequencerVoice, frequency: Double) {
+    private func updateExternalDrivePitch(voice: GraphAxis, frequency: Double) {
         switch voice {
         case .x:
             guard xExternallyDriven else { return }
@@ -425,7 +411,7 @@ class Sound {
         }
     }
 
-    private func endExternalDrive(voice: SequencerVoice) {
+    private func endExternalDrive(voice: GraphAxis) {
         switch voice {
         case .x:
             guard xExternallyDriven else { return }
@@ -445,16 +431,15 @@ class Sound {
         if activeTouchCount == 0 { stopEngine() }
     }
 
-    // MARK: - External MIDI drive: drone (phase 2 of the standalone-sequencer plan)
+    // MARK: - External MIDI drive: drone
     //
-    // A separate, parallel path from X/Y/Z's above rather than folded into SequencerVoice -
-    // drone has no crosshair on the graph, so SequencerVoice (which exists specifically to mark
+    // A separate, parallel path from X/Y/Z's above rather than folded into GraphAxis -
+    // drone has no crosshair on the graph, so GraphAxis (which exists specifically to mark
     // "something other than touch owns this crosshair") has no case for it and shouldn't gain
     // one just for this. Drives audio.triad.setTriadRootPitch + midi.setMidiRootPitch directly,
     // never setRootPitch/midi.setMidiReferencePitch - the latter would move the reference
     // frequency every other voice's pitch-bend is encoded against, as a side effect of just
-    // wanting drone to sound. SequencerState.scrub's own drone case set this same precedent for
-    // exactly this reason.
+    // wanting drone to sound.
     private var droneExternallyDriven = false
     private var lastIncomingDroneNote: Int?
 

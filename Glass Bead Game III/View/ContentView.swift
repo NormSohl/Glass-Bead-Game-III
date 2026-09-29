@@ -6,17 +6,15 @@
 //
 
 import SwiftUI
-import UniformTypeIdentifiers
 import GBGCore
 import GBGSound
 
 struct ContentView: View {
     // Wraps the shared, process-wide instances (Glass_Bead_Game_IIIApp.swift) rather than
     // constructing its own - see GraphScaleState.swift's own header comment for why: the
-    // external-display audience window needs to reach the exact same settings/recordingState/
-    // scale/tetradLayers ContentView uses, from outside any view's own lifetime.
+    // external-display audience window needs to reach the exact same settings/scale/
+    // tetradLayers ContentView uses, from outside any view's own lifetime.
     @ObservedObject private var settings: AppSettings = appSettings
-    @ObservedObject private var recordingState: RecordingState = appRecordingState
     @ObservedObject private var graphScale: GraphScaleState = graphScaleState
 
     // Thin pass-throughs so the rest of this file's existing `scale`/`tetradLayers` references
@@ -52,27 +50,6 @@ struct ContentView: View {
         ZStack {
             Color.black.ignoresSafeArea(.all)
 
-            // Recording/save feedback (Norm: reachable confirmation for actions that are now
-            // keyboard-triggerable from anywhere, not just from inside the Settings popover
-            // where the Record/Save buttons themselves are visible feedback enough on their
-            // own). Always on top, never intercepts touches/clicks, fades out on its own via
-            // RecordingState.showFeedback's own timer - nothing here dismisses it early.
-            if let message = recordingState.feedbackMessage {
-                VStack {
-                    Text(message)
-                        .font(.callout.weight(.medium))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(.black.opacity(0.8), in: Capsule())
-                    Spacer(minLength: 0)
-                }
-                .padding(.top, 16)
-                .allowsHitTesting(false)
-                .transition(.opacity)
-                .zIndex(10)
-            }
-
             VStack(spacing: 0) {
                 // Order swaps with settings.zSliderSide rather than just moving the Z-slider
                 // alone, so the iPad ControlColumn (leading in the .right/default case here)
@@ -88,7 +65,7 @@ struct ContentView: View {
                 HStack(spacing: ratioLabelGap(settings: settings)) {
                     if settings.zSliderSide == .right {
                         #if os(iOS)
-                        ControlColumn(settings: settings, recordingState: recordingState)
+                        ControlColumn(settings: settings)
                         #endif
                         graphSquare
                         zSlider
@@ -96,7 +73,7 @@ struct ContentView: View {
                         zSlider
                         graphSquare
                         #if os(iOS)
-                        ControlColumn(settings: settings, recordingState: recordingState)
+                        ControlColumn(settings: settings)
                         #endif
                     }
                 }
@@ -129,26 +106,7 @@ struct ContentView: View {
             }
         }
         .coordinateSpace(name: "contentRoot")
-        .animation(.easeInOut(duration: 0.2), value: recordingState.feedbackMessage)
         .frame (minWidth: 800, minHeight: 500)
-        // Live Recording's Save panel - driven by RecordingState.pendingExportData rather than
-        // local @State, so both the Settings-popover Save button (ControlView) and a keyboard
-        // shortcut (KeyActionDispatcher, works from anywhere - see Norm's ask for this) trigger
-        // the identical panel. isPresented's own setter is what actually clears
-        // pendingExportData - fires reliably on dismissal (success, failure, or cancel alike),
-        // unlike the completion closure below, which some SwiftUI versions skip on a plain
-        // cancel.
-        .fileExporter(
-            isPresented: Binding(
-                get: { recordingState.pendingExportData != nil },
-                set: { isPresented in if !isPresented { recordingState.clearPendingExport() } }
-            ),
-            document: recordingState.pendingExportData.map { GraphRecordingFile(data: $0) },
-            contentType: .midi,
-            defaultFilename: "Live Recording"
-        ) { result in
-            recordingState.reportSaveResult(result)
-        }
         #if os(macOS)
         // Locks the window to always resize both axes together, at whatever ratio has no dead
         // space (see idealWindowSize) - dragging just one edge would otherwise leave black
@@ -158,7 +116,7 @@ struct ContentView: View {
         // Keyboard access to Portamento/Pedal, per Norm - "third party pedals can be configured
         // to work with them" (many cheap USB foot pedals emulate a plain keystroke). See
         // KeyCommandMonitor's own header comment for the toggle-vs-momentary distinction.
-        .background(KeyCommandMonitor(settings: settings, recordingState: recordingState))
+        .background(KeyCommandMonitor(settings: settings))
         #endif
         #if os(iOS)
         // Apple Pencil Pro squeeze -> Pedal toggle, for live performance: the graphic-entry
@@ -170,13 +128,13 @@ struct ContentView: View {
         // KeyMapping a Mac keyboard would - Norm: "iPad can connect to a keyboard... button
         // pads are cheap," so this keeps that path open rather than treating Pencil-squeeze
         // as the iPad's only input. See KeyboardMonitor's own comment.
-        .background(KeyboardMonitor(settings: settings, recordingState: recordingState))
+        .background(KeyboardMonitor(settings: settings))
         // A Bluetooth/USB mouse operated by the free hand around the back of the case -
         // Norm's answer to Pencil-squeeze not firing reliably while the pencil is touching the
         // graph. iOS-only: on macOS the mouse already drives HitTestView's X/Y drag, so giving
         // it a second meaning there would conflict rather than help. See MouseMonitor's own
         // comment for the full reasoning.
-        .background(MouseMonitor(settings: settings, recordingState: recordingState, scale: scale))
+        .background(MouseMonitor(settings: settings, scale: scale))
         #endif
         .onChange(of: settings.selectedLimit) {
             graphScale.rebuild(for: settings)
@@ -272,7 +230,7 @@ struct ContentView: View {
                 }
                 .help("Settings - scale, tuning, MIDI, and view options")
                 .popover(isPresented: $settings.showSettings) {
-                    ControlView(settings: settings, recordingState: recordingState)
+                    ControlView(settings: settings)
                         .frame(minWidth: 340, idealWidth: 380, minHeight: 480, idealHeight: 650)
                 }
             }
@@ -290,7 +248,7 @@ struct ContentView: View {
         // .windowResizability(.contentSize) measures this view with an unconstrained/extreme
         // proposed size on at least one pass, and a GeometryReader caught in that pass could in
         // principle report one.
-        GraphSquareView(scale: scale, tetradLayers: tetradLayers, settings: settings, recordingState: recordingState, squareHeight: safeGraphSquareHeight, drawsRatioLabelsInternally: false)
+        GraphSquareView(scale: scale, tetradLayers: tetradLayers, settings: settings, squareHeight: safeGraphSquareHeight, drawsRatioLabelsInternally: false)
         .layoutPriority(1)
         .background(
             GeometryReader { proxy in
@@ -317,7 +275,7 @@ struct ContentView: View {
     // explicitly matched to the graph square's own rendered height (see graphSquareHeight
     // above) rather than left to fill whatever the row's full height happens to be.
     private var zSlider: some View {
-        ZSliderView(scale: scale, settings: settings, graphSquareSize: graphSquareHeight, recordingState: recordingState)
+        ZSliderView(scale: scale, settings: settings, graphSquareSize: graphSquareHeight)
             .frame(width: 70, height: graphSquareHeight > 0 ? graphSquareHeight : nil)
     }
 }
@@ -344,10 +302,9 @@ import AppKit
 // ever added here).
 private struct KeyCommandMonitor: NSViewRepresentable {
     @ObservedObject var settings: AppSettings
-    let recordingState: RecordingState
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(settings: settings, recordingState: recordingState)
+        Coordinator(settings: settings)
     }
 
     func makeNSView(context: Context) -> NSView {
@@ -370,9 +327,9 @@ private struct KeyCommandMonitor: NSViewRepresentable {
         // new event to find what actually changed (see .flagsChanged below).
         private var heldModifierTokens: Set<KeyToken> = []
 
-        init(settings: AppSettings, recordingState: RecordingState) {
+        init(settings: AppSettings) {
             self.settings = settings
-            self.dispatcher = KeyActionDispatcher(settings: settings, recordingState: recordingState)
+            self.dispatcher = KeyActionDispatcher(settings: settings)
         }
 
         func install() {
@@ -601,7 +558,6 @@ private struct PencilSqueezeMonitor: UIViewRepresentable {
 // already proven for the Z-slider, rather than drawing over the content.
 private struct ControlColumn: View {
     @ObservedObject var settings: AppSettings
-    let recordingState: RecordingState
 
     var body: some View {
         // Anchored to the top, not centered - cheap insurance against a resting palm: Norm's
@@ -631,7 +587,7 @@ private struct ControlColumn: View {
                 settings.showSettings = true
             }
             .popover(isPresented: $settings.showSettings) {
-                ControlView(settings: settings, recordingState: recordingState)
+                ControlView(settings: settings)
                     .frame(minWidth: 340, idealWidth: 380, minHeight: 480, idealHeight: 650)
             }
 
@@ -683,10 +639,9 @@ import GameController
 // concept to gate here at all.
 private struct KeyboardMonitor: UIViewRepresentable {
     @ObservedObject var settings: AppSettings
-    let recordingState: RecordingState
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(settings: settings, recordingState: recordingState)
+        Coordinator(settings: settings)
     }
 
     func makeUIView(context: Context) -> UIView {
@@ -705,9 +660,9 @@ private struct KeyboardMonitor: UIViewRepresentable {
         private let dispatcher: KeyActionDispatcher
         private var connectObserver: Any?
 
-        init(settings: AppSettings, recordingState: RecordingState) {
+        init(settings: AppSettings) {
             self.settings = settings
-            self.dispatcher = KeyActionDispatcher(settings: settings, recordingState: recordingState)
+            self.dispatcher = KeyActionDispatcher(settings: settings)
         }
 
         func install() {
@@ -786,7 +741,6 @@ private struct KeyboardMonitor: UIViewRepresentable {
 // all.
 private struct MouseMonitor: UIViewControllerRepresentable {
     @ObservedObject var settings: AppSettings
-    let recordingState: RecordingState
     // For scroll-driven Z stepping (handleScroll below) - the same Scale instance GraphView/
     // ZSliderView already draw their gridlines from, not a separate copy.
     let scale: Scale
@@ -818,7 +772,7 @@ private struct MouseMonitor: UIViewControllerRepresentable {
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(settings: settings, recordingState: recordingState, scale: scale)
+        Coordinator(settings: settings, scale: scale)
     }
 
     final class Coordinator {
@@ -847,10 +801,10 @@ private struct MouseMonitor: UIViewControllerRepresentable {
             jostleSuppressedUntil = Date().addingTimeInterval(jostleSuppressionWindow)
         }
 
-        init(settings: AppSettings, recordingState: RecordingState, scale: Scale) {
+        init(settings: AppSettings, scale: Scale) {
             self.settings = settings
             self.scale = scale
-            self.dispatcher = KeyActionDispatcher(settings: settings, recordingState: recordingState)
+            self.dispatcher = KeyActionDispatcher(settings: settings)
         }
 
         func install() {
@@ -971,30 +925,3 @@ private struct MouseMonitor: UIViewControllerRepresentable {
     }
 }
 #endif
-
-/// Thin FileDocument wrapper around an already-encoded Standard MIDI File for .fileExporter -
-/// SeqMIDICodec.encode (GBGCore) does the actual document->bytes work before this is even
-/// constructed (see RecordingState.requestSave()), so this just carries bytes to disk. Lives
-/// here rather than in ControlView, since ContentView is what actually presents the panel now -
-/// see the .fileExporter modifier above for why. init(configuration:) exists solely for
-/// FileDocument conformance - Graph only ever writes through this, never reads one back.
-struct GraphRecordingFile: FileDocument {
-    static var readableContentTypes: [UTType] { [.midi] }
-
-    var data: Data
-
-    init(data: Data) {
-        self.data = data
-    }
-
-    init(configuration: ReadConfiguration) throws {
-        guard let contents = configuration.file.regularFileContents else {
-            throw CocoaError(.fileReadCorruptFile)
-        }
-        data = contents
-    }
-
-    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        FileWrapper(regularFileWithContents: data)
-    }
-}

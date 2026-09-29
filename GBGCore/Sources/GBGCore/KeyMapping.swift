@@ -3,7 +3,7 @@
 //  GBGCore
 //
 //  User-remappable bindings for the keyboard-controllable actions (Drone/Portamento toggle/
-//  Portamento hold/Pedal hold/Record/Save) - see KeyCommandMonitor/KeyboardMonitor/MouseMonitor
+//  Portamento hold/Pedal hold) - see KeyCommandMonitor/KeyboardMonitor/MouseMonitor
 //  in the app target's ContentView.swift, which read this instead of hardcoded key checks.
 //  Persisted via UserDefaults (unlike the rest of AppSettings, which is deliberately
 //  in-memory-only and resets every launch - a performer's own keyboard remap is a real,
@@ -14,14 +14,14 @@
 //  and KeyActionDispatcher.swift alongside it - can be exercised by GBGCoreTests via a plain
 //  `swift test`, without needing a live keyboard/mouse/pencil or a UI test target at all. Norm:
 //  "add automated test harnesses... to confirm we don't lose functionality moving forward."
-//  This file has zero dependency on the app's AppSettings/RecordingState classes to begin with,
+//  This file has zero dependency on the app's AppSettings class to begin with,
 //  so it moved over unchanged apart from `public` visibility.
 //
 
 import Foundation
 
 public enum KeyAction: String, CaseIterable, Codable {
-    case drone, portamentoToggle, portamentoMomentary, pedal, recordToggle, save
+    case drone, portamentoToggle, portamentoMomentary, pedal
 
     public var displayName: String {
         switch self {
@@ -29,8 +29,6 @@ public enum KeyAction: String, CaseIterable, Codable {
         case .portamentoToggle: return "Portamento (toggle)"
         case .portamentoMomentary: return "Portamento (hold)"
         case .pedal: return "Pedal (hold)"
-        case .recordToggle: return "Live Recording (start/stop)"
-        case .save: return "Save Live Recording"
         }
     }
 
@@ -87,8 +85,6 @@ public struct KeyMapping: Codable, Equatable {
         KeyAction.portamentoToggle.rawValue: ["g", "h"],
         KeyAction.portamentoMomentary.rawValue: ["shift", "mouseRight"],
         KeyAction.pedal.rawValue: [" ", "f", "j", "mouseLeft"],
-        KeyAction.recordToggle.rawValue: ["r"],
-        KeyAction.save.rawValue: ["s"],
     ])
 
     public func tokens(for action: KeyAction) -> Set<KeyToken> {
@@ -128,7 +124,15 @@ extension KeyMapping {
               let decoded = try? JSONDecoder().decode(KeyMapping.self, from: data) else {
             return .defaultMapping
         }
-        return decoded.mergingNewDefaults()
+        return decoded.droppingRemovedActions().mergingNewDefaults()
+    }
+
+    /// Drops entries for actions that no longer exist (Live Recording's recordToggle/save,
+    /// removed 2026-09-28) - otherwise their tokens stay parked under a dead key, invisible in
+    /// the remap UI but still blocking mergingNewDefaults from ever reusing them.
+    private func droppingRemovedActions() -> KeyMapping {
+        let known = Set(KeyAction.allCases.map(\.rawValue))
+        return KeyMapping(bindings: bindings.filter { known.contains($0.key) })
     }
 
     /// Fills in an action's own default token(s) only when a saved mapping predates that action

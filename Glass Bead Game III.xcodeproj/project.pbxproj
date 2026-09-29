@@ -37,10 +37,8 @@
 		B5350927B1EA469B8572FCAC /* PianoRollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F5DEAD64F3749BC96777619 /* PianoRollView.swift */; };
 		C3D4E5F60718293A4B5C6D7E /* GBGSound in Frameworks */ = {isa = PBXBuildFile; productRef = B2C3D4E5F60718293A4B5C6D /* GBGSound */; };
 		C9DDCB90C8F2408F86C84FAB /* SequencerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FC5B11E74EC4FFC823642D9 /* SequencerView.swift */; };
-		CA9DFB93682D7900B1F2C29C /* RecordingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBCBBD744B6C27D6A0A04EC /* RecordingState.swift */; };
 		DF063A4191F1A5726E2F314B /* LiveCaptureState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09830CF05D1A4289498E8A7B /* LiveCaptureState.swift */; };
 		E434633F43BE43C28F278AE5 /* GBGSound in Frameworks */ = {isa = PBXBuildFile; productRef = B2C3D4E5F60718293A4B5C6D /* GBGSound */; };
-		EE645A5026D54B47871B55B4 /* ScoreCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290A597C9AA1404D82BB59FA /* ScoreCapture.swift */; };
 		F360FFA894604821B07976E7 /* RootIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04CFF1117DA340028AAA74C8 /* RootIndicatorView.swift */; };
 		F4CDD0102BD145C7BD92A70B /* SeqApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F35D5C9D9E84298AE75468E /* SeqApp.swift */; };
 		FE88F8752F854C75871D6C00 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F71E89B896DE4710A56E4B62 /* Assets.xcassets */; };
@@ -68,13 +66,11 @@
 		09830CF05D1A4289498E8A7B /* LiveCaptureState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveCaptureState.swift; sourceTree = "<group>"; };
 		11652339D95D45C69024E258 /* AudienceGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudienceGraphView.swift; sourceTree = "<group>"; };
 		1F1C0DE9AAC56B6A598764CC /* HangProfiler.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HangProfiler.swift; sourceTree = "<group>"; };
-		290A597C9AA1404D82BB59FA /* ScoreCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreCapture.swift; sourceTree = "<group>"; };
 		2C54886396D84BE08EF97D59 /* Seq.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Seq.entitlements; sourceTree = "<group>"; };
 		4A8E917E593A42A893FBEA9C /* PitchHitTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PitchHitTest.swift; sourceTree = "<group>"; };
 		4F2C24BD93574824A1F71E47 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		4FC5B11E74EC4FFC823642D9 /* SequencerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequencerView.swift; sourceTree = "<group>"; };
 		60EBDB420A6441FD86D347C5 /* PianoRollCoordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PianoRollCoordinates.swift; sourceTree = "<group>"; };
-		6FBCBBD744B6C27D6A0A04EC /* RecordingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingState.swift; sourceTree = "<group>"; };
 		778271CF9DA6CEB34CCEC947 /* KeyMappingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyMappingView.swift; sourceTree = "<group>"; };
 		792C3694A73A41E196B16CA2 /* ZSliderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZSliderView.swift; sourceTree = "<group>"; };
 		796BD56083BA49C1BA9CCD93 /* SeqSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeqSettings.swift; sourceTree = "<group>"; };
@@ -197,7 +193,6 @@
 			isa = PBXGroup;
 			children = (
 				06D062312BAA953300C68262 /* Overview.md */,
-				290A597C9AA1404D82BB59FA /* ScoreCapture.swift */,
 			);
 			path = Score;
 			sourceTree = "<group>";
@@ -207,7 +202,6 @@
 			children = (
 				06D062682BAA9A9000C68262 /* ControlData.swift */,
 				E5DDCC95CF1A81170C4DE41F /* GraphScaleState.swift */,
-				6FBCBBD744B6C27D6A0A04EC /* RecordingState.swift */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -352,7 +346,6 @@
 			files = (
 				06D0626C2BAA9A9000C68262 /* ControlData.swift in Sources */,
 				317B1BA8A34162AA9B38DE5C /* GraphScaleState.swift in Sources */,
-				CA9DFB93682D7900B1F2C29C /* RecordingState.swift in Sources */,
 				06824BDE2B881E3C002E9661 /* Glass_Bead_Game_IIIApp.swift in Sources */,
 				06824BFD2B886963002E9661 /* ContentView.swift in Sources */,
 				06824BFE2B886963002E9661 /* HitTestView.swift in Sources */,
@@ -369,7 +362,6 @@
 				4D9981F43229467D80A3D2BF /* PitchHitTest.swift in Sources */,
 				A38475822A7D41D583CA3B43 /* ZSliderView.swift in Sources */,
 				8CFA26E61CFF41F3AE63BE38 /* TetradView.swift in Sources */,
-				EE645A5026D54B47871B55B4 /* ScoreCapture.swift in Sources */,
 				8948E67C5DBAEC3899D80AE1 /* KeyMappingView.swift in Sources */,
 				FF3242B34ED98AD652BAA3B5 /* HangProfiler.swift in Sources */,
 			);

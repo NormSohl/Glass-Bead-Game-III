@@ -2,11 +2,10 @@
 
 *Glass Bead Game III is shortened to* **GBG III** *throughout this manual.*
 
-*Draft — not yet public. Will publish alongside App Store approval for GBG III and Seq.*
+*Draft — not yet public. Will publish alongside App Store approval for GBG III.*
 
 This manual is organized in increasing order of complexity: setup, then playing GBG III live,
-then the settings you'll reach for occasionally, then connecting outboard MIDI gear. If you
-want to record a performance and edit it afterward, see the separate **Seq manual**.
+then the settings you'll reach for occasionally, then connecting outboard MIDI gear.
 
 ---
 
@@ -40,8 +39,7 @@ scale limits mean mathematically — see [MapTone](https://www.sohl.com/maptone/
 
 On first launch, GBG III asks for nothing — no Bluetooth pairing prompt, and MIDI access needs
 no permission prompt on either platform for a normal outboard-MIDI or Network MIDI connection.
-It never actually records or touches audio (its "recording" feature captures your touch/pen
-gestures, not audio - see the Seq manual) - the one exception is connecting a USB-attached
+It never records or touches audio input - the one exception is connecting a USB-attached
 iPad via macOS's IDAM (Inter-Device Audio & MIDI): since IDAM exposes the iPad as a combined
 audio+MIDI interface, macOS gates it behind the same microphone permission as an actual
 microphone, and will show that system prompt the first time you use it, even though no audio is
@@ -71,17 +69,10 @@ cheap keypad that emulates one) for the same shortcuts. Defaults:
 | Portamento (toggle) | G, H |
 | Portamento (hold) | Shift |
 | Pedal (hold) | Space, F, J |
-| Live Recording (start/stop) | R |
-| Save Live Recording | S |
 
 There's no separate *toggle* key for Pedal — the keyboard only offers the hold behavior above,
 matching a real damper pedal. To toggle Pedal on and leave it on, use the on-screen button (or,
 on iPad, Pencil squeeze — see below).
-
-Record and Save work from the keyboard no matter what's on screen — you don't need Settings
-open first. A small message briefly appears at the top of the graph confirming what just
-happened ("Recording", "Stopped — 4 notes", "Saved"), since these two in particular have no
-other on-screen change to notice otherwise.
 
 All of these are remappable — see **Keyboard Mapping** under Settings.
 
@@ -170,10 +161,6 @@ occasionally rather than mid-phrase.
 - **Z-Slider Side** — Left or Right. Moves the Z-slider (and, on iPad, the on-screen control
   column) to whichever side suits your grip - set this once for how you actually hold the
   device/pencil.
-- **Live Recording** — captures a performance to hand off to Seq for review/editing. See the
-  separate Seq manual for the full recording/import workflow. Record and Save (§2's keyboard
-  table) work the same whether or not this panel is open — reach for this panel itself mainly
-  to check the Record/Stop state at a glance, or to remap the keys.
 - **Keyboard Mapping** — see §2 above for what's remappable.
 
 ---
@@ -188,11 +175,10 @@ settings, it'll show up here too, listed by whatever name that device gives itse
 separate in-app Bluetooth pairing screen — pair the device at the system level first.
 
 - **MIDI Destination** is where GBG III sends pitch/note data to — an external synth, a
-  Eurorack MIDI-to-CV interface, or Seq (same Mac, or over USB/Network MIDI - set this to Seq
-  and it can capture your performance live as you play, no Save/Open needed; see the Seq
-  manual's "Live capture" section).
+  Eurorack MIDI-to-CV interface, or another app (a DAW recording your performance live, on the
+  same Mac or over USB/Network MIDI).
 - **MIDI Source** is where GBG III listens for incoming MIDI from — an external controller, or
-  Seq's own live output.
+  a sequencer or DAW playing X/Y/Z back on their channels (2/3/4, see **MPE** below).
 - **Use internal synth** — GBG III's own built-in sound. Turn this off once your outboard gear
   is working and you'd rather hear only that.
 

@@ -11,12 +11,6 @@ import GBGSound
 
 struct ControlView: View {
     @ObservedObject var settings: AppSettings
-    @ObservedObject var recordingState: RecordingState
-
-    // Save (Step 3 of the live-record plan) - the actual encode + panel-presentation now live on
-    // RecordingState/ContentView (see RecordingState.requestSave() and ContentView's own
-    // .fileExporter), so a keyboard shortcut can trigger the identical save panel without this
-    // popover being open at all. This button just requests it.
     @State private var showKeyMapping = false
 
     var body: some View {
@@ -72,39 +66,10 @@ struct ControlView: View {
 
                 Divider()
 
-                // Live recording capture (step 3 of the live-record plan) - arms/disarms
-                // continuous pitch-contour capture from graph touches (see RecordingState), and
-                // saves whatever's captured as a Standard MIDI File (SeqMIDICodec, GBGCore) for
-                // Seq to later import and segment - a real .mid any DAW can also open, not just
-                // Seq, with the current scale/root carried in a custom meta-event Seq reads and
-                // a stock reader safely skips. Placed here alongside the other transport-adjacent
-                // controls rather than the main toolbar, matching where MIDI Destination/Verify
-                // Pitch Bend Range already live below.
-                Text("Live Recording").bold().foregroundStyle(.white)
-                HStack {
-                    Button {
-                        recordingState.toggleRecording()
-                    } label: {
-                        Label(recordingState.isRecording ? "Stop" : "Record", systemImage: recordingState.isRecording ? "stop.circle.fill" : "circle.fill")
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(recordingState.isRecording ? .red : tintcolor)
-
-                    Button {
-                        recordingState.requestSave()
-                    } label: {
-                        Label("Save", systemImage: "square.and.arrow.down")
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(recordingState.isRecording || !recordingState.hasAnyNotes)
-                }
-                .foregroundStyle(.white)
-
-                // Reachable from here rather than the main toolbar, matching Live Recording
-                // above - this is a "look at this occasionally," not a "reach for every session"
-                // control. Cross-platform: on the iPad performance build this drives a
-                // physical/Bluetooth keyboard's bindings (see ContentView's KeyboardMonitor)
-                // alongside Pencil-squeeze, not instead of it.
+                // Reachable from here rather than the main toolbar - this is a "look at this
+                // occasionally," not a "reach for every session" control. Cross-platform: on the
+                // iPad performance build this drives a physical/Bluetooth keyboard's bindings (see
+                // ContentView's KeyboardMonitor) alongside Pencil-squeeze, not instead of it.
                 Button {
                     showKeyMapping = true
                 } label: {
@@ -257,9 +222,8 @@ struct ControlView: View {
 #if os(iOS)
                 Text("MIDI Source:").foregroundStyle(.white)
 #endif
-                // Lets an external controller, or eventually a standalone Seq app, drive X/Y/Z
-                // over MIDI the same way touch does - see Sound.handleIncomingMidi and the
-                // standalone-sequencer foundation plan's step 3.
+                // Lets an external controller or sequencer drive X/Y/Z over MIDI the same way
+                // touch does - see Sound.handleIncomingMidi.
                 Picker("MIDI Source:", selection: $settings.sourceIndex) {
                     ForEach(sound.midi.midiSources.indices, id: \.self) { index in
                         Text(sound.midi.midiSources[index].name).foregroundStyle(.white)
