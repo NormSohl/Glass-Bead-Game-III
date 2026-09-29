@@ -13,6 +13,19 @@ struct ControlView: View {
     @ObservedObject var settings: AppSettings
     @State private var showKeyMapping = false
 
+    // A USB cable plugged in (or anything else that newly appeared) after this popover last
+    // checked never shows up on its own - the source/destination lists are only scanned once at
+    // launch plus whenever this fires. See Midi.refreshMidiPorts's own comment.
+    private var midiRefreshButton: some View {
+        Button {
+            sound.midi.refreshMidiPorts()
+        } label: {
+            Image(systemName: "arrow.clockwise")
+        }
+        .disabled(!settings.useMIDI)
+        .help("Re-scan for MIDI destinations/sources - use this after plugging in a cable")
+    }
+
     var body: some View {
         ZStack{
             Color.black.ignoresSafeArea(.all)
@@ -172,7 +185,16 @@ struct ControlView: View {
 
                 Divider().foregroundColor(.white)
 #if os(iOS)
-                Text("MIDI Destination:").foregroundStyle(.white)
+                // The refresh button sits on the label's row here rather than beside the picker
+                // (as on macOS): the popover is only ~340pt wide, and sharing a row squeezed the
+                // picker until a name like "Network Session 1" wrapped onto a second line that
+                // overflowed onto "MIDI Source:" below (seen live 2026-09-28). This way the
+                // picker gets the full row, same as MIDI Source's.
+                HStack {
+                    Text("MIDI Destination:").foregroundStyle(.white)
+                    Spacer()
+                    midiRefreshButton
+                }
 #endif
                 HStack {
                     Picker("MIDI Destination:" ,selection: $settings.destinationIndex) {
@@ -190,18 +212,10 @@ struct ControlView: View {
                     .pickerStyle(.menu)
                     .disabled(!settings.useMIDI)
                     .tint(.white)
-
-                    // A USB cable plugged in (or anything else that newly appeared) after this
-                    // popover last checked never shows up on its own - the source/destination
-                    // lists are only scanned once at launch plus whenever this fires. See
-                    // Midi.refreshMidiPorts's own comment.
-                    Button {
-                        sound.midi.refreshMidiPorts()
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                    }
-                    .disabled(!settings.useMIDI)
-                    .help("Re-scan for MIDI destinations/sources - use this after plugging in a cable")
+                    .lineLimit(1)
+#if os(macOS)
+                    midiRefreshButton
+#endif
                 }
 
 #if os(iOS)
@@ -222,6 +236,7 @@ struct ControlView: View {
                 .pickerStyle(.menu)
                 .disabled(!settings.useMIDI || sound.midi.midiSources.isEmpty)
                 .tint(.white)
+                .lineLimit(1)
 
                 Divider()
 
@@ -275,27 +290,32 @@ struct ControlView: View {
                 // time to jump straight to it - suits going back and forth while adjusting a
                 // knob on the receiving synth, rather than a fixed unison->fifth->octave order.
                 Text("Verify Pitch Bend Range").foregroundStyle(.white)
-                HStack {
-                    Button("Unison") {
-                        sound.midi.verifyRangeSet(ratio: 1.0)
-                        settings.verifyRangeRatio = 1.0
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(settings.verifyRangeRatio == 1.0 ? tintcolor : .gray)
+                // Two rows: all four buttons on one line don't fit the ~340pt popover - Stop was
+                // pushed off the edge entirely and "Unison" wrapped (seen live 2026-09-28).
+                VStack(alignment: .leading) {
+                    HStack {
+                        Button("Unison") {
+                            sound.midi.verifyRangeSet(ratio: 1.0)
+                            settings.verifyRangeRatio = 1.0
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(settings.verifyRangeRatio == 1.0 ? tintcolor : .gray)
 
-                    Button("Fifth") {
-                        sound.midi.verifyRangeSet(ratio: 3.0 / 2.0)
-                        settings.verifyRangeRatio = 3.0 / 2.0
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(settings.verifyRangeRatio == 3.0 / 2.0 ? tintcolor : .gray)
+                        Button("Fifth") {
+                            sound.midi.verifyRangeSet(ratio: 3.0 / 2.0)
+                            settings.verifyRangeRatio = 3.0 / 2.0
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(settings.verifyRangeRatio == 3.0 / 2.0 ? tintcolor : .gray)
 
-                    Button("Octave") {
-                        sound.midi.verifyRangeSet(ratio: 2.0)
-                        settings.verifyRangeRatio = 2.0
+                        Button("Octave") {
+                            sound.midi.verifyRangeSet(ratio: 2.0)
+                            settings.verifyRangeRatio = 2.0
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(settings.verifyRangeRatio == 2.0 ? tintcolor : .gray)
                     }
-                    .buttonStyle(.bordered)
-                    .tint(settings.verifyRangeRatio == 2.0 ? tintcolor : .gray)
+                    .lineLimit(1)
 
                     Button("Stop") {
                         sound.midi.verifyRangeStop()
