@@ -28,6 +28,12 @@ struct ZSliderView: View {
     // narrower canvas width. Norm: the diamonds should match the rest of the graph, in size as
     // well as color.
     let graphSquareSize: CGFloat
+    // false for the projector's display-only copy (AudienceGraphView) - it draws the Z marker
+    // from settings.zFrequency only, never writes zFrequency/zSliderHeight or takes touches.
+    // Both matter: the module-scope zSliderHeight is what the performer's own slider uses to map
+    // touches, and while the performer drags (zDragActive) the touch branch below would otherwise
+    // compute Z from this copy's own never-touched hoverLocation and fight the real drag.
+    var interactive: Bool = true
 
     @State private var hoverLocation: CGPoint = .zero
 
@@ -49,7 +55,7 @@ struct ZSliderView: View {
             // next to it was redundant. The canvas takes the full width freed up by removing it.
             Canvas { context, size in
               HangProfiler.shared.measure("ZSliderView.body.Canvas") {
-                zSliderHeight = size.height
+                if interactive { zSliderHeight = size.height }
 
                 // Cursor drawn first, diamonds after (and gridlines after that too, in the loop
                 // below) - Norm wants the diamonds sitting fully on top of the cursor bar rather
@@ -73,7 +79,7 @@ struct ZSliderView: View {
                 // still covers the original "before the first touch" case hasTouched existed for
                 // - hasTouched itself removed as fully redundant once this replaced it.
                 let markerY: Double
-                if settings.externallyDrivenVoices.contains(.z) || !settings.zDragActive {
+                if !interactive || settings.externallyDrivenVoices.contains(.z) || !settings.zDragActive {
                     let zNormalized = log2(settings.zFrequency / settings.rootFrequency)
                     let crosshair = scale.convertScaleValueToScreenUnits(normalizedValue: zNormalized, screenSize: size.height)
                     markerY = size.height - crosshair
@@ -207,6 +213,7 @@ struct ZSliderView: View {
                 )
             )
             #endif
+            .allowsHitTesting(interactive)
 
             Color.clear.frame(height: settings.border)
         }

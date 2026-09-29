@@ -83,6 +83,9 @@ struct GraphView: View {
 
                     if interactive {
                         HitTestView(scale:scale, settings: settings)
+                    } else {
+                        // The projector's own display-only crosshair - see AudienceCrosshair.
+                        AudienceCrosshair(scale: scale, settings: settings)
                     }
                 }
                 // Purely graphical Canvas drawing with no meaningful screen-reader semantics -
