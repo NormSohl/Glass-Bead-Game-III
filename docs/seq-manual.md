@@ -173,6 +173,12 @@ Three independent outputs, any combination of which can be on at once:
   own destination picker and its own per-voice MIDI channel assignment (Drone/X/Y/Z, each
   1–16, independently of whatever GBG III itself is using).
 
+**Pitch Bend Range** (next to Internal Synth, ±24 or ±48, default ±24) sets how many semitones a
+full pitch bend means, for Graph Out, Synth Out and Capture alike. GBG III doesn't pick this up
+over MIDI, so set it to match GBG III's own Settings → Pitch Bend Range, or pitches will come out
+wrong in both directions. An external synth needs its own bend range set by hand to match too.
+
+
 ## Panic
 
 The red Panic button force-sends a note-off on every channel either output could plausibly be

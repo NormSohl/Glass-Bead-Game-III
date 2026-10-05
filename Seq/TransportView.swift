@@ -14,6 +14,7 @@ import GBGCore
 
 struct TransportView: View {
     @ObservedObject var sequencer: SequencerState
+    @ObservedObject var settings: SeqSettings
     // Separate ObservedObject, not just reached via sequencer.liveCapture - SwiftUI only
     // re-renders on a view's own directly-observed object publishing, not a nested object's.
     @ObservedObject var liveCapture: LiveCaptureState
@@ -125,6 +126,15 @@ struct TransportView: View {
                 Toggle(isOn: $sequencer.internalSynthEnabled) {
                     Text("Internal Synth")
                 }
+
+                Text("Pitch Bend Range").foregroundStyle(.secondary)
+                Picker("Pitch Bend Range", selection: $settings.pitchBendRange) {
+                    ForEach(SeqSettings.pitchBendRangeChoices, id: \.self) { Text("±\($0)").tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
+                .help("Semitones per full pitch bend, for Graph Out, Synth Out and Capture. Set it to match Graph's Settings → Pitch Bend Range (and your synth's).")
                 Spacer()
             }
             .font(.callout)

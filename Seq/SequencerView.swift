@@ -20,7 +20,7 @@ struct SequencerView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            TransportView(sequencer: sequencer, liveCapture: sequencer.liveCapture)
+            TransportView(sequencer: sequencer, settings: settings, liveCapture: sequencer.liveCapture)
             EditToolbarView(sequencer: sequencer)
             NoteInspectorView(scale: scale, settings: settings, sequencer: sequencer)
             RootIndicatorView(scale: scale, settings: settings, sequencer: sequencer)

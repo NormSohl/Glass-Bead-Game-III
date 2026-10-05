@@ -53,7 +53,6 @@ let graphMidiFixedNote = 60
 // against, matching what Graph's own receive-side decode (PitchBendMath.
 // frequencyFromNoteAndPitchBend, called with the same fixed note above) assumes.
 private let graphMidiReferenceFrequency = 261.6255653005986
-let graphMidiPitchBendRange = 24 // matches Graph's own default pitchBendRangeMPE
 
 // The name Graph's own Midi.initVirtualDestination() gives its virtual MIDI destination -
 // used to auto-detect a likely Graph instance in the destination list rather than requiring
@@ -256,7 +255,7 @@ final class SequencerState: ObservableObject {
         // that picker is the entire UI this needs on Graph's side, already built and already
         // generic (lists whatever CoreMIDI sees, same-Mac/USB/Network MIDI alike).
         graphMidiOut.initMidiInput(name: "Seq")
-        liveCapture = LiveCaptureState(midi: graphMidiOut, xPart: xPart, yPart: yPart, zPart: zPart, sampleRateProvider: { [weak self] in self?.sampleRate ?? 44100 })
+        liveCapture = LiveCaptureState(midi: graphMidiOut, xPart: xPart, yPart: yPart, zPart: zPart, sampleRateProvider: { [weak self] in self?.sampleRate ?? 44100 }, pitchBendRangeProvider: { [weak settings] in settings?.pitchBendRange ?? 24 })
         // Bumps scoreRevision on every mutation liveCapture makes to xPart/yPart/zPart while
         // capturing, so the piano roll redraws live instead of only once capture stops.
         liveCapture.onUpdate = { [weak self] in self?.scoreRevision += 1 }
@@ -302,7 +301,7 @@ final class SequencerState: ObservableObject {
         }
 
         let frequency = note.getCurrentFrequency(percentComplete: note.percentComplete(at: sample))
-        let pitchBendValue = PitchBendMath.freqToPB(frequency: frequency, referenceFrequency: graphMidiReferenceFrequency, pitchBendRange: graphMidiPitchBendRange)
+        let pitchBendValue = PitchBendMath.freqToPB(frequency: frequency, referenceFrequency: graphMidiReferenceFrequency, pitchBendRange: settings.pitchBendRange)
 
         if sounding !== note {
             let velocity = min(127, max(1, Int(note.amplitude * 127)))

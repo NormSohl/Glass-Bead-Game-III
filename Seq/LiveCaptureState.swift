@@ -51,6 +51,8 @@ final class LiveCaptureState: ObservableObject {
     private let midi: SeqMidiOut
     private let sampleRateProvider: () -> Double
     private var sampleRate: Double { max(1, sampleRateProvider()) }
+    // Seq's Pitch Bend Range setting, read per event so a change applies immediately.
+    private let pitchBendRangeProvider: () -> Int
 
     // Called after every mutation to xPart/yPart/zPart, so SequencerState can bump
     // scoreRevision and the piano roll redraws live - see this file's own header comment.
@@ -81,7 +83,8 @@ final class LiveCaptureState: ObservableObject {
     // exists (Part's own "always tile contiguously" invariant).
     private var cursors: [CapturedVoice: Int] = [.x: 0, .y: 0, .z: 0]
 
-    init(midi: SeqMidiOut, xPart: Part, yPart: Part, zPart: Part, sampleRateProvider: @escaping () -> Double) {
+    init(midi: SeqMidiOut, xPart: Part, yPart: Part, zPart: Part, sampleRateProvider: @escaping () -> Double, pitchBendRangeProvider: @escaping () -> Int) {
+        self.pitchBendRangeProvider = pitchBendRangeProvider
         self.midi = midi
         self.xPart = xPart
         self.yPart = yPart
@@ -158,7 +161,7 @@ final class LiveCaptureState: ObservableObject {
     }
 
     private func frequency(forPitchBend value: Int) -> Double {
-        PitchBendMath.frequencyFromNoteAndPitchBend(note: graphMidiFixedNote, pitchBend: value, pitchBendRange: graphMidiPitchBendRange)
+        PitchBendMath.frequencyFromNoteAndPitchBend(note: graphMidiFixedNote, pitchBend: value, pitchBendRange: pitchBendRangeProvider())
     }
 
     private static func voice(forChannel channel: Int) -> CapturedVoice? {

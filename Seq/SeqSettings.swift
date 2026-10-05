@@ -16,4 +16,16 @@ final class SeqSettings: ObservableObject {
     @Published var xFrequency: Double = 261.6255653005986
     @Published var yFrequency: Double = 261.6255653005986
     @Published var zFrequency: Double = 261.6255653005986
+
+    // Pitch bend range (semitones) for every MIDI pitch-bend Seq sends (Graph Out, Synth Out)
+    // and decodes (live capture). Graph doesn't adopt a sender's range over MIDI - it encodes
+    // and decodes with its own Settings -> Pitch Bend Range - so this has to be set to match it.
+    // Same choices and default as Graph's AppSettings.pitchBendRangeMPE.
+    static let pitchBendRangeChoices = [24, 48]
+    @Published var pitchBendRange: Int = {
+        let saved = UserDefaults.standard.integer(forKey: "Seq.pitchBendRange")
+        return SeqSettings.pitchBendRangeChoices.contains(saved) ? saved : 24
+    }() {
+        didSet { UserDefaults.standard.set(pitchBendRange, forKey: "Seq.pitchBendRange") }
+    }
 }
