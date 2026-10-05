@@ -2,12 +2,12 @@
 //  PianoRollView.swift
 //  Seq
 //
-//  The piano-roll Canvas + gesture surface: per-scale-degree gridlines, one colored "partline"
-//  per voice, draggable start/end handles on every note, and the playhead. Ported from Graph's
-//  in-app sequencer and adapted: no AppSettings (uses SeqSettings instead), and a tap on empty
-//  canvas either moves the playhead (default) or places a new note (while "Add Note" is armed -
-//  see SequencerState.isPlacingNote) - Graph's original just moved the playhead, since Graph had
-//  a separate live-graph-touch-capture button for adding notes that has no equivalent here.
+//  The note editor: per-scale-degree gridlines, an optional bar/beat grid, one colored line
+//  per note (each note is a pitch bend from its start pitch to its end pitch, shaped by its
+//  profile - a held note is just start == end), draggable start/end handles, and the playhead,
+//  which doubles as the step cursor. What a tap does depends on SequencerState.editTool; drags
+//  edit notes in every tool. Pitches snap to the scale and times to the grid unless Option is
+//  held.
 //
 
 import SwiftUI
@@ -71,7 +71,12 @@ private struct ScrollWheelZoomCatcher: NSViewRepresentable {
 // module-scope workaround.
 var pianoRollCanvasSize: CGSize = .zero
 
-private let handleHitRadius: Double = 20
+private let handleHitRadius: Double = 10
+// How close (screen px) a click must be to a note's line to grab/select the note itself.
+private let bodyHitDistance: Double = 6
+// Movement (screen px) before a press becomes a drag; anything less is a tap. Lets a tap in the
+// Place/Step tools land right next to an existing handle without grabbing it.
+private let dragThreshold: Double = 3
 // Partline curve-sampling density: points per screen pixel of a note's own width, not a flat
 // per-note count - a fixed count (24, this used to be) gives wildly different effective time
 // resolution depending on note duration: fine for a short segmented piece, but on a long
@@ -83,14 +88,6 @@ private let handleHitRadius: Double = 20
 private let curveSamplesPerPixel: Double = 1.0 / 3.0
 private let minCurveSamplePoints = 8
 private let maxCurveSamplePoints = 2000
-// Radius for the transition-picker indicator at each note's midpoint - same treatment as the
-// start/end handles above, just its own constant since the two are visually distinct markers.
-private let transitionIndicatorHitRadius: Double = 12
-// Step 4 (live-record plan): a handle drag snaps to the nearest beat-grid line when within this
-// many screen pixels of it - a fixed pixel count, not a fraction of the beat period, so the feel
-// stays consistent across zoom levels/tempi instead of a period-relative window spanning almost
-// a whole beat at an extreme fast-tempo/zoomed-out combination.
-private let snapTimeThresholdPixels: Double = 10
 
 let voiceColors: [PartVoice: Color] = [
     .drone: .gray,
@@ -99,63 +96,92 @@ let voiceColors: [PartVoice: Color] = [
     .z: .pink
 ]
 
-// Identifies which note's transition-picker menu is currently open - a voice/note pair, same
-// identity-comparison shape as DraggingHandle above (Note is a class, compared by reference).
-private struct TransitionMenuTarget: Equatable {
-    let voice: PartVoice
-    let note: Note
+let voiceNames: [PartVoice: String] = [.drone: "Drone", .x: "X", .y: "Y", .z: "Z"]
 
-    static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.voice == rhs.voice && lhs.note === rhs.note
-    }
-}
+/// Option held = free placement: no pitch snap to the scale, no time snap to the grid.
+private var isFreeModifierHeld: Bool { NSEvent.modifierFlags.contains(.option) }
 
 struct PianoRollView: View {
     let scale: Scale
     @ObservedObject var settings: SeqSettings
     @ObservedObject var sequencer: SequencerState
 
-    // Gesture-local state - only ever touched from .gesture closures, never the Canvas draw
-    // closure, so plain @State is fine here.
+    // Gesture-local state - only ever touched from .gesture closures, never mutated from the
+    // Canvas draw closure, so plain @State is fine here.
     @State private var dragStartLocation: CGPoint?
+    @State private var dragDecided = false
+    @State private var pendingHit: DraggingHandle?
     @State private var panStartOffsetSamples: Int?
-
-    // Per-note transition picker (Step 4) - which note's menu, if any, is currently open. A
-    // popover anchored to a zero-size view positioned at that note's own midpoint, rather than
-    // anything drawn inside the Canvas itself - Canvas content can't host real SwiftUI controls.
-    @State private var transitionMenuTarget: TransitionMenuTarget?
-
-    private var transitionMenuIsPresented: Binding<Bool> {
-        Binding(
-            get: { transitionMenuTarget != nil },
-            set: { if !$0 { transitionMenuTarget = nil } }
-        )
-    }
+    // A body drag's starting point, so the move is applied relative to it (not accumulated).
+    @State private var bodyOrigin: (startTime: Int, startFrequency: Double, endFrequency: Double)?
+    // Pitch/time readout drawn next to the cursor while dragging.
+    @State private var readout: (location: CGPoint, text: String)?
+    @FocusState private var isFocused: Bool
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            Canvas { context, size in
-                pianoRollCanvasSize = size
-                drawGridlines(context: context, size: size)
-                drawBeatGrid(context: context, size: size)
-                drawPartlines(context: context, size: size)
-                drawPlayhead(context: context, size: size)
-            }
-            .background(Color.black)
-            .background(ScrollWheelZoomCatcher(onScroll: handleScrollZoom))
-            .gesture(dragGesture)
-            .simultaneousGesture(magnificationGesture)
-
-            if let target = transitionMenuTarget {
-                let location = midpointLocation(voice: target.voice, note: target.note, canvasSize: pianoRollCanvasSize)
-                Color.clear
-                    .frame(width: 1, height: 1)
-                    .position(location)
-                    .popover(isPresented: transitionMenuIsPresented, arrowEdge: .top) {
-                        transitionMenu(for: target)
-                    }
-            }
+        Canvas { context, size in
+            pianoRollCanvasSize = size
+            drawGridlines(context: context, size: size)
+            drawBeatGrid(context: context, size: size)
+            drawPartlines(context: context, size: size)
+            drawPlayhead(context: context, size: size)
+            drawReadout(context: context, size: size)
         }
+        .background(Color.black)
+        .background(ScrollWheelZoomCatcher(onScroll: handleScrollZoom))
+        .gesture(dragGesture)
+        .simultaneousGesture(magnificationGesture)
+        .focusable()
+        .focusEffectDisabled()
+        .focused($isFocused)
+        .onKeyPress(keys: [.delete, .deleteForward]) { _ in
+            sequencer.deleteSelectedNote()
+            return .handled
+        }
+        .onKeyPress(.escape) {
+            sequencer.select(nil)
+            return .handled
+        }
+        .onKeyPress(.space) {
+            if sequencer.isPlaying { sequencer.stop() } else { sequencer.play() }
+            return .handled
+        }
+        .onKeyPress(.rightArrow) {
+            guard sequencer.editTool == .step else { return .ignored }
+            sequencer.advanceStep()
+            return .handled
+        }
+        .onKeyPress(.leftArrow) {
+            guard sequencer.editTool == .step else { return .ignored }
+            sequencer.stepBack()
+            return .handled
+        }
+    }
+
+    // MARK: - Coordinates
+
+    private func screenX(_ sample: Int) -> Double {
+        pianoRollSampleToScreenX(sample: sample, offsetSamples: sequencer.offsetSamples, pixelsPerSecond: sequencer.pixelsPerSecond, sampleRate: sequencer.sampleRate)
+    }
+
+    private func sample(atX x: Double) -> Int {
+        pianoRollScreenXToSample(x: x, offsetSamples: sequencer.offsetSamples, pixelsPerSecond: sequencer.pixelsPerSecond, sampleRate: sequencer.sampleRate)
+    }
+
+    private func screenY(_ frequency: Double, height: Double = pianoRollCanvasSize.height) -> Double {
+        pianoRollFrequencyToScreenY(frequency: frequency, rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: height, verticalZoomFactor: sequencer.verticalZoomFactor)
+    }
+
+    private func frequency(atY y: Double) -> Double {
+        pianoRollScreenYToFrequency(y: y, rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: pianoRollCanvasSize.height, verticalZoomFactor: sequencer.verticalZoomFactor)
+    }
+
+    private func snapPitch(_ frequency: Double) -> Double {
+        isFreeModifierHeld ? frequency : scale.snappedFrequency(frequency, rootFrequency: settings.rootFrequency)
+    }
+
+    private func snapTime(_ sample: Int) -> Int {
+        isFreeModifierHeld ? max(0, sample) : sequencer.snapTime(max(0, sample))
     }
 
     // MARK: - Drawing
@@ -163,22 +189,22 @@ struct PianoRollView: View {
     private func drawGridlines(context: GraphicsContext, size: CGSize) {
         var path = Path()
         for element in scale.scale {
-            let y = pianoRollFrequencyToScreenY(
-                frequency: settings.rootFrequency * element.value,
-                rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: size.height, verticalZoomFactor: sequencer.verticalZoomFactor)
+            let y = screenY(settings.rootFrequency * element.value, height: size.height)
             path.move(to: CGPoint(x: 0, y: y))
             path.addLine(to: CGPoint(x: size.width, y: y))
         }
         context.stroke(path, with: .color(.gray.opacity(0.3)))
 
+        // Plain seconds lines only when there's no beat grid - otherwise the bar/beat lines
+        // below are the time reference and the two would just clutter each other.
+        guard sequencer.activeTempo == nil else { return }
         let step = pianoRollNiceTimeStepSeconds(pixelsPerSecond: sequencer.pixelsPerSecond)
         let stepSamples = Int(step * sequencer.sampleRate)
         guard stepSamples > 0 else { return }
-        let firstLineSample = (sequencer.offsetSamples / stepSamples) * stepSamples
         var timePath = Path()
-        var sample = firstLineSample
-        while pianoRollSampleToScreenX(sample: sample, offsetSamples: sequencer.offsetSamples, pixelsPerSecond: sequencer.pixelsPerSecond, sampleRate: sequencer.sampleRate) < size.width {
-            let x = pianoRollSampleToScreenX(sample: sample, offsetSamples: sequencer.offsetSamples, pixelsPerSecond: sequencer.pixelsPerSecond, sampleRate: sequencer.sampleRate)
+        var sample = (sequencer.offsetSamples / stepSamples) * stepSamples
+        while screenX(sample) < size.width {
+            let x = screenX(sample)
             if x >= 0 {
                 timePath.move(to: CGPoint(x: x, y: 0))
                 timePath.addLine(to: CGPoint(x: x, y: size.height))
@@ -188,100 +214,114 @@ struct PianoRollView: View {
         context.stroke(timePath, with: .color(.gray.opacity(0.15)))
     }
 
-    // Step 4 (live-record plan): an optional beat grid, drawn only when the currently loaded
-    // document carries a confident detected tempo (sequencer.tempoInfo). Visually distinct from
-    // the plain time gridlines above (a warm amber tint, heavier weight) so it reads as "the
-    // beat," not just another ruler line - no tempoInfo, no lines, today's appearance unchanged.
+    // The optional BPM grid: bar lines strongest, beats lighter, snap subdivisions faintest
+    // (and only once they're far enough apart on screen to read as lines, not a wash).
     private func drawBeatGrid(context: GraphicsContext, size: CGSize) {
-        guard let tempo = sequencer.tempoInfo else { return }
-        let periodSamples = pianoRollBeatPeriodSamples(tempo: tempo, sampleRate: sequencer.sampleRate)
-        guard periodSamples > 0 else { return }
+        guard let tempo = sequencer.activeTempo else { return }
+        let subdivision = max(1, sequencer.gridSubdivision)
+        let stepSamples = pianoRollBeatPeriodSamples(tempo: tempo, sampleRate: sequencer.sampleRate) / Double(subdivision)
+        guard stepSamples > 0 else { return }
+        let stepPixels = stepSamples / sequencer.sampleRate * sequencer.pixelsPerSecond
+        let beatsPerBar = max(1, sequencer.beatsPerBar)
 
-        let firstVisibleSample = sequencer.offsetSamples
-        let lastVisibleSample = sequencer.offsetSamples + Int(Double(size.width) / sequencer.pixelsPerSecond * sequencer.sampleRate)
-        let firstBeatIndex = Int((Double(firstVisibleSample - tempo.downbeatOffset) / periodSamples).rounded(.down)) - 1
-        let lastBeatIndex = Int((Double(lastVisibleSample - tempo.downbeatOffset) / periodSamples).rounded(.up)) + 1
-        guard firstBeatIndex <= lastBeatIndex else { return }
+        let first = Int((Double(sequencer.offsetSamples - tempo.downbeatOffset) / stepSamples).rounded(.down)) - 1
+        let last = Int((Double(sample(atX: size.width) - tempo.downbeatOffset) / stepSamples).rounded(.up)) + 1
+        guard first <= last else { return }
 
-        var path = Path()
-        for n in firstBeatIndex...lastBeatIndex {
-            let sample = tempo.downbeatOffset + Int((Double(n) * periodSamples).rounded())
-            let x = pianoRollSampleToScreenX(sample: sample, offsetSamples: sequencer.offsetSamples, pixelsPerSecond: sequencer.pixelsPerSecond, sampleRate: sequencer.sampleRate)
+        var barPath = Path(), beatPath = Path(), subPath = Path()
+        for n in first...last {
+            let x = screenX(tempo.downbeatOffset + Int((Double(n) * stepSamples).rounded()))
             guard x >= 0, x <= size.width else { continue }
-            path.move(to: CGPoint(x: x, y: 0))
-            path.addLine(to: CGPoint(x: x, y: size.height))
+            let isBeat = n % subdivision == 0
+            let isBar = isBeat && (n / subdivision) % beatsPerBar == 0
+            if isBar {
+                barPath.move(to: CGPoint(x: x, y: 0)); barPath.addLine(to: CGPoint(x: x, y: size.height))
+            } else if isBeat {
+                beatPath.move(to: CGPoint(x: x, y: 0)); beatPath.addLine(to: CGPoint(x: x, y: size.height))
+            } else if stepPixels >= 8 {
+                subPath.move(to: CGPoint(x: x, y: 0)); subPath.addLine(to: CGPoint(x: x, y: size.height))
+            }
         }
-        context.stroke(path, with: .color(.yellow.opacity(0.35)), lineWidth: 1.5)
+        context.stroke(subPath, with: .color(.yellow.opacity(0.08)))
+        context.stroke(beatPath, with: .color(.yellow.opacity(0.2)))
+        context.stroke(barPath, with: .color(.yellow.opacity(0.45)), lineWidth: 1.5)
     }
 
     private func drawPartlines(context: GraphicsContext, size: CGSize) {
         for voice in PartVoice.allCases {
-            let part = sequencer.part(for: voice)
             let color = voiceColors[voice] ?? .white
-
-            for note in part.notes where note.amplitude > 0 {
-                let noteDurationSeconds = Double(note.endTime - note.startTime) / sequencer.sampleRate
-                let notePixelWidth = noteDurationSeconds * sequencer.pixelsPerSecond
-                let sampledCurvePoints = min(maxCurveSamplePoints, max(minCurveSamplePoints, Int(notePixelWidth * curveSamplesPerPixel)))
-
-                var path = Path()
-                for step in 0...sampledCurvePoints {
-                    let percent = Double(step) / Double(sampledCurvePoints)
-                    let sample = note.startTime + Int(Double(note.endTime - note.startTime) * percent)
-                    let frequency = note.getCurrentFrequency(percentComplete: percent)
-                    let x = pianoRollSampleToScreenX(sample: sample, offsetSamples: sequencer.offsetSamples, pixelsPerSecond: sequencer.pixelsPerSecond, sampleRate: sequencer.sampleRate)
-                    let y = pianoRollFrequencyToScreenY(frequency: frequency, rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: size.height, verticalZoomFactor: sequencer.verticalZoomFactor)
-                    if step == 0 { path.move(to: CGPoint(x: x, y: y)) } else { path.addLine(to: CGPoint(x: x, y: y)) }
+            for note in sequencer.part(for: voice).soundingNotes {
+                let isSelected = sequencer.selection == NoteSelection(voice: voice, note: note)
+                let path = curvePath(note: note, height: size.height)
+                if isSelected {
+                    context.stroke(path, with: .color(.white.opacity(0.6)), lineWidth: 7)
                 }
                 context.stroke(path, with: .color(color), lineWidth: 3)
 
                 for edge in [NoteEdge.start, .end] {
-                    let handle = handleLocation(voice: voice, note: note, edge: edge, canvasSize: size)
-                    let isActive = sequencer.draggingHandle == DraggingHandle(voice: voice, note: note, edge: edge)
-                    context.fill(
-                        Path(ellipseIn: CGRect(x: handle.x - 5, y: handle.y - 5, width: 10, height: 10)),
-                        with: .color(isActive ? .white : color)
-                    )
+                    let handle = handleLocation(note: note, edge: edge, height: size.height)
+                    let isActive = sequencer.draggingHandle == DraggingHandle(voice: voice, note: note, grip: .edge(edge))
+                    let rect = CGRect(x: handle.x - 5, y: handle.y - 5, width: 10, height: 10)
+                    context.fill(Path(ellipseIn: rect), with: .color(isActive ? .white : color))
+                    if isSelected {
+                        context.stroke(Path(ellipseIn: rect.insetBy(dx: -2, dy: -2)), with: .color(.white), lineWidth: 1.5)
+                    }
                 }
-
-                // Transition-picker indicator (Step 4) - a small white square at the note's own
-                // screen-space midpoint, deliberately square rather than round so it reads as a
-                // distinct control from the circular start/end handles above.
-                let mid = midpointLocation(voice: voice, note: note, canvasSize: size)
-                let isMenuOpen = transitionMenuTarget == TransitionMenuTarget(voice: voice, note: note)
-                let markerRect = CGRect(x: mid.x - 6, y: mid.y - 6, width: 12, height: 12)
-                context.fill(Path(markerRect), with: .color(isMenuOpen ? .white : .white.opacity(0.85)))
-                context.stroke(Path(markerRect), with: .color(color), lineWidth: 1.5)
             }
         }
     }
 
+    private func curvePoints(note: Note, height: Double) -> [CGPoint] {
+        let notePixelWidth = Double(note.endTime - note.startTime) / sequencer.sampleRate * sequencer.pixelsPerSecond
+        let count = min(maxCurveSamplePoints, max(minCurveSamplePoints, Int(notePixelWidth * curveSamplesPerPixel)))
+        return (0...count).map { step in
+            let percent = Double(step) / Double(count)
+            let sample = note.startTime + Int(Double(note.endTime - note.startTime) * percent)
+            return CGPoint(x: screenX(sample), y: screenY(note.getCurrentFrequency(percentComplete: percent), height: height))
+        }
+    }
+
+    private func curvePath(note: Note, height: Double) -> Path {
+        var path = Path()
+        path.addLines(curvePoints(note: note, height: height))
+        return path
+    }
+
+    // The playhead doubles as the step cursor: green in the Step tool, labeled with the voice
+    // the next tap will place.
     private func drawPlayhead(context: GraphicsContext, size: CGSize) {
-        let x = pianoRollSampleToScreenX(sample: sequencer.playheadSample, offsetSamples: sequencer.offsetSamples, pixelsPerSecond: sequencer.pixelsPerSecond, sampleRate: sequencer.sampleRate)
+        let x = screenX(sequencer.playheadSample)
         guard x >= 0, x <= size.width else { return }
+        let isStep = sequencer.editTool == .step
         var path = Path()
         path.move(to: CGPoint(x: x, y: 0))
         path.addLine(to: CGPoint(x: x, y: size.height))
-        context.stroke(path, with: .color(.white), lineWidth: 2)
+        context.stroke(path, with: .color(isStep ? .green : .white), lineWidth: 2)
+
+        if isStep, let voice = sequencer.nextStepVoice {
+            let label = Text("next: \(voiceNames[voice] ?? "")").font(.caption.bold()).foregroundColor(voiceColors[voice] ?? .white)
+            context.draw(label, at: CGPoint(x: x + 6, y: 8), anchor: .topLeading)
+        }
     }
 
-    private func handleLocation(voice: PartVoice, note: Note, edge: NoteEdge, canvasSize: CGSize) -> CGPoint {
+    private func drawReadout(context: GraphicsContext, size: CGSize) {
+        guard let readout else { return }
+        let text = Text(readout.text).font(.caption.monospacedDigit()).foregroundColor(.white)
+        let resolved = context.resolve(text)
+        let textSize = resolved.measure(in: size)
+        // Up and to the right of the cursor, flipped inward near the canvas edges.
+        var origin = CGPoint(x: readout.location.x + 12, y: readout.location.y - textSize.height - 12)
+        if origin.x + textSize.width + 8 > size.width { origin.x = readout.location.x - textSize.width - 20 }
+        if origin.y < 0 { origin.y = readout.location.y + 12 }
+        let box = CGRect(x: origin.x - 4, y: origin.y - 2, width: textSize.width + 8, height: textSize.height + 4)
+        context.fill(Path(roundedRect: box, cornerRadius: 4), with: .color(.black.opacity(0.75)))
+        context.draw(resolved, at: origin, anchor: .topLeading)
+    }
+
+    private func handleLocation(note: Note, edge: NoteEdge, height: Double = pianoRollCanvasSize.height) -> CGPoint {
         let sample = edge == .start ? note.startTime : note.endTime
         let frequency = edge == .start ? note.startFrequency : note.endFrequency
-        let x = pianoRollSampleToScreenX(sample: sample, offsetSamples: sequencer.offsetSamples, pixelsPerSecond: sequencer.pixelsPerSecond, sampleRate: sequencer.sampleRate)
-        let y = pianoRollFrequencyToScreenY(frequency: frequency, rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: canvasSize.height, verticalZoomFactor: sequencer.verticalZoomFactor)
-        return CGPoint(x: x, y: y)
-    }
-
-    // Screen-space midpoint of a note's own span - time: midpoint of start/endTime, frequency:
-    // midpoint of start/endFrequency. An approximate resting spot for the transition-picker
-    // indicator, not meant to track the note's actual curve at that instant.
-    private func midpointLocation(voice: PartVoice, note: Note, canvasSize: CGSize) -> CGPoint {
-        let sample = (note.startTime + note.endTime) / 2
-        let frequency = (note.startFrequency + note.endFrequency) / 2
-        let x = pianoRollSampleToScreenX(sample: sample, offsetSamples: sequencer.offsetSamples, pixelsPerSecond: sequencer.pixelsPerSecond, sampleRate: sequencer.sampleRate)
-        let y = pianoRollFrequencyToScreenY(frequency: frequency, rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: canvasSize.height, verticalZoomFactor: sequencer.verticalZoomFactor)
-        return CGPoint(x: x, y: y)
+        return CGPoint(x: screenX(sample), y: screenY(frequency, height: height))
     }
 
     // MARK: - Hit testing
@@ -289,14 +329,13 @@ struct PianoRollView: View {
     private func hitTestHandle(at location: CGPoint) -> DraggingHandle? {
         var best: (handle: DraggingHandle, distance: Double)?
         for voice in PartVoice.allCases {
-            let part = sequencer.part(for: voice)
-            for note in part.notes where note.amplitude > 0 {
+            for note in sequencer.part(for: voice).soundingNotes {
                 for edge in [NoteEdge.start, .end] {
-                    let point = handleLocation(voice: voice, note: note, edge: edge, canvasSize: pianoRollCanvasSize)
+                    let point = handleLocation(note: note, edge: edge)
                     let distance = Double(hypot(point.x - location.x, point.y - location.y))
                     guard distance <= handleHitRadius else { continue }
                     if best == nil || distance < best!.distance {
-                        best = (DraggingHandle(voice: voice, note: note, edge: edge), distance)
+                        best = (DraggingHandle(voice: voice, note: note, grip: .edge(edge)), distance)
                     }
                 }
             }
@@ -304,20 +343,30 @@ struct PianoRollView: View {
         return best?.handle
     }
 
-    private func hitTestTransitionIndicator(at location: CGPoint) -> TransitionMenuTarget? {
-        var best: (target: TransitionMenuTarget, distance: Double)?
+    private func hitTestBody(at location: CGPoint) -> DraggingHandle? {
+        var best: (handle: DraggingHandle, distance: Double)?
         for voice in PartVoice.allCases {
-            let part = sequencer.part(for: voice)
-            for note in part.notes where note.amplitude > 0 {
-                let point = midpointLocation(voice: voice, note: note, canvasSize: pianoRollCanvasSize)
-                let distance = Double(hypot(point.x - location.x, point.y - location.y))
-                guard distance <= transitionIndicatorHitRadius else { continue }
-                if best == nil || distance < best!.distance {
-                    best = (TransitionMenuTarget(voice: voice, note: note), distance)
+            for note in sequencer.part(for: voice).soundingNotes {
+                guard location.x >= screenX(note.startTime) - bodyHitDistance,
+                      location.x <= screenX(note.endTime) + bodyHitDistance else { continue }
+                let points = curvePoints(note: note, height: pianoRollCanvasSize.height)
+                for (a, b) in zip(points, points.dropFirst()) {
+                    let distance = distanceFrom(location, toSegment: a, b)
+                    guard distance <= bodyHitDistance else { continue }
+                    if best == nil || distance < best!.distance {
+                        best = (DraggingHandle(voice: voice, note: note, grip: .body), distance)
+                    }
                 }
             }
         }
-        return best?.target
+        return best?.handle
+    }
+
+    private func distanceFrom(_ p: CGPoint, toSegment a: CGPoint, _ b: CGPoint) -> Double {
+        let dx = b.x - a.x, dy = b.y - a.y
+        let lengthSquared = dx * dx + dy * dy
+        let t = lengthSquared == 0 ? 0 : max(0, min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSquared))
+        return Double(hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy)))
     }
 
     // MARK: - Gestures
@@ -325,52 +374,67 @@ struct PianoRollView: View {
     // Gesture locations are plain SwiftUI top-down screen coordinates throughout - matching
     // PianoRollCoordinates' own convention (its frequency<->screen-Y functions flip internally,
     // so callers never need to).
+    //
+    // A press is a tap until it moves dragThreshold px. A drag that started on a handle edits
+    // that end (time + pitch); one that started on a note's line moves the whole note; anything
+    // else pans. A tap selects (Select tool), places a note where it lands (Place tool), or
+    // enters the next step voice at that pitch (Step tool).
     private var dragGesture: some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .local)
             .onChanged { value in
                 let location = value.location
-
-                if let dragging = sequencer.draggingHandle {
-                    applyHandleDrag(dragging, to: location)
+                if dragStartLocation == nil {
+                    isFocused = true
+                    dragStartLocation = location
+                    pendingHit = hitTestHandle(at: location) ?? hitTestBody(at: location)
                     return
                 }
-                if dragStartLocation == nil {
-                    dragStartLocation = location
-                    if let hit = hitTestHandle(at: location) {
+                if !dragDecided {
+                    guard hypot(value.translation.width, value.translation.height) >= dragThreshold else { return }
+                    dragDecided = true
+                    if let hit = pendingHit, !sequencer.isEditingLocked {
                         sequencer.beginDraggingHandle(hit)
-                        applyHandleDrag(hit, to: location)
-                        return
+                        bodyOrigin = (hit.note.startTime, hit.note.startFrequency, hit.note.endFrequency)
+                    } else {
+                        panStartOffsetSamples = sequencer.offsetSamples
                     }
-                    panStartOffsetSamples = sequencer.offsetSamples
                 }
-                guard let start = dragStartLocation, let panStart = panStartOffsetSamples else { return }
-                let deltaSamples = -Int((location.x - start.x) / sequencer.pixelsPerSecond * sequencer.sampleRate)
-                sequencer.offsetSamples = max(0, panStart + deltaSamples)
+                if let dragging = sequencer.draggingHandle {
+                    applyDrag(dragging, to: location)
+                } else if let start = dragStartLocation, let panStart = panStartOffsetSamples {
+                    let deltaSamples = -Int((location.x - start.x) / sequencer.pixelsPerSecond * sequencer.sampleRate)
+                    sequencer.offsetSamples = max(0, panStart + deltaSamples)
+                }
             }
             .onEnded { value in
                 defer {
                     sequencer.endDraggingHandle()
                     dragStartLocation = nil
+                    dragDecided = false
+                    pendingHit = nil
                     panStartOffsetSamples = nil
+                    bodyOrigin = nil
+                    readout = nil
                 }
-                guard sequencer.draggingHandle == nil else { return } // handle drag already fully applied live
-                guard abs(value.translation.width) < 4 && abs(value.translation.height) < 4 else { return }
-
-                if sequencer.isPlacingNote {
-                    let sample = pianoRollScreenXToSample(x: value.location.x, offsetSamples: sequencer.offsetSamples, pixelsPerSecond: sequencer.pixelsPerSecond, sampleRate: sequencer.sampleRate)
-                    let frequency = pianoRollScreenYToFrequency(y: value.location.y, rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: pianoRollCanvasSize.height, verticalZoomFactor: sequencer.verticalZoomFactor)
-                    sequencer.placeNote(atTime: max(0, sample), frequency: frequency)
-                } else if let target = hitTestTransitionIndicator(at: value.location) {
-                    // Step 4: a tap on a note's own transition-picker indicator opens its menu
-                    // instead of moving the playhead - checked after the placement-mode branch
-                    // above (placing a note always wins a tap, even one that happens to land near
-                    // an existing indicator) but before the plain playhead-move fallback below.
-                    transitionMenuTarget = target
-                } else {
-                    let sample = pianoRollScreenXToSample(x: value.location.x, offsetSamples: sequencer.offsetSamples, pixelsPerSecond: sequencer.pixelsPerSecond, sampleRate: sequencer.sampleRate)
-                    sequencer.setPlayhead(to: sample)
-                }
+                guard !dragDecided else { return } // a drag, already fully applied live
+                handleTap(at: value.location)
             }
+    }
+
+    private func handleTap(at location: CGPoint) {
+        switch sequencer.editTool {
+        case .select:
+            if let hit = pendingHit {
+                sequencer.select(NoteSelection(voice: hit.voice, note: hit.note))
+            } else {
+                sequencer.select(nil)
+                sequencer.setPlayhead(to: snapTime(sample(atX: location.x)))
+            }
+        case .place:
+            sequencer.placeNote(atTime: snapTime(sample(atX: location.x)), frequency: snapPitch(frequency(atY: location.y)))
+        case .step:
+            sequencer.enterStep(frequency: snapPitch(frequency(atY: location.y)))
+        }
     }
 
     private var magnificationGesture: some Gesture {
@@ -392,95 +456,30 @@ struct PianoRollView: View {
         sequencer.verticalZoomFactor = min(max(sequencer.verticalZoomFactor * factor, 0.3), 10)
     }
 
-    private func applyHandleDrag(_ handle: DraggingHandle, to location: CGPoint) {
-        let part = sequencer.part(for: handle.voice)
-        var newTime = pianoRollScreenXToSample(x: location.x, offsetSamples: sequencer.offsetSamples, pixelsPerSecond: sequencer.pixelsPerSecond, sampleRate: sequencer.sampleRate)
-        let newFrequency = pianoRollScreenYToFrequency(y: location.y, rootFrequency: settings.rootFrequency, scale: scale, canvasHeight: pianoRollCanvasSize.height, verticalZoomFactor: sequencer.verticalZoomFactor)
+    private func applyDrag(_ dragging: DraggingHandle, to location: CGPoint) {
+        let selection = NoteSelection(voice: dragging.voice, note: dragging.note)
+        switch dragging.grip {
+        case .edge(let edge):
+            let time = snapTime(sample(atX: location.x))
+            let pitch = snapPitch(frequency(atY: location.y))
+            sequencer.setEdge(edge, of: selection, time: time, frequency: pitch)
+            let applied = edge == .start ? dragging.note.startTime : dragging.note.endTime
+            readout = (location, "\(PitchText.format(pitch, rootFrequency: settings.rootFrequency, scale: scale))  ·  \(timeLabel(applied))")
 
-        // Step 4: snap to the nearest beat-grid line when a confident tempo grid exists and the
-        // drag landed within snapTimeThresholdPixels of it - mirrors PitchHitTest.swift's own
-        // windowed-snap idiom (lowerBounds/upperBounds gating a snap), applied to time instead of
-        // pitch. No tempoInfo -> this whole block is skipped, so today's unconditional drag
-        // behavior is unchanged when there's no grid to snap to.
-        if let tempo = sequencer.tempoInfo {
-            let snapped = pianoRollNearestBeatSample(to: newTime, tempo: tempo, sampleRate: sequencer.sampleRate)
-            let snapWindowSamples = Int(snapTimeThresholdPixels / sequencer.pixelsPerSecond * sequencer.sampleRate)
-            if abs(snapped - newTime) <= snapWindowSamples {
-                newTime = snapped
-            }
-        }
-
-        switch handle.edge {
-        case .start:
-            part.moveNoteBoundary(of: handle.note, edge: .start, to: newTime, minimumNoteLength: sequencer.minimumNoteLengthSamples)
-            handle.note.startFrequency = newFrequency
-        case .end:
-            part.moveNoteBoundary(of: handle.note, edge: .end, to: newTime, minimumNoteLength: sequencer.minimumNoteLengthSamples)
-            handle.note.endFrequency = newFrequency
-        }
-
-        switch handle.voice {
-        case .x: settings.xFrequency = newFrequency
-        case .y: settings.yFrequency = newFrequency
-        case .z: settings.zFrequency = newFrequency
-        case .drone: sequencer.updateDrivenDroneDisplay(frequency: newFrequency, amplitude: handle.note.amplitude)
-        }
-
-        sequencer.scoreRevision += 1
-    }
-
-    // MARK: - Transition picker (Step 4)
-    //
-    // General editing feature, not exclusive to recorded/segmented notes - every note in the
-    // piano roll gets this menu via its own indicator (drawPartlines above). `Recorded` and the
-    // purge action only appear when the note actually has a buffer to offer.
-
-    private static let basicTransitionKinds: [TransitionKind] = [.flat, .linear, .easeIn, .easeOut, .easeInEaseOut]
-
-    private func label(for kind: TransitionKind) -> String {
-        switch kind {
-        case .flat: return "Flat"
-        case .linear: return "Linear"
-        case .easeIn: return "Ease In"
-        case .easeOut: return "Ease Out"
-        case .easeInEaseOut: return "Ease In/Out"
-        case .recordedContour: return "Recorded"
+        case .body:
+            guard let origin = bodyOrigin, let start = dragStartLocation else { return }
+            let deltaSamples = sample(atX: location.x) - sample(atX: start.x)
+            let newStart = snapTime(origin.startTime + deltaSamples)
+            // Pitch moves as a ratio, so a bend keeps its interval; the start pitch is what snaps.
+            let ratio = frequency(atY: location.y) / frequency(atY: start.y)
+            let newStartFrequency = snapPitch(origin.startFrequency * ratio)
+            let newEndFrequency = origin.endFrequency * (newStartFrequency / origin.startFrequency)
+            sequencer.moveNote(selection, startTime: newStart, startFrequency: newStartFrequency, endFrequency: newEndFrequency)
+            readout = (location, "\(PitchText.format(newStartFrequency, rootFrequency: settings.rootFrequency, scale: scale))  ·  \(timeLabel(dragging.note.startTime))")
         }
     }
 
-    @ViewBuilder
-    private func transitionMenu(for target: TransitionMenuTarget) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("Transition").font(.caption).foregroundStyle(.secondary)
-            ForEach(Self.basicTransitionKinds, id: \.rawValue) { kind in
-                Button(label(for: kind)) {
-                    target.note.selectTransition(kind)
-                    sequencer.scoreRevision += 1
-                    transitionMenuTarget = nil
-                }
-            }
-
-            if target.note.recordedPitchBend != nil {
-                Divider()
-                Button(label(for: .recordedContour)) {
-                    target.note.selectTransition(.recordedContour)
-                    sequencer.scoreRevision += 1
-                    transitionMenuTarget = nil
-                }
-                Button("Purge Recorded Data", role: .destructive) {
-                    // If the recorded contour is what's currently sounding, fall back to Flat
-                    // before discarding the buffer it depends on - never leave the active
-                    // transition referencing data that no longer exists.
-                    if target.note.transitionKind == .recordedContour {
-                        target.note.selectTransition(.flat)
-                    }
-                    target.note.recordedPitchBend = nil
-                    sequencer.scoreRevision += 1
-                    transitionMenuTarget = nil
-                }
-            }
-        }
-        .padding(10)
-        .frame(minWidth: 160)
+    private func timeLabel(_ sample: Int) -> String {
+        pianoRollTimeLabel(sample: sample, sampleRate: sequencer.sampleRate, tempo: sequencer.activeTempo, beatsPerBar: sequencer.beatsPerBar, subdivision: sequencer.gridSubdivision)
     }
 }

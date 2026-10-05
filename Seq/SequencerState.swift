@@ -92,6 +92,7 @@ final class SequencerState: ObservableObject {
     /// straight into xPart/yPart/zPart while it ran.
     func toggleLiveCapture() {
         if isPlaying { stop() }
+        if !liveCapture.isCapturing { checkpoint("Capture") }
         liveCapture.toggleCapturing()
     }
     @Published var graphOutputEnabled: Bool = false
@@ -116,8 +117,16 @@ final class SequencerState: ObservableObject {
         graphOutputEnabled = true
     }
 
+    // Length of a newly entered note (Place or Step). In seconds with the grid off; in beats
+    // with it on, so step entry walks the beat grid exactly.
     @Published var noteDurationSeconds: Double = 0.5
-    var noteDurationSamples: Int { max(1, Int(noteDurationSeconds * sampleRate)) }
+    @Published var noteDurationBeats: Double = 1
+    var noteDurationSamples: Int {
+        if let tempo = activeTempo {
+            return max(1, Int((noteDurationBeats * pianoRollBeatPeriodSamples(tempo: tempo, sampleRate: sampleRate)).rounded()))
+        }
+        return max(1, Int(noteDurationSeconds * sampleRate))
+    }
 
     @Published private(set) var playheadSample: Int = 0
     @Published private(set) var isPlaying: Bool = false
@@ -143,13 +152,31 @@ final class SequencerState: ObservableObject {
     // PianoRollView's Canvas redraws - Part/Note are plain classes with no Combine publishing.
     @Published var scoreRevision: Int = 0
 
-    // The currently loaded document's detected tempo (step 4 of the live-record plan) - set
-    // straight from whatever SeqDocument.loadDocument was last given (nil for a plain hand-built
-    // piece, a plain "Load As-Is" import, or a segmented import over unmetered/melismatic
-    // material - all three are the same "no confident grid" case to PianoRollView). Metadata
-    // only: never touches a Note's own startTime/endTime, just gates the optional bar-line
-    // overlay and its opt-in snap-on-drag.
-    @Published private(set) var tempoInfo: TempoInfo?
+    // The optional BPM grid. Off: the timeline is plain seconds, no time snapping. On: a
+    // bar/beat grid is drawn, ruler shows bar numbers, and drags/placement/step durations snap
+    // to it (Option-drag escapes). A loaded document's detected tempo (step 4 of the live-record
+    // plan) turns it on with that tempo and downbeat; otherwise the person sets BPM by hand.
+    // Metadata only: never rewrites existing notes' times on its own.
+    @Published var gridEnabled: Bool = false
+    @Published var gridBPM: Double = 120
+    @Published var beatsPerBar: Int = 4
+    // Snap resolution, in divisions per beat (1 = beats, 2 = eighths, 4 = sixteenths in 4/4).
+    @Published var gridSubdivision: Int = 4
+    @Published var gridDownbeatOffset: Int = 0
+
+    var activeTempo: TempoInfo? {
+        guard gridEnabled, gridBPM > 0 else { return nil }
+        return TempoInfo(bpm: gridBPM, downbeatOffset: gridDownbeatOffset, confidence: 1)
+    }
+
+    /// `sample` snapped to the grid's subdivision, or unchanged with the grid off.
+    func snapTime(_ sample: Int) -> Int {
+        guard let tempo = activeTempo else { return sample }
+        let step = pianoRollBeatPeriodSamples(tempo: tempo, sampleRate: sampleRate) / Double(max(1, gridSubdivision))
+        guard step > 0 else { return sample }
+        let index = ((Double(sample) - Double(tempo.downbeatOffset)) / step).rounded()
+        return max(0, tempo.downbeatOffset + Int((index * step).rounded()))
+    }
 
     // The scale/root a loaded .mid declared (SeqMIDICodec's document-level metadata) - carried
     // forward so Save writes the same scale back out, not lost the way it was before this
@@ -161,10 +188,29 @@ final class SequencerState: ObservableObject {
 
     @Published var draggingHandle: DraggingHandle?
 
-    // Which voice "Add Note" places into, and whether the next canvas tap places a note instead
-    // of moving the playhead - see PianoRollView's tap handling.
+    // What a tap on empty canvas does - see PianoRollView's gesture handling. Drags on a note's
+    // handles or body edit it in every tool.
+    @Published var editTool: EditTool = .select
+    // Which voice the Place tool puts notes into.
     @Published var selectedVoice: PartVoice = .x
-    @Published var isPlacingNote: Bool = false
+    // The one note the inspector edits and Delete removes.
+    @Published var selection: NoteSelection?
+
+    // Step entry: the voices a step fills, in stepOrder, one tap each; after the last armed
+    // voice the playhead (the step cursor) advances by the note duration. stepVoiceIndex says
+    // which armed voice the next tap places.
+    static let stepOrder: [PartVoice] = [.x, .y, .z, .drone]
+    @Published var stepVoices: Set<PartVoice> = [.x, .y, .z] {
+        didSet { stepVoiceIndex = 0 }
+    }
+    @Published private(set) var stepVoiceIndex: Int = 0
+    var armedStepVoices: [PartVoice] { Self.stepOrder.filter { stepVoices.contains($0) } }
+    var nextStepVoice: PartVoice? {
+        let armed = armedStepVoices
+        return armed.isEmpty ? nil : armed[min(stepVoiceIndex, armed.count - 1)]
+    }
+
+    var isEditingLocked: Bool { liveCapture?.isCapturing ?? false }
 
     private var playheadTimer: Timer?
 
@@ -470,55 +516,207 @@ final class SequencerState: ObservableObject {
 
     // MARK: - Playhead positioning (not playback/scrub)
 
+    /// Also the step cursor: moving it starts a fresh step (the next tap is the first armed voice).
     func setPlayhead(to sample: Int) {
         guard !isPlaying, !isScrubbing else { return }
         playheadSample = max(0, sample)
+        stepVoiceIndex = 0
     }
 
-    // MARK: - Note placement ("Add Note")
+    // MARK: - Note entry (Place and Step tools)
 
-    /// Inserts a note for `selectedVoice` at (time, frequency), then disarms placement mode -
-    /// called by PianoRollView when a tap lands while `isPlacingNote` is true.
-    ///
-    /// `Part` documents itself as always tiling the timeline contiguously - "silence is a
-    /// zero-amplitude Note, never an absence" - and `getCurrentNote`/`ScorePlayer.advance()`
-    /// both trust that invariant (a timeslice with no covering note is treated as an error/
-    /// exhausted-part condition, not silence). A freshly-tapped note here can easily leave a
-    /// real gap before it - a brand new Part starts with zero notes at all, or the tap simply
-    /// isn't adjacent to whatever's already there - so this backfills a silent rest first,
-    /// confirmed necessary by live-testing: without it, ScorePlayer.advance() saw every voice's
-    /// currentNote as nil from sample 0 (not "silence," but "nothing to track at all") and
-    /// ended playback on literally the first sample processed.
+    /// Place tool: a held note for `selectedVoice` at (time, frequency), `noteDurationSamples`
+    /// long, overwriting whatever that voice had there. Part.placeNote keeps the Part tiled
+    /// with silent rests, which ScorePlayer.advance() depends on (a gap reads as an exhausted
+    /// part and ends playback).
     func placeNote(atTime time: Int, frequency: Double) {
-        let endTime = time + noteDurationSamples
-        let targetPart = part(for: selectedVoice)
-        let existingEnd = targetPart.notes.last?.endTime ?? 0
-        if time > existingEnd {
-            targetPart.insertNote(startTime: existingEnd, endTime: time, startFrequency: frequency, endFrequency: frequency, amplitude: 0)
-        }
-        targetPart.insertNote(startTime: time, endTime: endTime, startFrequency: frequency, endFrequency: frequency, amplitude: 1.0)
-        scoreRevision += 1
-        isPlacingNote = false
+        insertHeldNote(voice: selectedVoice, at: max(0, time), frequency: frequency)
     }
 
-    // MARK: - Handle editing
+    /// Step tool: places the next armed voice's note at the playhead (the step cursor). Once
+    /// every armed voice has a note in this step, the cursor advances by the note duration -
+    /// so a three-voice chord is three taps, and they all start together like Graph's chord.
+    func enterStep(frequency: Double) {
+        guard let voice = nextStepVoice else { return }
+        insertHeldNote(voice: voice, at: playheadSample, frequency: frequency)
+        if stepVoiceIndex + 1 >= armedStepVoices.count {
+            advanceStep()
+        } else {
+            stepVoiceIndex += 1
+        }
+    }
 
-    /// Stops playback (if any) before a handle drag begins mutating a Note - ScorePlayer.advance()
-    /// reads the same Note objects on the real-time audio thread, so this avoids needing any
-    /// locking around the mutation.
-    func beginDraggingHandle(_ handle: DraggingHandle) {
+    /// Moves the step cursor one step forward without placing anything (a rest), or finishes
+    /// a partly entered chord.
+    func advanceStep() {
+        guard !isPlaying, !isScrubbing else { return }
+        playheadSample += noteDurationSamples
+        stepVoiceIndex = 0
+    }
+
+    func stepBack() {
+        guard !isPlaying, !isScrubbing else { return }
+        playheadSample = max(0, playheadSample - noteDurationSamples)
+        stepVoiceIndex = 0
+    }
+
+    private func insertHeldNote(voice: PartVoice, at time: Int, frequency: Double) {
+        guard prepareForEdit() else { return }
+        checkpoint("Add Note")
+        let note = part(for: voice).placeNote(startTime: time, endTime: time + noteDurationSamples, startFrequency: frequency, endFrequency: frequency)
+        selection = NoteSelection(voice: voice, note: note)
+        scoreRevision += 1
+    }
+
+    // MARK: - Note editing (handles, body drag, inspector)
+
+    /// Stops playback/scrub before anything mutates a Note - ScorePlayer.advance() reads the
+    /// same Note objects on the real-time audio thread, so editing only while stopped avoids
+    /// needing any locking around the mutation. False while live capture is writing into the
+    /// Parts, which edits must not race.
+    private func prepareForEdit() -> Bool {
+        guard !isEditingLocked else { return false }
         if isPlaying { stop() }
+        if isScrubbing { endScrub() }
+        return true
+    }
+
+    func beginDraggingHandle(_ handle: DraggingHandle) {
+        guard prepareForEdit() else { return }
+        checkpoint(handle.grip == .body ? "Move Note" : "Edit Note")
         draggingHandle = handle
+        selection = NoteSelection(voice: handle.voice, note: handle.note)
     }
 
     func endDraggingHandle() {
         draggingHandle = nil
     }
 
+    func select(_ selection: NoteSelection?) {
+        self.selection = selection
+    }
+
+    /// Moves one end of a note in time and pitch together - what a handle drag does.
+    func setEdge(_ edge: NoteEdge, of selection: NoteSelection, time: Int, frequency: Double) {
+        guard prepareForEdit() else { return }
+        part(for: selection.voice).setEdge(edge, of: selection.note, to: time, minimumNoteLength: minimumNoteLengthSamples)
+        applyPitch(edge, of: selection, frequency: frequency)
+    }
+
+    func setTime(_ edge: NoteEdge, of selection: NoteSelection, time: Int) {
+        guard prepareForEdit() else { return }
+        checkpoint("Change Time")
+        part(for: selection.voice).setEdge(edge, of: selection.note, to: time, minimumNoteLength: minimumNoteLengthSamples)
+        scoreRevision += 1
+    }
+
+    func setPitch(_ edge: NoteEdge, of selection: NoteSelection, frequency: Double, actionName: String = "Change Pitch") {
+        guard prepareForEdit(), frequency > 0 else { return }
+        checkpoint(actionName)
+        applyPitch(edge, of: selection, frequency: frequency)
+    }
+
+    private func applyPitch(_ edge: NoteEdge, of selection: NoteSelection, frequency: Double) {
+        guard frequency > 0 else { return }
+        switch edge {
+        case .start: selection.note.startFrequency = frequency
+        case .end: selection.note.endFrequency = frequency
+        }
+        showDrivenFrequency(voice: selection.voice, frequency: frequency, amplitude: selection.note.amplitude)
+        scoreRevision += 1
+    }
+
+    /// Moves a whole note: its start to `startTime` (length kept, stopping at neighbors) and
+    /// both pitches to the given values - what a body drag does.
+    func moveNote(_ selection: NoteSelection, startTime: Int, startFrequency: Double, endFrequency: Double) {
+        guard prepareForEdit() else { return }
+        part(for: selection.voice).moveNote(selection.note, toStart: startTime)
+        selection.note.startFrequency = startFrequency
+        selection.note.endFrequency = endFrequency
+        showDrivenFrequency(voice: selection.voice, frequency: startFrequency, amplitude: selection.note.amplitude)
+        scoreRevision += 1
+    }
+
+    func setProfile(_ kind: TransitionKind, of selection: NoteSelection) {
+        guard prepareForEdit(), kind != selection.note.transitionKind else { return }
+        checkpoint("Change Profile")
+        selection.note.selectTransition(kind)
+        scoreRevision += 1
+    }
+
+    /// Turns a bend back into a held note: end pitch = start pitch.
+    func holdPitch(of selection: NoteSelection) {
+        setPitch(.end, of: selection, frequency: selection.note.startFrequency, actionName: "Hold Pitch")
+    }
+
+    /// Drops a note's recorded contour buffer, falling back to Linear first if that contour is
+    /// what's playing - never leave the active transition pointing at discarded data.
+    func purgeRecordedData(of selection: NoteSelection) {
+        guard prepareForEdit() else { return }
+        checkpoint("Purge Recorded Data")
+        if selection.note.transitionKind == .recordedContour {
+            selection.note.selectTransition(.linear)
+        }
+        selection.note.recordedPitchBend = nil
+        scoreRevision += 1
+    }
+
+    func deleteSelectedNote() {
+        guard let selection, prepareForEdit() else { return }
+        checkpoint("Delete Note")
+        part(for: selection.voice).removeNote(selection.note)
+        self.selection = nil
+        scoreRevision += 1
+    }
+
+    private func showDrivenFrequency(voice: PartVoice, frequency: Double, amplitude: Double) {
+        switch voice {
+        case .x: settings.xFrequency = frequency
+        case .y: settings.yFrequency = frequency
+        case .z: settings.zFrequency = frequency
+        case .drone: updateDrivenDroneDisplay(frequency: frequency, amplitude: amplitude)
+        }
+    }
+
+    // MARK: - Undo
+
+    // The window's own undo manager (set by SequencerView), so ⌘Z/⇧⌘Z and the Edit menu work
+    // with no extra plumbing. Every edit records a snapshot of all four Parts just before it
+    // changes anything; undoing restores that snapshot and registers the current state as the
+    // redo. A drag is one undo step (checkpointed once, when it begins).
+    weak var undoManager: UndoManager?
+
+    private func snapshotAll() -> [PartVoice: PartSnapshot] {
+        Dictionary(uniqueKeysWithValues: PartVoice.allCases.map { ($0, part(for: $0).snapshot()) })
+    }
+
+    private func checkpoint(_ actionName: String) {
+        guard let undoManager else { return }
+        let snapshot = snapshotAll()
+        undoManager.registerUndo(withTarget: self) { $0.restore(snapshot, actionName: actionName) }
+        undoManager.setActionName(actionName)
+    }
+
+    private func restore(_ snapshot: [PartVoice: PartSnapshot], actionName: String) {
+        // Undo can't run while capture is writing into the Parts; put the step back so it isn't lost.
+        guard prepareForEdit() else {
+            undoManager?.registerUndo(withTarget: self) { $0.restore(snapshot, actionName: actionName) }
+            undoManager?.setActionName(actionName)
+            return
+        }
+        checkpoint(actionName) // the redo (or, when redoing, the next undo)
+        for (voice, partSnapshot) in snapshot { part(for: voice).restore(partSnapshot) }
+        if let selection, !part(for: selection.voice).soundingNotes.contains(where: { $0 === selection.note }) {
+            self.selection = nil
+        }
+        stepVoiceIndex = 0
+        scoreRevision += 1
+    }
+
     // MARK: - Save/load (Step 5)
 
     func exportDocument() -> SeqDocument {
-        SeqDocument(dronePart: dronePart, xPart: xPart, yPart: yPart, zPart: zPart)
+        SeqDocument(dronePart: dronePart, xPart: xPart, yPart: yPart, zPart: zPart, tempoInfo: activeTempo)
     }
 
     /// Replaces the current piece's contents in place - SequencerState's own dronePart/xPart/
@@ -527,11 +725,21 @@ final class SequencerState: ObservableObject {
     /// beginDraggingHandle already uses, since a load mutating Part.notes out from under
     /// ScorePlayer.advance() mid-playback would be exactly the unsynchronized-mutation risk
     /// that guard exists to avoid.
-    func loadDocument(_ document: SeqDocument, scale: MIDIScaleDefinition? = nil) {
+    func loadDocument(_ document: SeqDocument, scale: MIDIScaleDefinition? = nil, actionName: String = "Open") {
         if isPlaying { stop() }
         if isScrubbing { endScrub() }
+        checkpoint(actionName)
         document.apply(toDronePart: dronePart, xPart: xPart, yPart: yPart, zPart: zPart)
-        tempoInfo = document.tempoInfo
+        // Every note is a pitch bend now - fold legacy Flat notes (older files, plain .mid
+        // imports) into equal-pitch Linear ones, which sound identical.
+        for part in [dronePart, xPart, yPart, zPart] { part.normalizeFlatTransitions() }
+        selection = nil
+        stepVoiceIndex = 0
+        if let tempo = document.tempoInfo {
+            gridBPM = tempo.bpm
+            gridDownbeatOffset = tempo.downbeatOffset
+            gridEnabled = true
+        }
         // nil (not "reset to the default") when the source had no scale metadata at all - a
         // plain third-party .mid, say - so a piece with a previously-known scale doesn't
         // silently forget it just because it was reloaded/resegmented.
@@ -590,17 +798,37 @@ final class SequencerState: ObservableObject {
         let tempo = detectTempo(onsetTimes: onsets, sampleRate: sampleRate)
 
         let segmentedDocument = SeqDocument(dronePart: segmentedDrone, xPart: segmentedX, yPart: segmentedY, zPart: segmentedZ, tempoInfo: tempo)
-        loadDocument(segmentedDocument)
+        loadDocument(segmentedDocument, actionName: "Segment")
     }
+}
+
+enum EditTool: Hashable {
+    case select, place, step
+}
+
+/// One sounding note, by voice and identity (Note is a class, compared by reference).
+struct NoteSelection: Equatable {
+    let voice: PartVoice
+    let note: Note
+
+    static func == (lhs: NoteSelection, rhs: NoteSelection) -> Bool {
+        lhs.voice == rhs.voice && lhs.note === rhs.note
+    }
+}
+
+/// What a drag on a note grabbed: one end's handle, or the line itself (moves the whole note).
+enum DragGrip: Equatable {
+    case edge(NoteEdge)
+    case body
 }
 
 struct DraggingHandle: Equatable {
     let voice: PartVoice
     let note: Note
-    let edge: NoteEdge
+    let grip: DragGrip
 
     // Note is a class, not Equatable by value - compare by identity.
     static func == (lhs: DraggingHandle, rhs: DraggingHandle) -> Bool {
-        lhs.voice == rhs.voice && lhs.edge == rhs.edge && lhs.note === rhs.note
+        lhs.voice == rhs.voice && lhs.grip == rhs.grip && lhs.note === rhs.note
     }
 }

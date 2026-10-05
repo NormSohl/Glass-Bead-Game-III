@@ -60,3 +60,20 @@ func pianoRollNearestBeatSample(to sample: Int, tempo: TempoInfo, sampleRate: Do
     let beatIndex = ((Double(sample) - Double(tempo.downbeatOffset)) / periodSamples).rounded()
     return tempo.downbeatOffset + Int((beatIndex * periodSamples).rounded())
 }
+
+// A time position as people read it: "bar.beat.division" (all 1-based) with a beat grid, plain
+// seconds without one. Off-grid positions (an Option-drag) floor to the division they fall in.
+func pianoRollTimeLabel(sample: Int, sampleRate: Double, tempo: TempoInfo?, beatsPerBar: Int, subdivision: Int) -> String {
+    guard let tempo else { return String(format: "%.3fs", Double(sample) / sampleRate) }
+    let period = pianoRollBeatPeriodSamples(tempo: tempo, sampleRate: sampleRate)
+    guard period > 0 else { return String(format: "%.3fs", Double(sample) / sampleRate) }
+    let divisions = max(1, subdivision)
+    let totalDivisions = Int((Double(sample - tempo.downbeatOffset) / period * Double(divisions) + 1e-6).rounded(.down))
+    let perBar = max(1, beatsPerBar) * divisions
+    // Floor-division, so positions before the downbeat count down into bar 0, -1, ...
+    let bar = Int((Double(totalDivisions) / Double(perBar)).rounded(.down))
+    let withinBar = totalDivisions - bar * perBar
+    let beat = withinBar / divisions + 1
+    let division = withinBar % divisions + 1
+    return divisions > 1 ? "\(bar + 1).\(beat).\(division)" : "\(bar + 1).\(beat)"
+}

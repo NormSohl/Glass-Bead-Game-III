@@ -2,11 +2,9 @@
 //  TransportView.swift
 //  Seq
 //
-//  Play/Stop, Scrub, and note placement - the sequencer's basic controls. Adapted from Graph's
-//  own TransportView: Graph's "Add Note" captured the live graph's current touch as a chord,
-//  which has no equivalent here (Seq has no touch graph) - replaced with a voice picker + an
-//  "Add Note" arm/disarm toggle, with actual placement happening on the next piano-roll tap (see
-//  PianoRollView/SequencerState.placeNote). The "close panel" button is dropped entirely - Seq
+//  Play/Stop, Capture, Scrub, Save/Open/Segment, Panic, and the three outputs - the
+//  sequencer's transport and I/O. Note entry lives in EditToolbarView/NoteInspectorView.
+//  Adapted from Graph's own TransportView; the "close panel" button is dropped entirely - Seq
 //  is the whole app/window, not a panel inside another app.
 //
 
@@ -71,30 +69,6 @@ struct TransportView: View {
                     }
                 )
                 .disabled(sequencer.isPlaying)
-
-                Picker("Voice", selection: $sequencer.selectedVoice) {
-                    Text("Drone").tag(PartVoice.drone).foregroundStyle(voiceColors[.drone] ?? .white)
-                    Text("X").tag(PartVoice.x).foregroundStyle(voiceColors[.x] ?? .white)
-                    Text("Y").tag(PartVoice.y).foregroundStyle(voiceColors[.y] ?? .white)
-                    Text("Z").tag(PartVoice.z).foregroundStyle(voiceColors[.z] ?? .white)
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 200)
-
-                Button {
-                    sequencer.isPlacingNote.toggle()
-                } label: {
-                    Label("Add Note", systemImage: "plus.circle.fill")
-                }
-                .tint(sequencer.isPlacingNote ? .green : tintColor)
-
-                Stepper(
-                    "Duration: \(String(format: "%.2f", sequencer.noteDurationSeconds))s",
-                    value: $sequencer.noteDurationSeconds,
-                    in: 0.05...4.0,
-                    step: 0.05
-                )
-                .frame(width: 220)
 
                 Button {
                     let data = SeqMIDICodec.encode(document: sequencer.exportDocument(), scale: sequencer.currentScale, sampleRate: sequencer.sampleRate)

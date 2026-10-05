@@ -115,21 +115,49 @@ edited by hand.
 Top to bottom:
 
 - **Transport bar** — play/stop, **Capture** (live capture straight from GBG III, see above), a
-  scrub slider, a Voice picker (Drone/X/Y/Z) for where new notes get placed, an **Add Note**
-  toggle (tap the empty canvas to place a note of the current duration once armed), a duration
-  stepper, Save/Open, **Segment** (applies segmentation to whatever's currently loaded), and
-  **Panic**.
+  scrub slider, Save/Open, **Segment** (applies segmentation to whatever's currently loaded),
+  and **Panic**.
+- **Edit bar** — the tool (**Select**, **Place**, **Step**), the controls that tool needs, the
+  length of a new note (seconds, or beats with the grid on), and the **Grid** switch with its
+  BPM, beats per bar and snap resolution.
+- **Note inspector** — exact values for the selected note (see below).
 - **Root indicator** — a thin strip showing where the drone currently sits, since the drone has
   no on-screen crosshair of its own.
-- **Piano roll** — the main editing canvas. Scale-degree gridlines run horizontally; an amber
-  beat grid appears automatically when Seq can detect a steady tempo in what you played (it's
-  fine, and expected, for this not to appear on freely-timed material).
+- **Timeline** — a labeled ruler: seconds with the grid off, bar numbers with it on. Click or
+  drag it to move the playhead.
+- **Note editor** — the main canvas. Scale-degree gridlines run horizontally; with the grid on,
+  bar/beat lines run vertically.
 
-**Editing a note:** drag its start/end handle to move that boundary (it snaps to the beat grid
-when Seq has detected one). Tap the small square at a note's midpoint to choose how it
-transitions into the next note — Flat, Linear, Ease In, Ease Out, Ease In/Out, or (only if the
-note has recorded detail) Recorded, which also lets you permanently discard that recorded detail
-if you'd rather have a clean curve instead.
+**Notes are pitch bends.** Every note goes from a start pitch to an end pitch, shaped by its
+profile (Linear, Ease In, Ease Out, Ease In/Out, or Recorded for captured material). A held
+note is simply one whose start and end pitch are the same. Each voice (X, Y, Z, Drone) is
+independent: its notes can start and stop anywhere, with silence between them, and moving one
+note never moves another.
+
+**Entering notes:**
+
+- **Place** — pick a voice, click where the note goes. It gets the current length.
+- **Step** — arm the voices a step should fill (X, Y, Z by default; add Drone if you like).
+  The playhead turns green and becomes the step cursor. Click a pitch for each armed voice in
+  turn (the cursor says which is next); after the last one the cursor moves on by the note
+  length, so a three-note chord is three clicks and all three start together, like Graph's.
+  **Rest** (or →) skips ahead leaving silence, or finishes a partial chord; ← steps back.
+  Click the ruler to put the cursor anywhere.
+
+**Editing a note:** in any tool, drag a note's start or end dot to move that end in time and
+pitch, or drag its line to move the whole note (a bend keeps its interval). In **Select**,
+click a note to select it, then use the inspector to type exact values: start/end time in
+seconds, start/end pitch as a ratio of the root (`5/4`, `7/4`) or in Hz (`440`), choose the
+profile from the dropdown, **Hold** to make end pitch = start pitch, or delete it (⌫ also
+deletes, Esc deselects, Space plays/stops). Pitches snap to the scale and times to the grid;
+hold **Option** while clicking or dragging for free placement. A note with recorded detail can
+switch back to **Recorded** any time, or **Purge Recorded** to discard it.
+
+**Undo:** ⌘Z undoes the last edit (a whole drag counts as one), ⇧⌘Z redoes; the Edit menu names
+the step. Open, Segment and Capture are undoable steps too.
+
+Older files and plain MIDI imports open with their notes converted to this model (an old "Flat"
+note becomes a held note - it sounds exactly the same).
 
 **Zoom:** pinch on a trackpad, or use a mouse's scroll wheel — both zoom the timeline
 horizontally and the pitch axis vertically together.

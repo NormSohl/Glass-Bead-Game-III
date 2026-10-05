@@ -35,6 +35,9 @@
 		993C55E39EE9405B91FC52E1 /* TransportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 034D090B4A594A8DB3E796B9 /* TransportView.swift */; };
 		A38475822A7D41D583CA3B43 /* ZSliderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 792C3694A73A41E196B16CA2 /* ZSliderView.swift */; };
 		B5350927B1EA469B8572FCAC /* PianoRollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F5DEAD64F3749BC96777619 /* PianoRollView.swift */; };
+		5CFD6086EDD44C60B56D6679 /* NoteInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D6FDD8002444DE3BDA5E412 /* NoteInspectorView.swift */; };
+		D802506CCC6745CE9D942520 /* EditToolbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67CC210BEE0D4E81B266D261 /* EditToolbarView.swift */; };
+		A176A9C6FFDD47C7B47EF919 /* TimelineRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32D11C7226AB4697BA821FF0 /* TimelineRulerView.swift */; };
 		C3D4E5F60718293A4B5C6D7E /* GBGSound in Frameworks */ = {isa = PBXBuildFile; productRef = B2C3D4E5F60718293A4B5C6D /* GBGSound */; };
 		C9DDCB90C8F2408F86C84FAB /* SequencerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FC5B11E74EC4FFC823642D9 /* SequencerView.swift */; };
 		DF063A4191F1A5726E2F314B /* LiveCaptureState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09830CF05D1A4289498E8A7B /* LiveCaptureState.swift */; };
@@ -76,6 +79,9 @@
 		796BD56083BA49C1BA9CCD93 /* SeqSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeqSettings.swift; sourceTree = "<group>"; };
 		7E903D696C4E843EF518EE59 /* GraphSquareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphSquareView.swift; sourceTree = "<group>"; };
 		8F5DEAD64F3749BC96777619 /* PianoRollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PianoRollView.swift; sourceTree = "<group>"; };
+		6D6FDD8002444DE3BDA5E412 /* NoteInspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteInspectorView.swift; sourceTree = "<group>"; };
+		67CC210BEE0D4E81B266D261 /* EditToolbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditToolbarView.swift; sourceTree = "<group>"; };
+		32D11C7226AB4697BA821FF0 /* TimelineRulerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineRulerView.swift; sourceTree = "<group>"; };
 		969C76870C734BBD95B79A2E /* Seq.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Seq.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9F35D5C9D9E84298AE75468E /* SeqApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeqApp.swift; sourceTree = "<group>"; };
 		A3254C2ACD7B49B292C8D1F9 /* ExternalDisplaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalDisplaySceneDelegate.swift; sourceTree = "<group>"; };
@@ -224,6 +230,9 @@
 				09830CF05D1A4289498E8A7B /* LiveCaptureState.swift */,
 				60EBDB420A6441FD86D347C5 /* PianoRollCoordinates.swift */,
 				8F5DEAD64F3749BC96777619 /* PianoRollView.swift */,
+				6D6FDD8002444DE3BDA5E412 /* NoteInspectorView.swift */,
+				67CC210BEE0D4E81B266D261 /* EditToolbarView.swift */,
+				32D11C7226AB4697BA821FF0 /* TimelineRulerView.swift */,
 				04CFF1117DA340028AAA74C8 /* RootIndicatorView.swift */,
 				034D090B4A594A8DB3E796B9 /* TransportView.swift */,
 				4FC5B11E74EC4FFC823642D9 /* SequencerView.swift */,
@@ -377,6 +386,9 @@
 				DF063A4191F1A5726E2F314B /* LiveCaptureState.swift in Sources */,
 				1BD79A4C38D54541987EBE6C /* PianoRollCoordinates.swift in Sources */,
 				B5350927B1EA469B8572FCAC /* PianoRollView.swift in Sources */,
+				5CFD6086EDD44C60B56D6679 /* NoteInspectorView.swift in Sources */,
+				D802506CCC6745CE9D942520 /* EditToolbarView.swift in Sources */,
+				A176A9C6FFDD47C7B47EF919 /* TimelineRulerView.swift in Sources */,
 				F360FFA894604821B07976E7 /* RootIndicatorView.swift in Sources */,
 				993C55E39EE9405B91FC52E1 /* TransportView.swift in Sources */,
 				C9DDCB90C8F2408F86C84FAB /* SequencerView.swift in Sources */,
