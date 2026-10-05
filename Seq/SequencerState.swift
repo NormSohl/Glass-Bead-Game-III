@@ -13,6 +13,7 @@
 //
 
 import Foundation
+import Combine
 import GBGCore
 import GBGSound
 
@@ -260,6 +261,10 @@ final class SequencerState: ObservableObject {
         // capturing, so the piano roll redraws live instead of only once capture stops.
         liveCapture.onUpdate = { [weak self] in self?.scoreRevision += 1 }
         synthMidiOut.initMidi()
+        pitchBendRangeSubscription = settings.$pitchBendRange
+            .dropFirst()
+            .removeDuplicates()
+            .sink { [weak self] range in self?.sendSynthPitchBendRange(semitones: range) }
     }
 
     var hasAnyNotes: Bool {
@@ -343,17 +348,40 @@ final class SequencerState: ObservableObject {
     // optional for this connection) - a real synth on the receiving end may need its pitch
     // bend range set by hand to match, same caveat Graph's own "Tune Midi" UI already carries
     // for modular/analog gear that can't be retuned automatically over MIDI.
+    //
+    // Update 2026-10-05: the pitch bend range IS now sent here (RPN 0 on each voice channel, see
+    // sendSynthPitchBendRange) whenever the output is switched on, its destination or a channel
+    // changes, the Pitch Bend Range setting changes, or playback starts - so a synth that honors
+    // RPN 0 follows Seq's setting by itself. Gear that ignores RPN still needs setting by hand.
     private let synthMidiOut = SeqMidiOut()
-    @Published var synthOutputEnabled: Bool = false
+    @Published var synthOutputEnabled: Bool = false {
+        didSet { if synthOutputEnabled { sendSynthPitchBendRange() } }
+    }
     @Published var synthDestinationIndex: Int = 0 {
-        didSet { synthMidiOut.setMidiDestination(destination: synthDestinationIndex) }
+        didSet {
+            synthMidiOut.setMidiDestination(destination: synthDestinationIndex)
+            sendSynthPitchBendRange()
+        }
     }
     var synthMidiDestinations: [SeqMidiOut.MidiEndpointInfo] { synthMidiOut.midiDestinations }
 
-    @Published var synthDroneChannel: Int = 1
-    @Published var synthXChannel: Int = 2
-    @Published var synthYChannel: Int = 3
-    @Published var synthZChannel: Int = 4
+    @Published var synthDroneChannel: Int = 1 { didSet { sendSynthPitchBendRange() } }
+    @Published var synthXChannel: Int = 2 { didSet { sendSynthPitchBendRange() } }
+    @Published var synthYChannel: Int = 3 { didSet { sendSynthPitchBendRange() } }
+    @Published var synthZChannel: Int = 4 { didSet { sendSynthPitchBendRange() } }
+
+    private var pitchBendRangeSubscription: AnyCancellable?
+
+    /// RPN 0 (Pitch Bend Sensitivity) on every channel Synth Out uses, once each. `semitones`
+    /// is passed explicitly by the settings subscription, which fires before the new value is
+    /// stored.
+    private func sendSynthPitchBendRange(semitones: Int? = nil) {
+        guard synthOutputEnabled, !synthMidiDestinations.isEmpty else { return }
+        let channels = Set([synthDroneChannel, synthXChannel, synthYChannel, synthZChannel]).sorted()
+        for channel in channels {
+            synthMidiOut.pitchBendSensitivity(channel: channel, semitones: semitones ?? settings.pitchBendRange)
+        }
+    }
 
     private func synthChannel(for voice: PartVoice) -> Int {
         switch voice {
@@ -388,6 +416,7 @@ final class SequencerState: ObservableObject {
 
     func play() {
         guard hasAnyNotes, !isPlaying, !isScrubbing else { return }
+        sendSynthPitchBendRange() // in case the synth was switched on or reset since
         audio.startAudio(amp: 1)
         scorePlayer.start(atSample: playheadSample)
         isPlaying = true

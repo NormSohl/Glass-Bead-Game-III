@@ -176,7 +176,10 @@ Three independent outputs, any combination of which can be on at once:
 **Pitch Bend Range** (next to Internal Synth, ±24 or ±48, default ±24) sets how many semitones a
 full pitch bend means, for Graph Out, Synth Out and Capture alike. GBG III doesn't pick this up
 over MIDI, so set it to match GBG III's own Settings → Pitch Bend Range, or pitches will come out
-wrong in both directions. An external synth needs its own bend range set by hand to match too.
+wrong in both directions. **Synth Out** tells the synth this range itself (the standard MIDI
+Pitch Bend Sensitivity message, RPN 0, on each of its four channels) whenever you switch it on,
+change its destination or a channel, change the setting, or press play. A synth that ignores
+that message needs its bend range set by hand to match.
 
 
 ## Panic

@@ -6,10 +6,10 @@
 //  Midi (which bundles a lot of Graph-specific surface: fixed root/X/Y/Z naming, MPE zone
 //  declaration tuned to Graph's own defaults, tuning UI). Voice-naming is an app-level concern,
 //  same "generic package, app does interpretation" principle Graph's own MIDI-input path
-//  already established - this class only knows about channels and raw values. RPN/MPE-zone
-//  declaration is deliberately not built here: not needed for driving Graph (its receive-side
-//  packet parser only decodes note-on/off/pitch-bend, never RPN), and would only become
-//  relevant for a real external synth (a future addition, not this task).
+//  already established - this class only knows about channels and raw values. The one RPN it
+//  sends is Pitch Bend Sensitivity (RPN 0), for Seq's Synth Out connection so a real synth
+//  can adopt Seq's bend range; Graph's receive-side parser only decodes note-on/off/pitch-bend
+//  and ignores it. MPE zone declaration (RPN 6) is still not built here.
 //
 //  See the standalone-sequencer plan, phase 2, step 3b.
 //
@@ -193,6 +193,27 @@ public class SeqMidiOut {
         packet1.data.0 = channelVoiceMessages.noteOff | (UInt8(channel) - 1)
         packet1.data.1 = UInt8(note)
         packet1.data.2 = 0
+        var packetList = MIDIPacketList(numPackets: 1, packet: packet1)
+        if !midiDestinations.isEmpty { MIDISend(outPort, midiDestinations[destNum].midiEndpoint, &packetList) }
+    }
+
+    /// Sets the receiver's pitch bend range on `channel` to `semitones` (RPN 0, Pitch Bend
+    /// Sensitivity): select RPN 0 (CC 101/100 = 0/0), Data Entry MSB = semitones, LSB = 0 cents,
+    /// then deselect (RPN null, 127/127) so a stray later Data Entry can't change it again.
+    public func pitchBendSensitivity(channel: Int, semitones: Int) {
+        let semitones = UInt8(max(0, min(127, semitones)))
+        for (cc, value) in [(101, 0), (100, 0), (6, Int(semitones)), (38, 0), (101, 127), (100, 127)] {
+            controlChange(channel: channel, controller: UInt8(cc), value: UInt8(value))
+        }
+    }
+
+    private func controlChange(channel: Int, controller: UInt8, value: UInt8) {
+        var packet1 = MIDIPacket()
+        packet1.timeStamp = 0
+        packet1.length = 3
+        packet1.data.0 = 0xB0 + (UInt8(channel) - 1)
+        packet1.data.1 = controller
+        packet1.data.2 = value
         var packetList = MIDIPacketList(numPackets: 1, packet: packet1)
         if !midiDestinations.isEmpty { MIDISend(outPort, midiDestinations[destNum].midiEndpoint, &packetList) }
     }
