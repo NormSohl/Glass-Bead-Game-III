@@ -11,22 +11,23 @@ to play GBG III itself.*
 
 ## Setup
 
-Seq is Mac-only today — macOS 14.2 or later. It installs from the App Store, same as any other
-app, as a separate app from GBG III with its own icon.
+Seq is Mac-only today — macOS 14.2 or later — and is a separate app from GBG III, with its own
+icon.
 
 ## How GBG III and Seq talk to each other
 
 There are two separate ways GBG III and Seq connect, one in each direction:
 
-1. **Seq → GBG III, live MIDI, same Mac only.** GBG III creates a virtual MIDI destination
+1. **Seq → GBG III, live MIDI.** On the same Mac, GBG III creates a virtual MIDI destination
    named "Glass Bead Game III". Whenever it appears — GBG III already open when Seq starts, or
    launched later — Seq connects **Graph Out** to it automatically (Graph is Seq's on-screen name
    for GBG III). From then on, playing or scrubbing in Seq moves GBG III's X/Y crosshair and Z
    marker in real time and sounds through GBG III itself (or drives GBG III's external
    MIDI/synth output, whatever GBG III is currently set up to do). If you switch Graph Out off,
    it stays off until GBG III is relaunched; **"Graph detected — Connect"** reconnects by hand.
-   You may want Seq's **Internal Synth** off while Graph Out is on, so you hear one sound, not two. This only works when both apps are running on the *same
-   machine* — there's no wireless/network link built in.
+   You may want Seq's **Internal Synth** off while Graph Out is on, so you hear one sound, not
+   two. The automatic connection is same-Mac only; to reach GBG III on an iPad, pick the Network
+   MIDI session in Graph Out's destination menu and the same session as GBG III's MIDI Source.
 2. **GBG III → Seq, live MIDI, any connection CoreMIDI supports.** The reverse direction: Seq
    captures a performance directly as you play it in GBG III. See **Live capture** below — this
    one *does* work over USB or Network MIDI, not just same-Mac, and it's the only way a
@@ -38,7 +39,8 @@ Files are Seq's own business: **Save** and **Open** read and write real Standard
 (`.mid`), so you can keep pieces, move them between Macs, or open them in any DAW. Only Seq
 understands the extra, safely-ignored metadata that carries the exact scale/tuning a piece uses
 and preserves Seq's own per-note editing detail losslessly. Seq can also open plain MIDI files
-from elsewhere.
+from elsewhere. When a piece carries its scale, Seq's editor uses it: gridlines, pitch snapping
+and ratio names all follow the piece.
 
 ## Live capture — recording straight into Seq
 
@@ -48,9 +50,10 @@ MIDI/RTP-MIDI - see below): just play and watch the notes appear in Seq as you p
 1. In GBG III's Settings, set **MIDI Destination** to **Seq** (it shows up in that picker like
    any other MIDI destination, since Seq advertises itself the same way GBG III does) and make
    sure **Use Midi MPE** is on.
-2. In Seq's transport bar, tap **Capture**. It stays armed (shown as **Stop**) until you tap it
-   again - play as long as you like across it. This stops playback if it was running, since the
-   two can't happen at once.
+2. In Seq's transport bar, tap **Capture**. It clears X/Y/Z (the drone is kept; ⌘Z brings the
+   old notes back) and stays armed (shown as **Stop**) until you tap it again - play as long as
+   you like across it. Playback stops if it was running, and play, scrub and note editing are
+   unavailable while capturing; Open, Segment and Undo end the capture first.
 3. Play in GBG III. X/Y/Z pitch is captured continuously for as long as you're touching the
    graph - gaps between phrases are kept as silence - and Seq draws each note as you play it,
    live, not only once you stop. The drone isn't captured: there's no touch gesture driving it.
@@ -58,13 +61,16 @@ MIDI/RTP-MIDI - see below): just play and watch the notes appear in Seq as you p
    performance, raw and unsegmented - nothing to open, nothing to save first. Apply **Segment**
    (see below) whenever you're ready, or leave it as-is and segment/edit some other time.
 
-Connecting over Network MIDI works the same way once the connection itself exists - pair the
-iPad and Mac in **Audio MIDI Setup**'s Network MIDI panel, and GBG III's MIDI Destination picker
-will show Seq the same way it does on the same Mac. USB is a separate mechanism, not just "plug
-in the cable": macOS bridges a USB-connected iPad's MIDI via IDAM (Inter-Device Audio & MIDI),
-which needs enabling per-connection in **Audio MIDI Setup**'s *Audio Devices* window (not the
-MIDI Studio window a real MIDI interface would show up in) - look for the iPad's own entry there
-and click **Enable**. Seq assumes GBG III's MPE channel assignment for X/Y/Z - GBG III is
+From an iPad, the connection arrives in Seq as a MIDI *source*, not by the name "Seq", so
+there's one more step: in Seq, set **Capture Source** (below the transport bar) to that
+connection. Over Network MIDI, pair the iPad and Mac in **Audio MIDI Setup**'s Network MIDI
+panel, set GBG III's MIDI Destination to the network session, and pick that session as Seq's
+Capture Source. USB is a separate mechanism, not just "plug in the cable": macOS bridges a
+USB-connected iPad's MIDI via IDAM (Inter-Device Audio & MIDI), which needs enabling
+per-connection in **Audio MIDI Setup**'s *Audio Devices* window (not the MIDI Studio window a
+real MIDI interface would show up in) - look for the iPad's own entry there, click **Enable**,
+then pick the iPad as Seq's Capture Source. Seq's menus pick up connections made after it
+started on their own. Seq assumes GBG III's MPE channel assignment for X/Y/Z - GBG III is
 MPE-only, with no separate mode to fall out of sync with, so this always lines up. Set Seq's
 **Pitch Bend Range** to match GBG III's (see *Sending Seq's output somewhere*), or captured
 pitches come out wrong.
@@ -95,9 +101,10 @@ short gesture), segmentation leaves it as one note rather than guessing at a spl
 Segmentation isn't only an import-time choice — the transport bar's own **Segment** button
 applies it to whatever's currently loaded, whenever you want. Load or capture a performance raw
 first, look at (or play) the unsegmented curve, then press **Segment** to see it split into
-discrete notes. Safe to press more than once or on already-segmented material - it only ever
-acts on genuinely un-segmented stretches, so it never re-cuts a note you've already placed or
-edited by hand.
+discrete notes. Safe to press more than once: it only acts on notes whose profile is
+**Recorded**, so notes you placed, or switched to another profile, are left alone, and an
+already-segmented note comes back as itself. A Recorded note whose ends you've moved is
+segmented as it now sounds.
 
 ## The Seq window
 
@@ -138,11 +145,15 @@ pitch, or drag its line to move the whole note (a bend keeps its interval). In *
 click a note to select it, then use the inspector to type exact values: start/end time
 (with the grid on, as bar.beat.division like a DAW - `3`, `3.2` or `3.2.4`, all counting from 1,
 so a note ending at `5` ends on bar 5's downbeat; or in seconds with an `s`, like `1.25s`; with
-the grid off, plain seconds), start/end pitch as a ratio of the root (`5/4`, `7/4`) or in Hz (`440`), choose the
-profile from the dropdown, **Hold** to make end pitch = start pitch, or delete it (⌫ also
-deletes, Esc deselects, Space plays/stops). Pitches snap to the scale and times to the grid;
-hold **Option** while clicking or dragging for free placement. A note with recorded detail can
-switch back to **Recorded** any time, or **Purge Recorded** to discard it.
+the grid off, plain seconds), start/end pitch as a ratio of the root (`5/4`, `7/4`) or in Hz
+(`440`), choose the profile from the dropdown, **Hold** to make end pitch = start pitch, or
+delete it (⌫ also deletes, Esc deselects, Space plays/stops). Pitches snap to the scale and
+times to the grid; hold **Option** while clicking or dragging for free placement.
+
+A Recorded note's dots and pitch fields show the pitch it actually sounds at each end, and
+changing a note's profile keeps both end pitches where they are - so a capture switched to
+Linear becomes a straight line between the same two pitches, and switching back to
+**Recorded** restores it exactly. **Purge Recorded** discards the recorded detail for good.
 
 **Undo:** ⌘Z undoes the last edit (a whole drag counts as one), ⇧⌘Z redoes; the Edit menu names
 the step. Open, Segment and Capture are undoable steps too.
@@ -172,14 +183,9 @@ Pitch Bend Sensitivity message, RPN 0, on each of its four channels) whenever yo
 change its destination or a channel, change the setting, or press play. A synth that ignores
 that message needs its bend range set by hand to match.
 
-
 ## Panic
 
 The red Panic button force-sends a note-off on every channel either output could plausibly be
 using, regardless of what Seq's own bookkeeping thinks is currently sounding. Use it if
 something gets stuck sounding — a very short note can occasionally slip past Seq's own
 note-tracking.
-
----
-
-*Feedback on this manual, or on Seq itself, welcome — [contact info / link].*

@@ -45,7 +45,7 @@ struct TransportView: View {
                     Image(systemName: sequencer.isPlaying ? "stop.fill" : "play.fill")
                         .font(.title2)
                 }
-                .disabled(!sequencer.hasAnyNotes && !sequencer.isPlaying)
+                .disabled((!sequencer.hasAnyNotes && !sequencer.isPlaying) || liveCapture.isCapturing)
 
                 // Live capture straight from Graph over MIDI (see LiveCaptureState) - no
                 // Save/Open file round trip needed. Loads the raw, unsegmented performance the
@@ -69,7 +69,7 @@ struct TransportView: View {
                         if editing { sequencer.beginScrub() } else { sequencer.endScrub() }
                     }
                 )
-                .disabled(sequencer.isPlaying)
+                .disabled(sequencer.isPlaying || liveCapture.isCapturing)
 
                 Button {
                     let data = SeqMIDICodec.encode(document: sequencer.exportDocument(), scale: sequencer.currentScale, sampleRate: sequencer.sampleRate)

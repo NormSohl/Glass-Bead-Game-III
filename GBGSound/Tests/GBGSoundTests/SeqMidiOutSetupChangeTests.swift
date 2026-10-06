@@ -60,3 +60,54 @@ final class SeqMidiOutSetupChangeTests: XCTestCase {
         XCTAssertNil(out.selectedDestinationIndex)
     }
 }
+
+final class SeqMidiOutSourceTests: XCTestCase {
+    private var client: MIDIClientRef = 0
+
+    override func setUp() { MIDIClientCreate("SourceTestClient" as CFString, nil, nil, &client) }
+    override func tearDown() { MIDIClientDispose(client) }
+
+    private func makeSource(_ name: String) -> MIDIEndpointRef {
+        var endpoint: MIDIEndpointRef = 0
+        MIDISourceCreateWithProtocol(client, name as CFString, ._1_0, &endpoint)
+        return endpoint
+    }
+
+    private func sendNoteOn(from source: MIDIEndpointRef, channel: UInt8) {
+        var packet = MIDIPacket()
+        packet.length = 3
+        packet.data.0 = 0x90 | (channel - 1); packet.data.1 = 60; packet.data.2 = 100
+        var list = MIDIPacketList(numPackets: 1, packet: packet)
+        MIDIReceived(source, &list)
+    }
+
+    private func expectEvent(_ out: SeqMidiOut, from source: MIDIEndpointRef, _ description: String) {
+        let got = expectation(description: description)
+        got.assertForOverFulfill = false
+        out.onEvent = { event in if event.channel == 3 { got.fulfill() } }
+        sendNoteOn(from: source, channel: 3)
+        wait(for: [got], timeout: 2)
+    }
+
+    func testSourceConnectsAndReconnectsByName() {
+        let name = "CapSrc-\(UUID().uuidString.prefix(8))"
+        let first = makeSource(name)
+
+        let out = SeqMidiOut()
+        out.initMidi()
+        out.initMidiInput(name: "CapTest-\(UUID().uuidString.prefix(8))")
+        XCTAssertNotNil(out.connectedSourceIndex, "something is connected from the start")
+        let index = out.midiSources.firstIndex { $0.name == name }!
+        out.setMidiSource(source: index)
+        XCTAssertEqual(out.connectedSourceIndex, index)
+        expectEvent(out, from: first, "event from the chosen source")
+
+        // The source goes away and comes back as a new endpoint with the same name.
+        MIDIEndpointDispose(first)
+        let second = makeSource(name)
+        defer { MIDIEndpointDispose(second) }
+        out.refreshMidiSources()
+        XCTAssertEqual(out.midiSources[out.connectedSourceIndex!].name, name)
+        expectEvent(out, from: second, "event after reconnecting by name")
+    }
+}

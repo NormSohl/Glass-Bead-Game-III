@@ -49,7 +49,20 @@ private let minDwellDurationSeconds = 0.1
 /// no dwell region is found anywhere long enough to count (a pure fast glide, or a note too
 /// short to contain `minDwellDurationSeconds` at all) - never over-splits degenerate input.
 public func segmentPitch(_ note: Note, sampleRate: Double) -> [Note] {
-    guard let samples = note.recordedPitchBend, samples.count > 2 else { return [note] }
+    // Only a note currently playing its recorded contour: one switched to another profile keeps
+    // that choice (its buffer stays, unused, until reselected or purged).
+    guard note.transitionKind == .recordedContour,
+          var samples = note.recordedPitchBend, samples.count > 2 else { return [note] }
+    // The contour rides on a base pitch running start -> end (TransRecordedContour interpolates
+    // linearly). Normally start == end; if an end was moved in the editor they differ, so fold
+    // that glide into the samples, making them all cents relative to startFrequency.
+    if note.endFrequency != note.startFrequency, note.startFrequency > 0, note.endFrequency > 0 {
+        let lastIndex = Double(samples.count - 1)
+        samples = samples.enumerated().map { index, cents in
+            let base = note.startFrequency + (note.endFrequency - note.startFrequency) * Double(index) / lastIndex
+            return cents + 1200 * log2(base / note.startFrequency)
+        }
+    }
     let noteDurationSamples = note.endTime - note.startTime
     guard noteDurationSamples > 0, sampleRate > 0 else { return [note] }
 

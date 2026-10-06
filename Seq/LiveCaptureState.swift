@@ -22,9 +22,9 @@
 //  arming capture - the same "stop first" guard loadDocument already has - so this and
 //  ScorePlayer.advance() (audio-render-thread) never touch these Parts at the same time.
 //
-//  Mirrors Glass Bead Game III/Data/RecordingState.swift's own ActiveGesture/gesture-cursor
-//  pattern, just driven by incoming MIDI note-on/pitch-bend/note-off instead of local touch
-//  begin/end plus a 300Hz settings poll - the rate at which pitch-bend actually arrives here is
+//  Uses the ActiveGesture/gesture-cursor pattern of Graph's former recorder (RecordingState,
+//  removed from Graph 2026-09-28 - this is now the only way a performance reaches Seq), driven
+//  by incoming MIDI note-on/pitch-bend/note-off. The rate at which pitch-bend arrives here is
 //  whatever Graph's own touch-move rate is (Graph sends a MIDI pitch-bend update on every
 //  settings.xFrequency/yFrequency/zFrequency change, i.e. every touch-move frame, not throttled -
 //  see AppSettings/Sound.setXPitch in Graph). X/Y/Z only, same as Graph's own recorder - drone
@@ -65,13 +65,12 @@ final class LiveCaptureState: ObservableObject {
     }
 
     /// One voice's in-progress gesture - nil when that voice isn't currently mid-note.
-    /// referenceFrequency is fixed at note-on, using whatever pitch-bend value is already known
-    /// for that channel at that instant (0/center if none has arrived yet) - Graph's own MPE
-    /// send order puts note-on before the real starting bend, but this doesn't hard-assume that:
-    /// real MIDI transports (Network MIDI especially) can still reorder or drop packets, so a
-    /// pitch-bend-before-note-on arrival is defended against rather than assumed impossible; see
-    /// Sound.beginExternalDrive (Graph target) for the identical assumption already made for the
-    /// same real-world scenario.
+    /// referenceFrequency is the anchor note's pitch at center bend (middle C) - Graph sends
+    /// note-on first and the real pitch in the pitch-bends that follow, and every bend is stored
+    /// as cents relative to this reference. The note's base start/endFrequency therefore sit at
+    /// middle C, with the performance in its Recorded contour; the editor works with the
+    /// sounding pitch (Note.endpointFrequency). A bend arriving before its note-on (possible
+    /// over Network MIDI) is dropped, since there's no gesture to add it to yet.
     private struct ActiveGesture {
         let referenceFrequency: Double
         let startSampleTime: Int
@@ -79,8 +78,8 @@ final class LiveCaptureState: ObservableObject {
     }
     private var activeGestures: [CapturedVoice: ActiveGesture] = [:]
 
-    // Where each voice's Part left off - see RecordingState's identical property for why this
-    // exists (Part's own "always tile contiguously" invariant).
+    // Where each voice's Part left off, so the silence before the next gesture can be filled
+    // with a rest (Part's own "always tile contiguously" invariant).
     private var cursors: [CapturedVoice: Int] = [.x: 0, .y: 0, .z: 0]
 
     init(midi: SeqMidiOut, xPart: Part, yPart: Part, zPart: Part, sampleRateProvider: @escaping () -> Double, pitchBendRangeProvider: @escaping () -> Int) {
@@ -112,15 +111,17 @@ final class LiveCaptureState: ObservableObject {
         didSet { midi.setMidiSource(source: selectedSourceIndex) }
     }
 
-    /// Re-scans for newly-available sources - a Network MIDI connection made after this app
-    /// launched (or a cable plugged in) doesn't show up on its own. See
-    /// SeqMidiOut.refreshMidiSources' own comment.
+    /// Re-scans sources (SequencerState calls this whenever CoreMIDI reports a change, and the
+    /// refresh button does too) and points the picker at whatever SeqMidiOut has connected,
+    /// whose position in the list may have moved.
     func refreshSources() {
         midi.refreshMidiSources()
+        let connected = midi.connectedSourceIndex ?? 0
+        if connected != selectedSourceIndex { selectedSourceIndex = connected }
         objectWillChange.send() // midiSources is computed from midi, so nothing else publishes this
     }
 
-    /// Clears x/y/z and starts fresh, matching Graph's own Record button - drone is left
+    /// Clears x/y/z and starts fresh (undoable - SequencerState checkpoints first) - drone is left
     /// untouched (never captured, see this file's header comment), so anything already there
     /// (e.g. from a prior import) survives.
     private func start() {
@@ -134,8 +135,8 @@ final class LiveCaptureState: ObservableObject {
         onUpdate?()
     }
 
-    /// Immediately finalizes whatever's in progress, same as RecordingState.stopRecording -
-    /// doesn't wait for a note-off that may never arrive (e.g. Graph quit mid-touch).
+    /// Immediately finalizes whatever's in progress - doesn't wait for a note-off that may never
+    /// arrive (e.g. Graph quit mid-touch).
     private func stop() {
         for voice in CapturedVoice.allCases {
             finalizeGesture(voice)
@@ -226,7 +227,7 @@ final class LiveCaptureState: ObservableObject {
         guard endTime > gesture.startSampleTime else {
             // Degenerate (e.g. an instant tap) - writeLiveNote already left a 1-sample note
             // behind for this gesture; turn it back to silence rather than leaving a stray
-            // audible blip, matching RecordingState's own "drop degenerate gestures" behavior.
+            // audible blip.
             let placeholderEnd = gesture.startSampleTime + 1
             part(for: voice).insertNote(startTime: gesture.startSampleTime, endTime: placeholderEnd, startFrequency: gesture.referenceFrequency, endFrequency: gesture.referenceFrequency, amplitude: 0)
             cursors[voice] = placeholderEnd

@@ -3,13 +3,10 @@
 //  Seq
 //
 //  Owns the sequencer's document data (the four voices' Parts), transport/editing state
-//  (playhead, play/scrub/drag state, pan/zoom), and Seq's two output drivers: the internal
-//  synth (Step 2) and, as of Step 3b, a polled MIDI-out engine driving Graph over
-//  SeqMidiOut. Ported from Graph's in-app sequencer and adapted: no AppSettings/Sound
-//  coupling (Seq has no touch graph or crosshair to follow), no sequencerDrivenVoices (that
-//  mechanism only makes sense when a local crosshair exists to drive - Graph's copy keeps it,
-//  Seq's doesn't need it). Both output drivers can be on at once, same as Graph's own
-//  "internal synth" + "MIDI" toggles.
+//  (playhead, play/scrub/drag state, pan/zoom, tools, selection, grid, undo), and Seq's three
+//  outputs: the internal synth, Graph Out (MIDI driving Graph, which follows it on screen), and
+//  Synth Out (MIDI to an external synth). All three can be on at once. Ported from Graph's
+//  in-app sequencer (since removed from Graph) and adapted: no AppSettings/Sound coupling.
 //
 
 import Foundation
@@ -95,8 +92,13 @@ final class SequencerState: ObservableObject {
         if !liveCapture.isCapturing { checkpoint("Capture") }
         liveCapture.toggleCapturing()
     }
-    @Published var graphOutputEnabled: Bool = false
+    // Switching Graph Out off, or to another destination, mid-note sends note-offs first, so
+    // nothing is left hanging on the old receiver.
+    @Published var graphOutputEnabled: Bool = false {
+        didSet { if !graphOutputEnabled { flushGraphMidiOutput() } }
+    }
     @Published var graphDestinationIndex: Int = 0 {
+        willSet { if newValue != graphMidiOut.selectedDestinationIndex { flushGraphMidiOutput() } }
         didSet { graphMidiOut.setMidiDestination(destination: graphDestinationIndex) }
     }
     // Where Graph's virtual destination (graphVirtualDestinationName) sits in the list, kept
@@ -161,7 +163,10 @@ final class SequencerState: ObservableObject {
     // plan) turns it on with that tempo and downbeat; otherwise the person sets BPM by hand.
     // Metadata only: never rewrites existing notes' times on its own.
     @Published var gridEnabled: Bool = false
-    @Published var gridBPM: Double = 120
+    @Published var gridBPM: Double = 120 {
+        // Keeps the grid drawable (an absurd tempo would mean thousands of lines per frame).
+        didSet { if !(20...400).contains(gridBPM) { gridBPM = min(max(gridBPM.isFinite ? gridBPM : 120, 20), 400) } }
+    }
     @Published var beatsPerBar: Int = 4
     // Snap resolution, in divisions per beat (1 = beats, 2 = eighths, 4 = sixteenths in 4/4).
     @Published var gridSubdivision: Int = 4
@@ -187,12 +192,17 @@ final class SequencerState: ObservableObject {
     }
 
     // The scale/root a loaded .mid declared (SeqMIDICodec's document-level metadata) - carried
-    // forward so Save writes the same scale back out, not lost the way it was before this
-    // existed. Defaults to Graph's own out-of-the-box defaults (limit 11, 3/1..1/2, middle C) for
-    // a piece that's never been imported (built from scratch here via Add Note, or opened from a
-    // plain third-party .mid with no scale metadata) - there's no independently-tracked "Seq's
-    // own scale" concept otherwise, so this is the least surprising fallback.
-    @Published private(set) var currentScale = MIDIScaleDefinition(limit: 11, highestRatio: 3.0, lowestRatio: 0.5, rootFrequency: 261.6255653005986)
+    // forward so Save writes the same scale back out, and used by the editor (gridlines, pitch
+    // snapping, ratio display) via editorScale and settings.rootFrequency. Defaults to Graph's
+    // own out-of-the-box defaults (limit 11, 3/1..1/2, middle C) for a piece built from scratch
+    // here, or opened from a plain third-party .mid with no scale metadata.
+    @Published private(set) var currentScale = MIDIScaleDefinition(limit: 11, highestRatio: 3.0, lowestRatio: 0.5, rootFrequency: 261.6255653005986) {
+        didSet {
+            editorScale = Scale(limit: currentScale.limit, highestRatio: currentScale.highestRatio, lowestRatio: currentScale.lowestRatio)
+            settings.rootFrequency = currentScale.rootFrequency
+        }
+    }
+    @Published private(set) var editorScale = Scale(limit: 11, highestRatio: 3.0, lowestRatio: 0.5)
 
     @Published var draggingHandle: DraggingHandle?
 
@@ -222,23 +232,19 @@ final class SequencerState: ObservableObject {
 
     private var playheadTimer: Timer?
 
-    // Internal synth on/off (Step 6 - closing a real gap against the plan's own "three
-    // independent, simultaneously-enable-able outputs" promise: Graph Out/Synth Out already
-    // had their own toggles, internal synth didn't). Gates only the Triad's per-tone
-    // audibility, never audio.startAudio/stopAudio themselves - ScorePlayer.advance() only
-    // ever runs from inside Audio's real-time render callback (Audio.swift's
-    // AVAudioSourceNode block), so the audio engine has to keep running regardless of this
-    // toggle or playback timing/MIDI-out (which reads scorePlayer.currentSample/isPlaying)
-    // would break too, not just go silent.
+    // Internal synth on/off. Gated at the output mixer's volume, not per tone: ScorePlayer
+    // sets every tone's amplitude on every sample, so muting tones would be overwritten
+    // immediately (it was - the switch did nothing during playback). The audio engine itself
+    // keeps running either way, because ScorePlayer.advance() runs inside Audio's render
+    // callback and playback timing and MIDI out (which read scorePlayer.currentSample/
+    // isPlaying) depend on it.
     @Published var internalSynthEnabled: Bool = true {
         didSet { applyInternalSynthEnable() }
     }
 
     private func applyInternalSynthEnable() {
-        audio.triad.enableTriadRootTone(enable: internalSynthEnabled)
-        audio.triad.enableTriadXTone(enable: internalSynthEnabled)
-        audio.triad.enableTriadYTone(enable: internalSynthEnabled)
-        audio.triad.enableTriadZTone(enable: internalSynthEnabled)
+        guard isPlaying || isScrubbing else { return } // play()/beginScrub() apply it on start
+        if internalSynthEnabled { audio.startAudio(amp: 1) } else { audio.stopAudio() }
     }
 
     init(settings: SeqSettings) {
@@ -250,11 +256,6 @@ final class SequencerState: ObservableObject {
             dronePart: dronePart, xPart: xPart, yPart: yPart, zPart: zPart,
             sampleRate: sampleRate)
         audio.scorePlayer = scorePlayer
-        // No touch-based enable-gating exists in Seq - all four voices are simply gated on
-        // internalSynthEnabled alone; whether anything is actually heard beyond that is
-        // governed entirely by whether a Part has a nonzero-amplitude note at the current
-        // playhead.
-        applyInternalSynthEnable()
 
         graphMidiOut.initMidi()
         // One setup-change hook covers everything: the notification is system-wide, and
@@ -268,6 +269,9 @@ final class SequencerState: ObservableObject {
         // Bumps scoreRevision on every mutation liveCapture makes to xPart/yPart/zPart while
         // capturing, so the piano roll redraws live instead of only once capture stops.
         liveCapture.onUpdate = { [weak self] in self?.scoreRevision += 1 }
+        // Views observing only this object (the inspector, the edit lock) need to hear when
+        // capture starts/stops too.
+        captureStateSubscription = liveCapture.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }
         synthMidiOut.initMidi()
         refreshMidiEndpoints()
         pitchBendRangeSubscription = settings.$pitchBendRange
@@ -295,7 +299,8 @@ final class SequencerState: ObservableObject {
 
     // MARK: - MIDI-out engine (shared core, driven per-output below)
 
-    /// Looks up the current note for `voice` at `sample` and drives `output` on `channel`
+    /// Given the note at `sample` (via Part.note(at:), which - unlike getCurrentNote - doesn't
+    /// move the Part's playback cursor that ScorePlayer is using on the audio thread), drives `output` on `channel`
     /// accordingly - fires note-on when a genuinely new Note starts (by reference identity),
     /// sends an updated pitch-bend on every call while the same note keeps sounding (this is
     /// what carries a Transition's glide/curve over MIDI, not just one flat pitch per note),
@@ -338,7 +343,7 @@ final class SequencerState: ObservableObject {
     private func updateGraphMidiOutput(voice: PartVoice, at sample: Int) {
         guard graphOutputEnabled else { return }
         var sounding = graphMidiSoundingNote[voice]
-        driveMidiOutput(graphMidiOut, channel: GraphMidiChannel.forVoice(voice), note: part(for: voice).getCurrentNote(timeSlice: sample), sample: sample, sounding: &sounding)
+        driveMidiOutput(graphMidiOut, channel: GraphMidiChannel.forVoice(voice), note: part(for: voice).note(at: sample), sample: sample, sounding: &sounding)
         graphMidiSoundingNote[voice] = sounding
     }
 
@@ -364,9 +369,10 @@ final class SequencerState: ObservableObject {
     // RPN 0 follows Seq's setting by itself. Gear that ignores RPN still needs setting by hand.
     private let synthMidiOut = SeqMidiOut()
     @Published var synthOutputEnabled: Bool = false {
-        didSet { if synthOutputEnabled { sendSynthPitchBendRange() } }
+        didSet { if synthOutputEnabled { sendSynthPitchBendRange() } else { flushSynthMidiOutput() } }
     }
     @Published var synthDestinationIndex: Int = 0 {
+        willSet { if newValue != synthMidiOut.selectedDestinationIndex { flushSynthMidiOutput() } }
         didSet {
             synthMidiOut.setMidiDestination(destination: synthDestinationIndex)
             sendSynthPitchBendRange()
@@ -405,12 +411,15 @@ final class SequencerState: ObservableObject {
         liveCapture?.refreshSources()
     }
 
-    @Published var synthDroneChannel: Int = 1 { didSet { sendSynthPitchBendRange() } }
-    @Published var synthXChannel: Int = 2 { didSet { sendSynthPitchBendRange() } }
-    @Published var synthYChannel: Int = 3 { didSet { sendSynthPitchBendRange() } }
-    @Published var synthZChannel: Int = 4 { didSet { sendSynthPitchBendRange() } }
+    // willSet flushes while the old channel is still current, so its note-off goes where the
+    // note-on went.
+    @Published var synthDroneChannel: Int = 1 { willSet { flushSynthMidiOutput() } didSet { sendSynthPitchBendRange() } }
+    @Published var synthXChannel: Int = 2 { willSet { flushSynthMidiOutput() } didSet { sendSynthPitchBendRange() } }
+    @Published var synthYChannel: Int = 3 { willSet { flushSynthMidiOutput() } didSet { sendSynthPitchBendRange() } }
+    @Published var synthZChannel: Int = 4 { willSet { flushSynthMidiOutput() } didSet { sendSynthPitchBendRange() } }
 
     private var pitchBendRangeSubscription: AnyCancellable?
+    private var captureStateSubscription: AnyCancellable?
 
     /// RPN 0 (Pitch Bend Sensitivity) on every channel Synth Out uses, once each. `semitones`
     /// is passed explicitly by the settings subscription, which fires before the new value is
@@ -437,7 +446,7 @@ final class SequencerState: ObservableObject {
     private func updateSynthMidiOutput(voice: PartVoice, at sample: Int) {
         guard synthOutputEnabled else { return }
         var sounding = synthMidiSoundingNote[voice]
-        driveMidiOutput(synthMidiOut, channel: synthChannel(for: voice), note: part(for: voice).getCurrentNote(timeSlice: sample), sample: sample, sounding: &sounding)
+        driveMidiOutput(synthMidiOut, channel: synthChannel(for: voice), note: part(for: voice).note(at: sample), sample: sample, sounding: &sounding)
         synthMidiSoundingNote[voice] = sounding
     }
 
@@ -445,8 +454,7 @@ final class SequencerState: ObservableObject {
         flushMidiOutput(synthMidiOut, sounding: &synthMidiSoundingNote, channelForVoice: synthChannel(for:))
     }
 
-    /// Called by PianoRollView while a drone note's handle is being dragged, alongside the note
-    /// mutation itself, so RootIndicatorView shows the same value live.
+    /// Called while a drone note is being edited, so RootIndicatorView shows the same value live.
     func updateDrivenDroneDisplay(frequency: Double, amplitude: Double) {
         drivenDroneFrequency = frequency
         drivenDroneAmplitude = amplitude
@@ -455,9 +463,11 @@ final class SequencerState: ObservableObject {
     // MARK: - Playback
 
     func play() {
-        guard hasAnyNotes, !isPlaying, !isScrubbing else { return }
+        // Not while capturing: capture rewrites the Parts that ScorePlayer would be reading on
+        // the audio thread.
+        guard hasAnyNotes, !isPlaying, !isScrubbing, !isEditingLocked else { return }
         sendSynthPitchBendRange() // in case the synth was switched on or reset since
-        audio.startAudio(amp: 1)
+        if internalSynthEnabled { audio.startAudio(amp: 1) }
         scorePlayer.start(atSample: playheadSample)
         isPlaying = true
         startPlayheadPolling()
@@ -495,9 +505,6 @@ final class SequencerState: ObservableObject {
 
     private func pollPlayback() {
         playheadSample = scorePlayer.currentSample
-        if let f = scorePlayer.currentXFrequency { settings.xFrequency = f }
-        if let f = scorePlayer.currentYFrequency { settings.yFrequency = f }
-        if let f = scorePlayer.currentZFrequency { settings.zFrequency = f }
         drivenDroneFrequency = scorePlayer.currentDroneFrequency
         for voice in PartVoice.allCases {
             updateGraphMidiOutput(voice: voice, at: playheadSample)
@@ -511,38 +518,19 @@ final class SequencerState: ObservableObject {
     // MARK: - Scrub
 
     func beginScrub() {
-        guard !isPlaying else { return }
+        guard !isPlaying, !isEditingLocked else { return }
         isScrubbing = true
-        audio.startAudio(amp: 1)
+        if internalSynthEnabled { audio.startAudio(amp: 1) }
     }
 
-    /// Random-access preview of the score at `sample`: looks up each voice's chord directly
-    /// (Part.getCurrentNote is documented as fine for occasional/discrete lookups, not
-    /// real-time-loop use - exactly this case) rather than stepping ScorePlayer through every
-    /// intervening sample.
+    /// Random-access preview of the score at `sample`: the internal synth sounds what's there
+    /// (ScorePlayer.preview sets each voice's pitch and level), and both MIDI outputs follow.
     func scrub(to sample: Int) {
+        guard isScrubbing else { return }
         playheadSample = max(0, sample)
-
-        for voice in [PartVoice.x, .y, .z] {
-            guard let note = part(for: voice).getCurrentNote(timeSlice: playheadSample), note.amplitude > 0 else { continue }
-            let frequency = note.getCurrentFrequency(percentComplete: note.percentComplete(at: playheadSample))
-            switch voice {
-            case .x: settings.xFrequency = frequency; audio.triad.setTriadXPitch(frequency: frequency)
-            case .y: settings.yFrequency = frequency; audio.triad.setTriadYPitch(frequency: frequency)
-            case .z: settings.zFrequency = frequency; audio.triad.setTriadZPitch(frequency: frequency)
-            case .drone: break // loop only ever visits x/y/z - drone is handled separately below
-            }
-        }
-
-        if let note = dronePart.getCurrentNote(timeSlice: playheadSample), note.amplitude > 0 {
-            let frequency = note.getCurrentFrequency(percentComplete: note.percentComplete(at: playheadSample))
-            audio.triad.setTriadRootPitch(frequency: frequency)
-            drivenDroneFrequency = frequency
-            drivenDroneAmplitude = note.getCurrentAmplitude(percentComplete: note.percentComplete(at: playheadSample))
-        } else {
-            drivenDroneFrequency = nil
-            drivenDroneAmplitude = nil
-        }
+        scorePlayer.preview(atSample: playheadSample)
+        drivenDroneFrequency = scorePlayer.currentDroneFrequency
+        drivenDroneAmplitude = dronePart.note(at: playheadSample).map { $0.getCurrentAmplitude(percentComplete: $0.percentComplete(at: playheadSample)) }
 
         for voice in PartVoice.allCases {
             updateGraphMidiOutput(voice: voice, at: playheadSample)
@@ -553,6 +541,7 @@ final class SequencerState: ObservableObject {
     func endScrub() {
         guard isScrubbing else { return }
         isScrubbing = false
+        scorePlayer.stop() // silences the voices preview left sounding
         audio.stopAudio()
         flushGraphMidiOutput()
         flushSynthMidiOutput()
@@ -607,8 +596,8 @@ final class SequencerState: ObservableObject {
     /// every armed voice has a note in this step, the cursor advances by the note duration -
     /// so a three-voice chord is three taps, and they all start together like Graph's chord.
     func enterStep(frequency: Double) {
-        guard let voice = nextStepVoice else { return }
-        insertHeldNote(voice: voice, at: playheadSample, frequency: frequency)
+        guard let voice = nextStepVoice,
+              insertHeldNote(voice: voice, at: playheadSample, frequency: frequency) else { return }
         if stepVoiceIndex + 1 >= armedStepVoices.count {
             advanceStep()
         } else {
@@ -630,12 +619,14 @@ final class SequencerState: ObservableObject {
         stepVoiceIndex = 0
     }
 
-    private func insertHeldNote(voice: PartVoice, at time: Int, frequency: Double) {
-        guard prepareForEdit() else { return }
+    @discardableResult
+    private func insertHeldNote(voice: PartVoice, at time: Int, frequency: Double) -> Bool {
+        guard prepareForEdit() else { return false }
         checkpoint("Add Note")
         let note = part(for: voice).placeNote(startTime: time, endTime: time + noteDurationSamples, startFrequency: frequency, endFrequency: frequency)
         selection = NoteSelection(voice: voice, note: note)
         scoreRevision += 1
+        return true
     }
 
     // MARK: - Note editing (handles, body drag, inspector)
@@ -686,18 +677,18 @@ final class SequencerState: ObservableObject {
         applyPitch(edge, of: selection, frequency: frequency)
     }
 
+    /// `frequency` is the pitch the note should sound at that end (what the handle and the
+    /// inspector show) - for a Recorded note that differs from its base start/endFrequency.
     private func applyPitch(_ edge: NoteEdge, of selection: NoteSelection, frequency: Double) {
         guard frequency > 0 else { return }
-        switch edge {
-        case .start: selection.note.startFrequency = frequency
-        case .end: selection.note.endFrequency = frequency
-        }
+        selection.note.setEndpointFrequency(edge, to: frequency)
         showDrivenFrequency(voice: selection.voice, frequency: frequency, amplitude: selection.note.amplitude)
         scoreRevision += 1
     }
 
     /// Moves a whole note: its start to `startTime` (length kept, stopping at neighbors) and
-    /// both pitches to the given values - what a body drag does.
+    /// its base pitches to the given values - what a body drag does (it scales both by one
+    /// ratio, which moves the sounding pitch, contour and all, by that ratio).
     func moveNote(_ selection: NoteSelection, startTime: Int, startFrequency: Double, endFrequency: Double) {
         guard prepareForEdit() else { return }
         part(for: selection.voice).moveNote(selection.note, toStart: startTime)
@@ -710,13 +701,13 @@ final class SequencerState: ObservableObject {
     func setProfile(_ kind: TransitionKind, of selection: NoteSelection) {
         guard prepareForEdit(), kind != selection.note.transitionKind else { return }
         checkpoint("Change Profile")
-        selection.note.selectTransition(kind)
+        selection.note.selectProfile(kind) // keeps the pitch at both ends
         scoreRevision += 1
     }
 
     /// Turns a bend back into a held note: end pitch = start pitch.
     func holdPitch(of selection: NoteSelection) {
-        setPitch(.end, of: selection, frequency: selection.note.startFrequency, actionName: "Hold Pitch")
+        setPitch(.end, of: selection, frequency: selection.note.endpointFrequency(.start), actionName: "Hold Pitch")
     }
 
     /// Drops a note's recorded contour buffer, falling back to Linear first if that contour is
@@ -725,7 +716,7 @@ final class SequencerState: ObservableObject {
         guard prepareForEdit() else { return }
         checkpoint("Purge Recorded Data")
         if selection.note.transitionKind == .recordedContour {
-            selection.note.selectTransition(.linear)
+            selection.note.selectProfile(.linear)
         }
         selection.note.recordedPitchBend = nil
         scoreRevision += 1
@@ -739,13 +730,10 @@ final class SequencerState: ObservableObject {
         scoreRevision += 1
     }
 
+    /// Drone has no line of its own on screen beyond the piano roll, so its edits also show on
+    /// the root indicator strip.
     private func showDrivenFrequency(voice: PartVoice, frequency: Double, amplitude: Double) {
-        switch voice {
-        case .x: settings.xFrequency = frequency
-        case .y: settings.yFrequency = frequency
-        case .z: settings.zFrequency = frequency
-        case .drone: updateDrivenDroneDisplay(frequency: frequency, amplitude: amplitude)
-        }
+        if voice == .drone { updateDrivenDroneDisplay(frequency: frequency, amplitude: amplitude) }
     }
 
     // MARK: - Undo
@@ -768,12 +756,9 @@ final class SequencerState: ObservableObject {
     }
 
     private func restore(_ snapshot: [PartVoice: PartSnapshot], actionName: String) {
-        // Undo can't run while capture is writing into the Parts; put the step back so it isn't lost.
-        guard prepareForEdit() else {
-            undoManager?.registerUndo(withTarget: self) { $0.restore(snapshot, actionName: actionName) }
-            undoManager?.setActionName(actionName)
-            return
-        }
+        // Undo during a capture ends the capture first (the newest step is the capture itself).
+        stopCaptureIfNeeded()
+        guard prepareForEdit() else { return }
         checkpoint(actionName) // the redo (or, when redoing, the next undo)
         for (voice, partSnapshot) in snapshot { part(for: voice).restore(partSnapshot) }
         if let selection, !part(for: selection.voice).soundingNotes.contains(where: { $0 === selection.note }) {
@@ -781,6 +766,12 @@ final class SequencerState: ObservableObject {
         }
         stepVoiceIndex = 0
         scoreRevision += 1
+    }
+
+    /// Open, Segment and Undo replace the Parts wholesale, so a capture writing into them is
+    /// finished first rather than left racing them.
+    private func stopCaptureIfNeeded() {
+        if liveCapture.isCapturing { liveCapture.toggleCapturing() }
     }
 
     // MARK: - Save/load (Step 5)
@@ -796,6 +787,7 @@ final class SequencerState: ObservableObject {
     /// ScorePlayer.advance() mid-playback would be exactly the unsynchronized-mutation risk
     /// that guard exists to avoid.
     func loadDocument(_ document: SeqDocument, scale: MIDIScaleDefinition? = nil, actionName: String = "Open") {
+        stopCaptureIfNeeded()
         if isPlaying { stop() }
         if isScrubbing { endScrub() }
         checkpoint(actionName)
@@ -823,9 +815,9 @@ final class SequencerState: ObservableObject {
     /// Whether `document` looks like a raw, unsegmented live recording - any note across its
     /// four parts still carrying an active `.recordedContour` transition - rather than a normal
     /// hand-edited or already-segmented piece. Checked directly against the decoded DTOs (no
-    /// Part instantiation needed, since `NoteDTO.transitionKind` is already public). See
-    /// RecordingState in the Graph target - the only current producer of documents shaped this
-    /// way (always one long recordedContour note per touch-gesture, per voice).
+    /// Part instantiation needed, since `NoteDTO.transitionKind` is already public). Produced
+    /// today by saving a live capture before segmenting it (one long recordedContour note per
+    /// touch gesture, per voice), or by files from older GBG III builds that could record.
     static func looksLikeRawRecording(_ document: SeqDocument) -> Bool {
         [document.dronePart, document.xPart, document.yPart, document.zPart]
             .flatMap { $0.notes }
@@ -855,6 +847,7 @@ final class SequencerState: ObservableObject {
     /// TempoDetection.swift's own doc comment). Doesn't touch currentScale - segmenting in place
     /// has no new scale information of its own to offer.
     func applySegmentation() {
+        stopCaptureIfNeeded()
         let segmentedDrone = dronePart.segmentAllNotes(sampleRate: sampleRate)
         let segmentedX = xPart.segmentAllNotes(sampleRate: sampleRate)
         let segmentedY = yPart.segmentAllNotes(sampleRate: sampleRate)

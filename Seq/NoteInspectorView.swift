@@ -3,8 +3,10 @@
 //  Seq
 //
 //  Exact editing for the selected note: start/end time (bar.beat.division with the grid on,
-//  seconds otherwise - "1.25s" works either way), start/end pitch (a scale ratio like "5/4", or Hz), and the profile dropdown that shapes the bend between them. A held note is
-//  just a bend with equal pitches, so "Hold" sets end pitch = start pitch.
+//  seconds otherwise - "1.25s" works either way), start/end pitch (a scale ratio like "5/4",
+//  or Hz), and the profile dropdown that shapes the bend between them. Pitches are what the
+//  note sounds at each end (a Recorded note's include its contour). A held note is just a bend
+//  with equal pitches, so "Hold" sets end pitch = start pitch.
 //
 
 import SwiftUI
@@ -63,20 +65,20 @@ struct NoteInspectorView: View {
         Divider().frame(height: 20)
 
         labeled("Pitch") {
-            CommitField(value: pitch(note.startFrequency), width: 80) { text in
+            CommitField(value: pitch(note.endpointFrequency(.start)), width: 80) { text in
                 guard let f = PitchText.parse(text, rootFrequency: settings.rootFrequency) else { return false }
                 sequencer.setPitch(.start, of: selection, frequency: f)
                 return true
             }
         }
         Image(systemName: "arrow.right").foregroundStyle(.secondary)
-        CommitField(value: pitch(note.endFrequency), width: 80) { text in
+        CommitField(value: pitch(note.endpointFrequency(.end)), width: 80) { text in
             guard let f = PitchText.parse(text, rootFrequency: settings.rootFrequency) else { return false }
             sequencer.setPitch(.end, of: selection, frequency: f)
             return true
         }
         Button("Hold") { sequencer.holdPitch(of: selection) }
-            .disabled(note.endFrequency == note.startFrequency)
+            .disabled(abs(note.endpointFrequency(.end) / note.endpointFrequency(.start) - 1) < 1e-9)
             .help("Make it a held note: end pitch = start pitch")
 
         Picker("Profile", selection: Binding(

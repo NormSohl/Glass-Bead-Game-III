@@ -159,3 +159,59 @@ public extension Part {
         currentNoteIndex = 0
     }
 }
+
+public extension Part {
+    /// The note covering `time` (start inclusive, end exclusive - the same rule ScorePlayer
+    /// plays by), or nil past the end. Unlike `getCurrentNote`, this leaves the Part's playback
+    /// cursor alone and logs nothing, so it's safe to call from the main thread while
+    /// ScorePlayer is advancing the same Part on the audio thread.
+    func note(at time: Int) -> Note? {
+        var low = 0, high = notes.count - 1
+        while low <= high {
+            let mid = (low + high) / 2
+            let candidate = notes[mid]
+            if time < candidate.startTime { high = mid - 1 }
+            else if time >= candidate.endTime { low = mid + 1 }
+            else { return candidate }
+        }
+        return nil
+    }
+}
+
+/// The pitch a note actually sounds at each end. For most profiles that's just
+/// startFrequency/endFrequency; a Recorded note adds its contour's cents offset on top, so its
+/// real endpoints can sit well away from those base values (a raw live capture's base is the
+/// MIDI anchor pitch, middle C). Editing goes through these so handles sit on the drawn line and
+/// typed pitches mean what you hear.
+public extension Note {
+    func endpointFrequency(_ edge: NoteEdge) -> Double {
+        getCurrentFrequency(percentComplete: edge == .start ? 0 : 1)
+    }
+
+    /// Sets the pitch this note sounds at `edge` to `frequency`, by adjusting the base pitch at
+    /// that end. Every profile but the legacy Flat runs its base from start (at 0) to end (at 1),
+    /// so this is exact; a Flat note is first converted to its equal-pitch Linear equivalent.
+    func setEndpointFrequency(_ edge: NoteEdge, to frequency: Double) {
+        guard frequency > 0 else { return }
+        if transitionKind == .flat {
+            endFrequency = startFrequency
+            selectTransition(.linear)
+        }
+        let offsetFactor = pow(2, transition.centsOffset(percentComplete: edge == .start ? 0 : 1) / 1200)
+        switch edge {
+        case .start: startFrequency = frequency / offsetFactor
+        case .end: endFrequency = frequency / offsetFactor
+        }
+    }
+
+    /// Switches the profile while keeping the pitches the note sounds at both ends. Without
+    /// this, turning a raw Recorded capture to Linear would drop it to its middle-C base; with
+    /// it, Recorded -> Linear -> Recorded comes back exactly.
+    func selectProfile(_ kind: TransitionKind) {
+        let start = endpointFrequency(.start)
+        let end = endpointFrequency(.end)
+        selectTransition(kind == .flat ? .linear : kind)
+        setEndpointFrequency(.start, to: start)
+        setEndpointFrequency(.end, to: end)
+    }
+}

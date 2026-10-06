@@ -119,6 +119,31 @@ public class ScorePlayer {
         currentZFrequency = nil
     }
 
+    /// Scrub preview: sets every voice's pitch and amplitude to what the score has at `sample`
+    /// (silence where a voice has a rest or has run out), without starting playback. Main-thread
+    /// only and only while not playing - advance() no-ops then, so nothing else is driving
+    /// `triad`. Uses Part.note(at:), which leaves the Parts' playback cursors alone. Call stop()
+    /// afterward to silence everything again.
+    public func preview(atSample sample: Int) {
+        guard !isPlaying else { return }
+        currentDroneFrequency = previewVoice(dronePart, at: sample, setPitch: triad.setTriadRootPitch, setAmplitude: triad.setTriadRootAmplitude)
+        currentXFrequency = previewVoice(xPart, at: sample, setPitch: triad.setTriadXPitch, setAmplitude: triad.setTriadXAmplitude)
+        currentYFrequency = previewVoice(yPart, at: sample, setPitch: triad.setTriadYPitch, setAmplitude: triad.setTriadYAmplitude)
+        currentZFrequency = previewVoice(zPart, at: sample, setPitch: triad.setTriadZPitch, setAmplitude: triad.setTriadZAmplitude)
+    }
+
+    private func previewVoice(_ part: Part?, at sample: Int, setPitch: (Double) -> Void, setAmplitude: (Double) -> Void) -> Double? {
+        guard let part, let note = part.note(at: sample), note.amplitude > 0 else {
+            setAmplitude(0)
+            return nil
+        }
+        let percentComplete = note.percentComplete(at: sample)
+        let frequency = note.getCurrentFrequency(percentComplete: percentComplete)
+        setPitch(frequency)
+        setAmplitude(note.getCurrentAmplitude(percentComplete: percentComplete))
+        return frequency
+    }
+
     /// Advances playback by exactly one sample, pushing this sample's pitch/amplitude for each
     /// active voice into `triad`. Real-time safe: no allocation, no locking, just array
     /// indexing (Part's O(1) getNextNote) and floating-point math. Call once per sample, before

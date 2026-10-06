@@ -281,3 +281,42 @@ final class TempoDetectionTests: XCTestCase {
         XCTAssertNil(result)
     }
 }
+
+final class SegmentationEditedNoteTests: XCTestCase {
+    let sampleRate = 44100.0
+
+    /// Two 1-second dwells, at 0 and +700 cents, joined by a fast glide.
+    private func twoDwellNote() -> Note {
+        var samples = [Double](repeating: 0, count: 100)
+        samples += (0..<20).map { 700 * Double($0) / 19 }
+        samples += [Double](repeating: 700, count: 100)
+        return Part(name: "t").insertRecordedNote(startTime: 0, endTime: Int(2.2 * sampleRate), startFrequency: 440, endFrequency: 440, amplitude: 1, recordedPitchBend: samples)
+    }
+
+    func testNoteSwitchedAwayFromRecordedIsLeftAlone() {
+        let note = twoDwellNote()
+        note.selectProfile(.linear)
+        let result = segmentPitch(note, sampleRate: sampleRate)
+        XCTAssertEqual(result.count, 1)
+        XCTAssertTrue(result[0] === note)
+    }
+
+    func testMovedEndIsAccountedFor() {
+        // Raise the sounding end pitch by a fifth: the base now glides 440 -> 660 under the
+        // contour, so the second dwell really sounds a fifth higher than it did.
+        let note = twoDwellNote()
+        let originalEnd = note.endpointFrequency(.end)
+        note.setEndpointFrequency(.end, to: originalEnd * 1.5)
+        XCTAssertNotEqual(note.endFrequency, note.startFrequency)
+
+        let pieces = segmentPitch(note, sampleRate: sampleRate)
+        XCTAssertEqual(pieces.count, 2)
+        for piece in pieces {
+            // Each piece must sound what the edited note sounded over the same span.
+            let middle = (piece.startTime + piece.endTime) / 2
+            let expected = note.getCurrentFrequency(percentComplete: note.percentComplete(at: middle))
+            let actual = piece.getCurrentFrequency(percentComplete: piece.percentComplete(at: middle))
+            XCTAssertEqual(1200 * log2(actual / expected), 0, accuracy: 15, "piece at \(piece.startTime)")
+        }
+    }
+}

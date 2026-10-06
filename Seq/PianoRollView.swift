@@ -112,8 +112,9 @@ struct PianoRollView: View {
     @State private var dragDecided = false
     @State private var pendingHit: DraggingHandle?
     @State private var panStartOffsetSamples: Int?
-    // A body drag's starting point, so the move is applied relative to it (not accumulated).
-    @State private var bodyOrigin: (startTime: Int, startFrequency: Double, endFrequency: Double)?
+    // A body drag's starting point, so the move is applied relative to it (not accumulated):
+    // the note's start time, its base pitches, and the pitch it sounds at its start (what snaps).
+    @State private var bodyOrigin: (startTime: Int, startFrequency: Double, endFrequency: Double, soundingStart: Double)?
     // Pitch/time readout drawn next to the cursor while dragging.
     @State private var readout: (location: CGPoint, text: String)?
     @FocusState private var isFocused: Bool
@@ -318,10 +319,11 @@ struct PianoRollView: View {
         context.draw(resolved, at: origin, anchor: .topLeading)
     }
 
+    // On the drawn line's own ends - the pitch the note sounds there, which for a Recorded note
+    // includes its contour, not just the base start/endFrequency.
     private func handleLocation(note: Note, edge: NoteEdge, height: Double = pianoRollCanvasSize.height) -> CGPoint {
         let sample = edge == .start ? note.startTime : note.endTime
-        let frequency = edge == .start ? note.startFrequency : note.endFrequency
-        return CGPoint(x: screenX(sample), y: screenY(frequency, height: height))
+        return CGPoint(x: screenX(sample), y: screenY(note.endpointFrequency(edge), height: height))
     }
 
     // MARK: - Hit testing
@@ -394,7 +396,7 @@ struct PianoRollView: View {
                     dragDecided = true
                     if let hit = pendingHit, !sequencer.isEditingLocked {
                         sequencer.beginDraggingHandle(hit)
-                        bodyOrigin = (hit.note.startTime, hit.note.startFrequency, hit.note.endFrequency)
+                        bodyOrigin = (hit.note.startTime, hit.note.startFrequency, hit.note.endFrequency, hit.note.endpointFrequency(.start))
                     } else {
                         panStartOffsetSamples = sequencer.offsetSamples
                     }
@@ -470,16 +472,20 @@ struct PianoRollView: View {
             guard let origin = bodyOrigin, let start = dragStartLocation else { return }
             let deltaSamples = sample(atX: location.x) - sample(atX: start.x)
             let newStart = snapTime(origin.startTime + deltaSamples)
-            // Pitch moves as a ratio, so a bend keeps its interval; the start pitch is what snaps.
-            let ratio = frequency(atY: location.y) / frequency(atY: start.y)
-            let newStartFrequency = snapPitch(origin.startFrequency * ratio)
-            let newEndFrequency = origin.endFrequency * (newStartFrequency / origin.startFrequency)
-            sequencer.moveNote(selection, startTime: newStart, startFrequency: newStartFrequency, endFrequency: newEndFrequency)
-            readout = (location, "\(PitchText.format(newStartFrequency, rootFrequency: settings.rootFrequency, scale: scale))  ·  \(timeLabel(dragging.note.startTime))")
+            // Pitch moves as one ratio, so a bend keeps its interval (and a Recorded note its
+            // contour); the pitch the note sounds at its start is what snaps.
+            let dragRatio = frequency(atY: location.y) / frequency(atY: start.y)
+            let soundingStart = snapPitch(origin.soundingStart * dragRatio)
+            let ratio = soundingStart / origin.soundingStart
+            sequencer.moveNote(selection, startTime: newStart, startFrequency: origin.startFrequency * ratio, endFrequency: origin.endFrequency * ratio)
+            readout = (location, "\(PitchText.format(soundingStart, rootFrequency: settings.rootFrequency, scale: scale))  ·  \(timeLabel(dragging.note.startTime))")
         }
     }
 
+    // Same format as the inspector's time fields: bar.beat.division on the grid, seconds off it.
     private func timeLabel(_ sample: Int) -> String {
-        pianoRollTimeLabel(sample: sample, sampleRate: sequencer.sampleRate, tempo: sequencer.activeTempo, beatsPerBar: sequencer.beatsPerBar, subdivision: sequencer.gridSubdivision)
+        let grid = sequencer.timeGrid
+        let text = TimeText.format(sample, grid: grid, sampleRate: sequencer.sampleRate)
+        return grid == nil ? text + "s" : text
     }
 }

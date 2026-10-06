@@ -279,3 +279,67 @@ final class PartSnapshotTests: XCTestCase {
         XCTAssertEqual(a.transitionKind, .recordedContour)
     }
 }
+
+final class NoteLookupAndEndpointTests: XCTestCase {
+    func testNoteAtUsesHalfOpenSpansAndLeavesCursorAlone() {
+        let part = Part(name: "test")
+        let a = part.placeNote(startTime: 100, endTime: 200, startFrequency: 440, endFrequency: 440)
+        let b = part.placeNote(startTime: 200, endTime: 300, startFrequency: 550, endFrequency: 550)
+        part.currentNoteIndex = 2
+        XCTAssertEqual(part.note(at: 0)?.amplitude, 0) // leading rest
+        XCTAssertTrue(part.note(at: 100) === a)
+        XCTAssertTrue(part.note(at: 199) === a)
+        XCTAssertTrue(part.note(at: 200) === b)
+        XCTAssertNil(part.note(at: 300))
+        XCTAssertNil(Part(name: "empty").note(at: 0))
+        XCTAssertEqual(part.currentNoteIndex, 2)
+    }
+
+    private func recordedNote() -> Note {
+        // A raw capture: base at middle C, contour from +700 to +400 cents.
+        let part = Part(name: "test")
+        return part.insertRecordedNote(startTime: 0, endTime: 100, startFrequency: 261.63, endFrequency: 261.63, amplitude: 1, recordedPitchBend: [700, 500, 400])
+    }
+
+    func testEndpointsIncludeRecordedContour() {
+        let note = recordedNote()
+        XCTAssertEqual(note.endpointFrequency(.start), 261.63 * pow(2, 7.0 / 12), accuracy: 1e-6)
+        XCTAssertEqual(note.endpointFrequency(.end), 261.63 * pow(2, 4.0 / 12), accuracy: 1e-6)
+    }
+
+    func testSetEndpointHitsTheSoundingPitch() {
+        let note = recordedNote()
+        note.setEndpointFrequency(.start, to: 440)
+        note.setEndpointFrequency(.end, to: 330)
+        XCTAssertEqual(note.endpointFrequency(.start), 440, accuracy: 1e-9)
+        XCTAssertEqual(note.endpointFrequency(.end), 330, accuracy: 1e-9)
+
+        let plain = Part(name: "p").placeNote(startTime: 0, endTime: 10, startFrequency: 440, endFrequency: 440, profile: .easeIn)
+        plain.setEndpointFrequency(.end, to: 660)
+        XCTAssertEqual(plain.endFrequency, 660)
+        XCTAssertEqual(plain.endpointFrequency(.end), 660, accuracy: 1e-9)
+    }
+
+    func testSetEndpointOnLegacyFlatConvertsFirst() {
+        let note = Part(name: "p").insertNote(startTime: 0, endTime: 10, startFrequency: 440, endFrequency: 999, amplitude: 1)
+        note.setEndpointFrequency(.end, to: 550)
+        XCTAssertEqual(note.transitionKind, .linear)
+        XCTAssertEqual(note.startFrequency, 440)
+        XCTAssertEqual(note.endpointFrequency(.end), 550, accuracy: 1e-9)
+    }
+
+    func testProfileSwitchKeepsEndpointsAndRoundTrips() {
+        let note = recordedNote()
+        let start = note.endpointFrequency(.start), end = note.endpointFrequency(.end)
+        let middle = note.getCurrentFrequency(percentComplete: 0.5)
+
+        note.selectProfile(.linear)
+        XCTAssertEqual(note.endpointFrequency(.start), start, accuracy: 1e-9)
+        XCTAssertEqual(note.endpointFrequency(.end), end, accuracy: 1e-9)
+
+        note.selectProfile(.recordedContour)
+        XCTAssertEqual(note.startFrequency, 261.63, accuracy: 1e-9)
+        XCTAssertEqual(note.endFrequency, 261.63, accuracy: 1e-9)
+        XCTAssertEqual(note.getCurrentFrequency(percentComplete: 0.5), middle, accuracy: 1e-9)
+    }
+}

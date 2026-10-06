@@ -43,37 +43,8 @@ func pianoRollNiceTimeStepSeconds(pixelsPerSecond: Double, targetPixelSpacing: D
     return niceResidual * magnitude
 }
 
-// One beat period, in samples, for a detected tempo - shared by the bar-line overlay (drawing)
-// and the handle-drag snap check (step 4 of the live-record plan), so both agree on exactly
-// where the grid lines actually are.
+// One beat period, in samples - shared by grid drawing, the ruler, grid snapping and beat-based
+// note lengths, so they all agree on where the beats are.
 func pianoRollBeatPeriodSamples(tempo: TempoInfo, sampleRate: Double) -> Double {
     60.0 / tempo.bpm * sampleRate
-}
-
-// The nearest beat-grid sample to `sample`, given a detected tempo - `tempo.downbeatOffset` plus
-// the nearest whole multiple of the beat period. Pure rounding, no threshold check - callers
-// decide separately (PianoRollView's own snap-window logic) whether `sample` was actually close
-// enough to this to snap to it.
-func pianoRollNearestBeatSample(to sample: Int, tempo: TempoInfo, sampleRate: Double) -> Int {
-    let periodSamples = pianoRollBeatPeriodSamples(tempo: tempo, sampleRate: sampleRate)
-    guard periodSamples > 0 else { return sample }
-    let beatIndex = ((Double(sample) - Double(tempo.downbeatOffset)) / periodSamples).rounded()
-    return tempo.downbeatOffset + Int((beatIndex * periodSamples).rounded())
-}
-
-// A time position as people read it: "bar.beat.division" (all 1-based) with a beat grid, plain
-// seconds without one. Off-grid positions (an Option-drag) floor to the division they fall in.
-func pianoRollTimeLabel(sample: Int, sampleRate: Double, tempo: TempoInfo?, beatsPerBar: Int, subdivision: Int) -> String {
-    guard let tempo else { return String(format: "%.3fs", Double(sample) / sampleRate) }
-    let period = pianoRollBeatPeriodSamples(tempo: tempo, sampleRate: sampleRate)
-    guard period > 0 else { return String(format: "%.3fs", Double(sample) / sampleRate) }
-    let divisions = max(1, subdivision)
-    let totalDivisions = Int((Double(sample - tempo.downbeatOffset) / period * Double(divisions) + 1e-6).rounded(.down))
-    let perBar = max(1, beatsPerBar) * divisions
-    // Floor-division, so positions before the downbeat count down into bar 0, -1, ...
-    let bar = Int((Double(totalDivisions) / Double(perBar)).rounded(.down))
-    let withinBar = totalDivisions - bar * perBar
-    let beat = withinBar / divisions + 1
-    let division = withinBar % divisions + 1
-    return divisions > 1 ? "\(bar + 1).\(beat).\(division)" : "\(bar + 1).\(beat)"
 }

@@ -107,9 +107,18 @@ public class SeqMidiOut {
     // "Synth Out" connection has no reason to receive anything.
     private var virtualDestination: MIDIEndpointRef = 0
     private var inPort: MIDIPortRef = 0
-    private var sourceNum = 0
-    private var sourceConnected = false
+    // The connected source, by endpoint (like selectedDestination), plus its name so a source
+    // that goes away and comes back as a new endpoint (a restarted Network MIDI session) is
+    // reconnected on the next refresh.
+    private var connectedSource: MIDIEndpointRef?
+    private var connectedSourceName: String?
     public var midiSources: [MidiEndpointInfo] = []
+
+    /// Index of the connected source in `midiSources`, or nil if none is connected.
+    public var connectedSourceIndex: Int? {
+        guard let connectedSource else { return nil }
+        return midiSources.firstIndex { $0.midiEndpoint == connectedSource }
+    }
 
     // Reuses Midi.MidiInputEvent (GBGSound) rather than declaring a second, identical event
     // type - both classes live in this same module, and the shape (raw channel + note/velocity/
@@ -126,30 +135,35 @@ public class SeqMidiOut {
         MIDIInputPortCreateWithBlock(midiClient, "\(name) In" as CFString, &inPort) { [weak self] packetListPointer, _ in
             self?.handleIncomingPacketList(packetListPointer)
         }
-        initMidiSources()
+        refreshMidiSources()
     }
 
-    // Mirrors Midi.setMidiSource exactly (disconnect whatever was previously connected first,
-    // so switching sources at runtime doesn't leave the old one still delivering packets too).
+    // Disconnects whatever was previously connected first, so switching sources at runtime
+    // doesn't leave the old one still delivering packets too. Choosing the already-connected
+    // source is a no-op.
     public func setMidiSource(source: Int) {
         guard source >= 0, source < midiSources.count else { return }
-        if sourceConnected, sourceNum < midiSources.count {
-            MIDIPortDisconnectSource(inPort, midiSources[sourceNum].midiEndpoint)
-        }
-        sourceNum = source
-        MIDIPortConnectSource(inPort, midiSources[sourceNum].midiEndpoint, nil)
-        sourceConnected = true
+        let endpoint = midiSources[source].midiEndpoint
+        guard endpoint != connectedSource else { return }
+        if let connectedSource { MIDIPortDisconnectSource(inPort, connectedSource) }
+        MIDIPortConnectSource(inPort, endpoint, nil)
+        connectedSource = endpoint
+        connectedSourceName = midiSources[source].name
     }
 
-    // Re-scans CoreMIDI's current source list - see Midi.refreshMidiPorts's own comment for why
-    // this needs to exist at all (initMidiSources only ever runs once, at initMidiInput). Also
-    // re-resolves the currently connected source by name across the rebuild, same reasoning as
-    // Midi.refreshMidiPorts.
+    /// Re-scans CoreMIDI's sources (devices and sessions come and go after launch). Keeps the
+    /// connected source if it still exists; if it vanished and a source with the same name is
+    /// back, connects that; with nothing connected yet, connects the first source, which is
+    /// what the picker shows as selected.
     public func refreshMidiSources() {
-        let previousSourceName = sourceNum < midiSources.count ? midiSources[sourceNum].name : nil
         initMidiSources()
-        if let previousSourceName, let newIndex = midiSources.firstIndex(where: { $0.name == previousSourceName }) {
-            sourceNum = newIndex
+        if connectedSourceIndex == nil {
+            connectedSource = nil // gone - CoreMIDI drops the connection with the endpoint
+            if let name = connectedSourceName, let index = midiSources.firstIndex(where: { $0.name == name }) {
+                setMidiSource(source: index)
+            } else if !midiSources.isEmpty {
+                setMidiSource(source: 0)
+            }
         }
     }
 
