@@ -20,7 +20,11 @@ import CoreMIDI
 public class SeqMidiOut {
     private var midiClient: MIDIClientRef = 0
     private var outPort: MIDIPortRef = 0
-    private var destNum = 0
+    // The chosen destination, held by endpoint rather than list index so it survives the list
+    // being rebuilt when devices/apps come and go (indices shift; endpoints don't). nil = the
+    // chosen destination went away - sends are dropped rather than landing on whatever now
+    // occupies its old index.
+    private var selectedDestination: MIDIEndpointRef?
 
     public struct MidiEndpointInfo {
         var midiEndpoint: MIDIEndpointRef = 0
@@ -32,10 +36,61 @@ public class SeqMidiOut {
 
     public init() {}
 
+    /// Fires on the main queue whenever CoreMIDI's set of devices/endpoints changes - another
+    /// app (Graph) launching or quitting, a USB device plugged in, a Network MIDI session
+    /// opening. Callers refresh their lists from here instead of only ever seeing what existed
+    /// at launch.
+    public var onSetupChanged: (() -> Void)?
+
     public func initMidi() {
-        MIDIClientCreate("Seq" as CFString, nil, nil, &midiClient)
+        MIDIClientCreateWithBlock("Seq" as CFString, &midiClient) { [weak self] notification in
+            // Property changes too, not just setup changes: a newly created virtual endpoint can
+            // get its display name a moment after it's added, and Graph is found by name.
+            switch notification.pointee.messageID {
+            case .msgSetupChanged, .msgObjectAdded, .msgObjectRemoved, .msgPropertyChanged:
+                self?.scheduleSetupChanged()
+            default:
+                break
+            }
+        }
         MIDIOutputPortCreate(midiClient, "Seq" as CFString, &outPort)
         initMidiDestinations()
+        selectedDestination = midiDestinations.first?.midiEndpoint
+    }
+
+    // CoreMIDI sends several notifications for one change (added, property, setup changed);
+    // coalesce them into a single onSetupChanged per burst.
+    private var setupChangePending = false
+
+    private func scheduleSetupChanged() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, !self.setupChangePending else { return }
+            self.setupChangePending = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                self?.setupChangePending = false
+                self?.onSetupChanged?()
+            }
+        }
+    }
+
+    /// Index of the chosen destination in `midiDestinations`, or nil if it's gone.
+    public var selectedDestinationIndex: Int? {
+        guard let selectedDestination else { return nil }
+        return midiDestinations.firstIndex { $0.midiEndpoint == selectedDestination }
+    }
+
+    /// Re-scans CoreMIDI's destinations, keeping the current choice (by endpoint) if it still
+    /// exists. Returns false if the chosen destination has disappeared.
+    @discardableResult
+    public func refreshMidiDestinations() -> Bool {
+        initMidiDestinations()
+        if selectedDestinationIndex == nil { selectedDestination = nil }
+        return selectedDestination != nil
+    }
+
+    private func send(_ packetList: inout MIDIPacketList) {
+        guard let selectedDestination else { return }
+        MIDISend(outPort, selectedDestination, &packetList)
     }
 
     // MARK: - Input (receiving a live performance, e.g. from Graph)
@@ -153,7 +208,7 @@ public class SeqMidiOut {
 
     public func setMidiDestination(destination: Int) {
         guard destination >= 0, destination < midiDestinations.count else { return }
-        destNum = destination
+        selectedDestination = midiDestinations[destination].midiEndpoint
     }
 
     private func initMidiDestinations() {
@@ -183,7 +238,7 @@ public class SeqMidiOut {
         packet1.data.1 = UInt8(note)
         packet1.data.2 = UInt8(velocity)
         var packetList = MIDIPacketList(numPackets: 1, packet: packet1)
-        if !midiDestinations.isEmpty { MIDISend(outPort, midiDestinations[destNum].midiEndpoint, &packetList) }
+        send(&packetList)
     }
 
     public func noteOff(channel: Int, note: Int) {
@@ -194,7 +249,7 @@ public class SeqMidiOut {
         packet1.data.1 = UInt8(note)
         packet1.data.2 = 0
         var packetList = MIDIPacketList(numPackets: 1, packet: packet1)
-        if !midiDestinations.isEmpty { MIDISend(outPort, midiDestinations[destNum].midiEndpoint, &packetList) }
+        send(&packetList)
     }
 
     /// Sets the receiver's pitch bend range on `channel` to `semitones` (RPN 0, Pitch Bend
@@ -215,7 +270,7 @@ public class SeqMidiOut {
         packet1.data.1 = controller
         packet1.data.2 = value
         var packetList = MIDIPacketList(numPackets: 1, packet: packet1)
-        if !midiDestinations.isEmpty { MIDISend(outPort, midiDestinations[destNum].midiEndpoint, &packetList) }
+        send(&packetList)
     }
 
     // Raw 14-bit value (0...16383, centered at 8192) - same encoding Midi.sendMidiPitchBend
@@ -234,6 +289,6 @@ public class SeqMidiOut {
         packet1.data.1 = lsb8
         packet1.data.2 = msb8
         var packetList = MIDIPacketList(numPackets: 1, packet: packet1)
-        if !midiDestinations.isEmpty { MIDISend(outPort, midiDestinations[destNum].midiEndpoint, &packetList) }
+        send(&packetList)
     }
 }

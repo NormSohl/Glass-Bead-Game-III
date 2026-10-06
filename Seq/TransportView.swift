@@ -103,7 +103,7 @@ struct TransportView: View {
                 .disabled(!sequencer.hasAnyNotes)
 
                 // Panic - manual escape hatch for a voice stuck sounding, e.g. via a note
-                // shorter than pollPlayback's ~30Hz interval getting skipped entirely on the
+                // shorter than pollPlayback's ~60Hz interval getting skipped entirely on the
                 // way out to Graph or an external synth (see SequencerState.panic's own doc
                 // comment). Deliberately its own destructive-looking color, unlike the plain
                 // tintColor the other buttons share - this is a "stop everything now" action,

@@ -117,6 +117,7 @@ final class LiveCaptureState: ObservableObject {
     /// SeqMidiOut.refreshMidiSources' own comment.
     func refreshSources() {
         midi.refreshMidiSources()
+        objectWillChange.send() // midiSources is computed from midi, so nothing else publishes this
     }
 
     /// Clears x/y/z and starts fresh, matching Graph's own Record button - drone is left

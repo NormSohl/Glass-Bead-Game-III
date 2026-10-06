@@ -19,11 +19,13 @@ app, as a separate app from GBG III with its own icon.
 There are two separate ways GBG III and Seq connect, one in each direction:
 
 1. **Seq → GBG III, live MIDI, same Mac only.** GBG III creates a virtual MIDI destination
-   named "Glass Bead Game III" that Seq automatically detects. When both apps are open on the
-   same Mac, Seq shows a **"Graph detected — Connect"** button (Seq's own on-screen name for
-   GBG III); one tap wires Seq's output straight into GBG III, so a sequence played back in Seq
-   can sound through GBG III itself (or drive GBG III's external MIDI/synth output, whatever
-   GBG III is currently set up to do). This only works when both apps are running on the *same
+   named "Glass Bead Game III". Whenever it appears — GBG III already open when Seq starts, or
+   launched later — Seq connects **Graph Out** to it automatically (Graph is Seq's on-screen name
+   for GBG III). From then on, playing or scrubbing in Seq moves GBG III's X/Y crosshair and Z
+   marker in real time and sounds through GBG III itself (or drives GBG III's external
+   MIDI/synth output, whatever GBG III is currently set up to do). If you switch Graph Out off,
+   it stays off until GBG III is relaunched; **"Graph detected — Connect"** reconnects by hand.
+   You may want Seq's **Internal Synth** off while Graph Out is on, so you hear one sound, not two. This only works when both apps are running on the *same
    machine* — there's no wireless/network link built in.
 2. **GBG III → Seq, live MIDI, any connection CoreMIDI supports.** The reverse direction: Seq
    captures a performance directly as you play it in GBG III. See **Live capture** below — this

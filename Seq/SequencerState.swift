@@ -99,11 +99,14 @@ final class SequencerState: ObservableObject {
     @Published var graphDestinationIndex: Int = 0 {
         didSet { graphMidiOut.setMidiDestination(destination: graphDestinationIndex) }
     }
-    // Set once at init if a destination named graphVirtualDestinationName is found - lets the
-    // UI offer a one-tap "Graph detected, connect?" affordance instead of requiring manual
-    // picker selection every time, without silently auto-connecting on its own.
+    // Where Graph's virtual destination (graphVirtualDestinationName) sits in the list, kept
+    // current by refreshMidiEndpoints as apps launch and quit. When Graph appears - already
+    // running at Seq's launch, or launched later - Graph Out connects to it automatically, so
+    // playback moves Graph's crosshair/Z marker (and sounds through it) with no setup. Turning
+    // Graph Out off sticks until Graph next reappears; the "Graph detected - Connect" button
+    // reconnects by hand.
     @Published private(set) var detectedGraphDestinationIndex: Int?
-    var graphMidiDestinations: [SeqMidiOut.MidiEndpointInfo] { graphMidiOut.midiDestinations }
+    @Published private(set) var graphMidiDestinations: [SeqMidiOut.MidiEndpointInfo] = []
 
     // Tracks, per voice, which Note (if any) is currently sounding over the Graph MIDI
     // connection - a class reference, compared by identity, so a genuinely new Note (even one
@@ -254,9 +257,9 @@ final class SequencerState: ObservableObject {
         applyInternalSynthEnable()
 
         graphMidiOut.initMidi()
-        if let index = graphMidiOut.midiDestinations.firstIndex(where: { $0.name == graphVirtualDestinationName }) {
-            detectedGraphDestinationIndex = index
-        }
+        // One setup-change hook covers everything: the notification is system-wide, and
+        // refreshMidiEndpoints rescans both outputs and the capture sources.
+        graphMidiOut.onSetupChanged = { [weak self] in self?.refreshMidiEndpoints() }
         // Named "Seq" so it shows up by that name in Graph's own MIDI Destination picker -
         // that picker is the entire UI this needs on Graph's side, already built and already
         // generic (lists whatever CoreMIDI sees, same-Mac/USB/Network MIDI alike).
@@ -266,6 +269,7 @@ final class SequencerState: ObservableObject {
         // capturing, so the piano roll redraws live instead of only once capture stops.
         liveCapture.onUpdate = { [weak self] in self?.scoreRevision += 1 }
         synthMidiOut.initMidi()
+        refreshMidiEndpoints()
         pitchBendRangeSubscription = settings.$pitchBendRange
             .dropFirst()
             .removeDuplicates()
@@ -298,7 +302,7 @@ final class SequencerState: ObservableObject {
     /// and fires note-off once amplitude drops to 0 or no note is found. `sounding` is the
     /// caller's own per-voice tracking slot (graphMidiSoundingNote/synthMidiSoundingNote),
     /// passed by reference so this one function serves both outputs identically. Shared by
-    /// both pollPlayback (continuous, ~30Hz during real playback) and scrub (discrete, per
+    /// both pollPlayback (continuous, ~60Hz during real playback) and scrub (discrete, per
     /// drag update) - both need identical note-on/hold/off logic, just called at different
     /// cadences.
     private func driveMidiOutput(_ output: SeqMidiOut, channel: Int, note: Note?, sample: Int, sounding: inout Note?) {
@@ -368,7 +372,38 @@ final class SequencerState: ObservableObject {
             sendSynthPitchBendRange()
         }
     }
-    var synthMidiDestinations: [SeqMidiOut.MidiEndpointInfo] { synthMidiOut.midiDestinations }
+    @Published private(set) var synthMidiDestinations: [SeqMidiOut.MidiEndpointInfo] = []
+
+    /// Rescans MIDI endpoints (at launch, and whenever CoreMIDI reports a change): refreshes
+    /// both outputs' destination lists keeping each chosen destination if it still exists,
+    /// switches an output off if its destination went away, auto-connects Graph Out when Graph
+    /// appears, and refreshes live capture's source list.
+    func refreshMidiEndpoints() {
+        graphMidiOut.refreshMidiDestinations()
+        graphMidiDestinations = graphMidiOut.midiDestinations
+        if let index = graphMidiOut.selectedDestinationIndex {
+            if index != graphDestinationIndex { graphDestinationIndex = index }
+        } else if graphOutputEnabled {
+            graphMidiSoundingNote.removeAll() // nothing to send note-offs to any more
+            graphOutputEnabled = false
+        }
+
+        let graphIndex = graphMidiDestinations.firstIndex { $0.name == graphVirtualDestinationName }
+        let graphAppeared = graphIndex != nil && detectedGraphDestinationIndex == nil
+        detectedGraphDestinationIndex = graphIndex
+        if graphAppeared { connectDetectedGraph() }
+
+        synthMidiOut.refreshMidiDestinations()
+        synthMidiDestinations = synthMidiOut.midiDestinations
+        if let index = synthMidiOut.selectedDestinationIndex {
+            if index != synthDestinationIndex { synthDestinationIndex = index }
+        } else if synthOutputEnabled {
+            synthMidiSoundingNote.removeAll()
+            synthOutputEnabled = false
+        }
+
+        liveCapture?.refreshSources()
+    }
 
     @Published var synthDroneChannel: Int = 1 { didSet { sendSynthPitchBendRange() } }
     @Published var synthXChannel: Int = 2 { didSet { sendSynthPitchBendRange() } }
@@ -444,7 +479,9 @@ final class SequencerState: ObservableObject {
         stopPlayheadPolling()
         // .common, not .default, so this keeps firing while the piano roll's own DragGesture is
         // tracking (panning, scrubbing, dragging a handle).
-        let timer = Timer(timeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
+        // 60Hz, so Graph's crosshair and Z marker (driven by these sends) move smoothly with
+        // playback rather than in visible ~33ms steps.
+        let timer = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
             self?.pollPlayback()
         }
         RunLoop.main.add(timer, forMode: .common)
@@ -528,7 +565,7 @@ final class SequencerState: ObservableObject {
     /// amplitudes rather than leaving them frozen mid-note) and broadcasts a MIDI note-off on
     /// every channel either output could possibly be using - not just whatever this session's
     /// own graphMidiSoundingNote/synthMidiSoundingNote tracking currently believes is sounding.
-    /// That per-voice tracking is exactly what can desync (pollPlayback runs at a fixed ~30Hz -
+    /// That per-voice tracking is exactly what can desync (pollPlayback runs at a fixed ~60Hz -
     /// see startPlayheadPolling - so a note shorter than one poll interval can be skipped
     /// entirely: a fresh note-on then fires for whatever note the next poll happens to land on,
     /// with no note-off ever sent for the one that got skipped), so a real panic can't rely on
