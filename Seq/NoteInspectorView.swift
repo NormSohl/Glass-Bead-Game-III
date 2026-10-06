@@ -2,8 +2,8 @@
 //  NoteInspectorView.swift
 //  Seq
 //
-//  Exact editing for the selected note: start/end time, start/end pitch (a scale ratio like
-//  "5/4", or Hz), and the profile dropdown that shapes the bend between them. A held note is
+//  Exact editing for the selected note: start/end time (bar.beat.division with the grid on,
+//  seconds otherwise - "1.25s" works either way), start/end pitch (a scale ratio like "5/4", or Hz), and the profile dropdown that shapes the bend between them. A held note is
 //  just a bend with equal pitches, so "Hold" sets end pitch = start pitch.
 //
 
@@ -51,20 +51,12 @@ struct NoteInspectorView: View {
         Text(voiceNames[selection.voice] ?? "").bold()
 
         labeled("Start") {
-            CommitField(value: seconds(note.startTime), width: 70) { text in
-                guard let value = Double(text) else { return false }
-                sequencer.setTime(.start, of: selection, time: Int(value * sequencer.sampleRate))
-                return true
-            }
+            timeField(.start, of: selection)
         }
         labeled("End") {
-            CommitField(value: seconds(note.endTime), width: 70) { text in
-                guard let value = Double(text) else { return false }
-                sequencer.setTime(.end, of: selection, time: Int(value * sequencer.sampleRate))
-                return true
-            }
+            timeField(.end, of: selection)
         }
-        Text(gridPosition(note) + String(format: "%.3fs long", Double(note.endTime - note.startTime) / sequencer.sampleRate))
+        Text(String(format: "%.3fs long", Double(note.endTime - note.startTime) / sequencer.sampleRate))
             .foregroundStyle(.secondary)
             .monospacedDigit()
 
@@ -120,17 +112,21 @@ struct NoteInspectorView: View {
         }
     }
 
-    private func seconds(_ sample: Int) -> String {
-        String(format: "%.3f", Double(sample) / sequencer.sampleRate)
+    private func timeField(_ edge: NoteEdge, of selection: NoteSelection) -> some View {
+        let grid = sequencer.timeGrid
+        let sample = edge == .start ? selection.note.startTime : selection.note.endTime
+        return CommitField(value: TimeText.format(sample, grid: grid, sampleRate: sequencer.sampleRate), width: 80) { text in
+            guard let time = TimeText.parse(text, grid: grid, sampleRate: sequencer.sampleRate) else { return false }
+            sequencer.setTime(edge, of: selection, time: time)
+            return true
+        }
+        .help(grid == nil
+              ? "Seconds"
+              : "Bar.beat.division, e.g. 3.2 or 3.2.4 (\(sequencer.beatsPerBar) beats/bar, \(sequencer.gridSubdivision) per beat) - or seconds with an s, e.g. 1.25s")
     }
 
     private func pitch(_ frequency: Double) -> String {
         PitchText.format(frequency, rootFrequency: settings.rootFrequency, scale: scale)
-    }
-
-    private func gridPosition(_ note: Note) -> String {
-        guard let tempo = sequencer.activeTempo else { return "" }
-        return "at " + pianoRollTimeLabel(sample: note.startTime, sampleRate: sequencer.sampleRate, tempo: tempo, beatsPerBar: sequencer.beatsPerBar, subdivision: sequencer.gridSubdivision) + ", "
     }
 
     private func label(for kind: TransitionKind) -> String {

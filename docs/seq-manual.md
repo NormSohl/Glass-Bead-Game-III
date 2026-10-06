@@ -133,8 +133,10 @@ note never moves another.
 
 **Editing a note:** in any tool, drag a note's start or end dot to move that end in time and
 pitch, or drag its line to move the whole note (a bend keeps its interval). In **Select**,
-click a note to select it, then use the inspector to type exact values: start/end time in
-seconds, start/end pitch as a ratio of the root (`5/4`, `7/4`) or in Hz (`440`), choose the
+click a note to select it, then use the inspector to type exact values: start/end time
+(with the grid on, as bar.beat.division like a DAW - `3`, `3.2` or `3.2.4`, all counting from 1,
+so a note ending at `5` ends on bar 5's downbeat; or in seconds with an `s`, like `1.25s`; with
+the grid off, plain seconds), start/end pitch as a ratio of the root (`5/4`, `7/4`) or in Hz (`440`), choose the
 profile from the dropdown, **Hold** to make end pitch = start pitch, or delete it (⌫ also
 deletes, Esc deselects, Space plays/stops). Pitches snap to the scale and times to the grid;
 hold **Option** while clicking or dragging for free placement. A note with recorded detail can

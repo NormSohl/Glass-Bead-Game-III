@@ -169,6 +169,11 @@ final class SequencerState: ObservableObject {
         return TempoInfo(bpm: gridBPM, downbeatOffset: gridDownbeatOffset, confidence: 1)
     }
 
+    /// The grid in the form the inspector's bar.beat.division time fields use, or nil with it off.
+    var timeGrid: TimeGrid? {
+        activeTempo.map { TimeGrid(tempo: $0, beatsPerBar: beatsPerBar, subdivision: gridSubdivision, sampleRate: sampleRate) }
+    }
+
     /// `sample` snapped to the grid's subdivision, or unchanged with the grid off.
     func snapTime(_ sample: Int) -> Int {
         guard let tempo = activeTempo else { return sample }
