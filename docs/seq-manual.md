@@ -1,10 +1,11 @@
 # Seq — User Manual
 
-*Companion to the GBG III manual. Seq is a companion app for reviewing and editing performances
-you've recorded in GBG III (Glass Bead Game III) — not something you need for ordinary live
-playing. See the main GBG III manual for setup and how to play GBG III itself.*
+*Companion to the GBG III manual. Seq is a companion app for writing sequences note by note
+and for capturing, reviewing and editing performances played in GBG III (Glass Bead Game III) —
+not something you need for ordinary live playing. See the main GBG III manual for setup and how
+to play GBG III itself.*
 
-*Draft — not yet public. Will publish alongside App Store approval for GBG III and Seq.*
+*Draft — not yet public. GBG III's first release ships on its own; Seq comes later.*
 
 ---
 
@@ -15,8 +16,7 @@ app, as a separate app from GBG III with its own icon.
 
 ## How GBG III and Seq talk to each other
 
-There are three separate ways GBG III and Seq connect — it's worth understanding all three,
-since they serve different purposes:
+There are two separate ways GBG III and Seq connect, one in each direction:
 
 1. **Seq → GBG III, live MIDI, same Mac only.** GBG III creates a virtual MIDI destination
    named "Glass Bead Game III" that Seq automatically detects. When both apps are open on the
@@ -26,21 +26,22 @@ since they serve different purposes:
    GBG III is currently set up to do). This only works when both apps are running on the *same
    machine* — there's no wireless/network link built in.
 2. **GBG III → Seq, live MIDI, any connection CoreMIDI supports.** The reverse direction: Seq
-   can capture a performance directly as you play it in GBG III, no file needed at all. See
-   **Live capture** below — this one *does* work over USB or Network MIDI, not just same-Mac.
-3. **File export/import, any device.** GBG III can save what you've played as a file; Seq can
-   open that file. This is how a performance recorded on the iPad reaches Seq on your Mac when
-   there's no live connection between them — move the file over however you'd move any file
-   (AirDrop, Files app, iCloud Drive, etc.), then open it in Seq. Files are real Standard MIDI
-   Files (`.midi`) — any DAW can open one, though only Seq understands the extra, safely-ignored
-   metadata that carries the exact scale/tuning a performance was played in and preserves
-   Seq's own per-note editing detail losslessly.
+   captures a performance directly as you play it in GBG III. See **Live capture** below — this
+   one *does* work over USB or Network MIDI, not just same-Mac, and it's the only way a
+   performance gets from GBG III into Seq: GBG III itself doesn't record or save performances.
+   To bring in something played on the iPad, connect it to the Mac over Network MIDI or USB and
+   capture it live.
+
+Files are Seq's own business: **Save** and **Open** read and write real Standard MIDI Files
+(`.mid`), so you can keep pieces, move them between Macs, or open them in any DAW. Only Seq
+understands the extra, safely-ignored metadata that carries the exact scale/tuning a piece uses
+and preserves Seq's own per-note editing detail losslessly. Seq can also open plain MIDI files
+from elsewhere.
 
 ## Live capture — recording straight into Seq
 
-The most direct path, when both apps can reach each other over MIDI (same Mac, USB, or Network
-MIDI/RTP-MIDI - see below): no Record/Save in GBG III, no Open in Seq, just play and watch the
-notes appear in the piano roll as you play them.
+Works whenever both apps can reach each other over MIDI (same Mac, USB, or Network
+MIDI/RTP-MIDI - see below): just play and watch the notes appear in Seq as you play them.
 
 1. In GBG III's Settings, set **MIDI Destination** to **Seq** (it shows up in that picker like
    any other MIDI destination, since Seq advertises itself the same way GBG III does) and make
@@ -48,10 +49,10 @@ notes appear in the piano roll as you play them.
 2. In Seq's transport bar, tap **Capture**. It stays armed (shown as **Stop**) until you tap it
    again - play as long as you like across it. This stops playback if it was running, since the
    two can't happen at once.
-3. Play in GBG III. X/Y/Z are captured continuously, the same detail level as GBG III's own
-   Record feature (drone isn't - there's no touch gesture driving it, same as Record) - and the
-   piano roll draws each note as you play it, live, not only once you stop.
-4. Tap **Stop** in Seq when you're done. What's already in the piano roll *is* the captured
+3. Play in GBG III. X/Y/Z pitch is captured continuously for as long as you're touching the
+   graph - gaps between phrases are kept as silence - and Seq draws each note as you play it,
+   live, not only once you stop. The drone isn't captured: there's no touch gesture driving it.
+4. Tap **Stop** in Seq when you're done. What's already on screen *is* the captured
    performance, raw and unsegmented - nothing to open, nothing to save first. Apply **Segment**
    (see below) whenever you're ready, or leave it as-is and segment/edit some other time.
 
@@ -61,29 +62,15 @@ will show Seq the same way it does on the same Mac. USB is a separate mechanism,
 in the cable": macOS bridges a USB-connected iPad's MIDI via IDAM (Inter-Device Audio & MIDI),
 which needs enabling per-connection in **Audio MIDI Setup**'s *Audio Devices* window (not the
 MIDI Studio window a real MIDI interface would show up in) - look for the iPad's own entry there
-and click **Enable**. Seq assumes
-GBG III's MPE channel assignment for X/Y/Z - GBG III is MPE-only now, with no separate mode to
-fall out of sync with, so this always lines up (Record → Save → Open never depended on this
-either, since files carry no such assumption).
+and click **Enable**. Seq assumes GBG III's MPE channel assignment for X/Y/Z - GBG III is
+MPE-only, with no separate mode to fall out of sync with, so this always lines up. Set Seq's
+**Pitch Bend Range** to match GBG III's (see *Sending Seq's output somewhere*), or captured
+pitches come out wrong.
 
-## Recording a performance in GBG III (for Save/Open instead of live capture)
+## Opening a file in Seq
 
-In GBG III's Settings panel, under **Live Recording**:
-
-1. Tap **Record**, then play. GBG III captures your X/Y/Z touch pitch continuously (300 times a
-   second) for as long as you're actually touching the graph — gaps between phrases are kept as
-   silence, not stitched together.
-2. Tap **Record** again to stop.
-3. Tap **Save** to export a file (default name "Live Recording"). Move this file to wherever
-   Seq will open it from.
-
-The drone voice is never captured this way — there's no touch gesture driving it, so recordings
-only ever contain X/Y/Z material.
-
-## Opening a recording in Seq
-
-Use Seq's **Open** button and pick the file. If Seq recognizes it as a raw, unsegmented
-recording, it asks:
+Use Seq's **Open** button and pick a `.mid` file. If it holds a raw, unsegmented capture (one
+you saved before segmenting), Seq asks:
 
 - **Segment** — automatically break the continuous recorded pitch into discrete notes (see
   below).
