@@ -5,7 +5,7 @@ and for capturing, reviewing and editing performances played in GBG III (Glass B
 not something you need for ordinary live playing. See the main GBG III manual for setup and how
 to play GBG III itself.*
 
-*Draft — not yet public. GBG III's first release ships on its own; Seq comes later.*
+*Seq is a work in progress, not ready for release. It is not on the App Store; GBG III ships without it. This manual is a draft and may not match the current build.*
 
 ---
 
