@@ -10,7 +10,7 @@
 # the login keychain (the script offers to do that). Claude Code's own shell can't sign.
 #
 # ONE-TIME SETUP
-#   1. App Store Connect: GBG III ships as version 2.0 of the existing "A Glass Bead Game" app
+#   1. App Store Connect: GBG III ships as version 3.0 of the existing "A Glass Bead Game" app
 #      (bundle ID com.sohl.norm.Glass-Bead-Game-2), so no new app record is needed. Make sure
 #      that record has both iOS and macOS platforms; add macOS there if it's missing.
 #   2. App Store Connect > Users and Access > Integrations > App Store Connect API: generate a

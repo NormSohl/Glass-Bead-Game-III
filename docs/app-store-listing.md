@@ -1,9 +1,9 @@
 # App Store Connect — listing copy (Glass Bead Game III)
 
-**This is version 2.0 of the existing App Store app "A Glass Bead Game"** (bundle ID
+**This is version 3.0 of the existing App Store app "A Glass Bead Game"** (bundle ID
 `com.sohl.norm.Glass-Bead-Game-2`, apps.apple.com/us/app/a-glass-bead-game/id6686394632).
 Existing owners get it as an update and the App Store link stays the same. Make the new version
-in that app's record (**+ Version or Platform → 2.0**), not a new app.
+in that app's record (**+ Version or Platform → 3.0**), not a new app.
 
 Paste-ready. Character limits noted; check counts with `scripts`-free `wc -m` if you edit.
 
@@ -123,5 +123,5 @@ Designed for Apple Pencil, keyboard or mouse. No account or sign-in.
 - App Privacy: **Data Not Collected** (matches PrivacyInfo.xcprivacy).
 - Age rating: 4+. Category: Music. Price: Free.
 - Platforms: iOS (iPad only) and macOS, same bundle ID, one record. Check the existing record has macOS; add it if not.
-- Version 2.0, build number from the upload script (git commit count), well above the old app's.
+- Version 3.0, build number from the upload script (git commit count), well above the old app's.
 - Screenshots: 13" iPad landscape 2752×2064 (or 2064×2752), Mac 2880×1800.
