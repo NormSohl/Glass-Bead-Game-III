@@ -30,4 +30,8 @@ The name comes from Hermann Hesse's novel, in which the fictional Glass Bead Gam
 
 ## Repo history
 
-This repo is a continuation of [Glass-Bead-Game-2](https://github.com/NormSohl/Glass-Bead-Game-2), branched with full history. The purpose of this repo is to try expanding the app with Claude Code's help.
+This repo is a continuation of Glass-Bead-Game-2 (the 2024 app, still a private repo), branched with full history. The purpose of this repo is to try expanding the app with Claude Code's help.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
