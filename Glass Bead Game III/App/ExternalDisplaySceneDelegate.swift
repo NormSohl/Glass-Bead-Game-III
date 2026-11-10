@@ -21,6 +21,7 @@ final class ExternalDisplaySceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
 
         let window = UIWindow(windowScene: windowScene)
+        window.overrideUserInterfaceStyle = .dark // match the main window (see GlassBeadGameIIIApp)
         window.rootViewController = UIHostingController(rootView: AudienceGraphView())
         self.window = window
         window.makeKeyAndVisible()

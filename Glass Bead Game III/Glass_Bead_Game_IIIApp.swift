@@ -45,6 +45,11 @@ struct GlassBeadGameIIIApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                // Always dark: the canvas is always black, and the iPad ControlColumn's icons
+                // use Color.primary - black in light mode, so on a light-mode iPad every control
+                // but the red Panic button was invisible. Found 2026-11-10 taking App Store
+                // screenshots. Applies to the window, so the Settings popover follows it too.
+                .preferredColorScheme(.dark)
         }
         .windowResizability(.contentSize)
         // Window width should exactly match its content (graph + Z-slider, no dead space) - a

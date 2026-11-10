@@ -9,7 +9,8 @@
 # Run it from a session that can sign: Terminal.app, or an SSH/Termius session after unlocking
 # the login keychain (the script offers to do that). Claude Code's own shell can't sign.
 #
-# ONE-TIME SETUP
+# ONE-TIME SETUP (the API key is optional: without ASC_KEY_ID set, the Apple ID signed in to
+# Xcode > Settings > Accounts is used instead, which works when running on the Mac itself)
 #   1. App Store Connect: GBG III ships as version 3.0 of the existing "A Glass Bead Game" app
 #      (bundle ID com.sohl.norm.Glass-Bead-Game-2), so no new app record is needed. Make sure
 #      that record has both iOS and macOS platforms; add macOS there if it's missing.
@@ -88,8 +89,11 @@ fi
 [[ "$BUILD_NUMBER" =~ ^[0-9]+$ ]] || die "--build must be a whole number"
 
 AUTH_ARGS=()
-if [[ $DRY_RUN -eq 0 ]]; then
-    [[ -n "${ASC_KEY_ID:-}" ]] || die "ASC_KEY_ID not set (see ONE-TIME SETUP in this script)"
+if [[ -z "${ASC_KEY_ID:-}" ]]; then
+    # No API key: xcodebuild falls back to the Apple ID signed in to Xcode > Settings >
+    # Accounts, which can do cloud-managed distribution signing and the upload itself.
+    echo "No ASC_KEY_ID set - signing and uploading with the account signed in to Xcode."
+else
     [[ -n "${ASC_ISSUER_ID:-}" ]] || die "ASC_ISSUER_ID not set (see ONE-TIME SETUP in this script)"
     ASC_KEY_PATH="${ASC_KEY_PATH:-$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8}"
     [[ -f "$ASC_KEY_PATH" ]] || die "API key not found at $ASC_KEY_PATH"
