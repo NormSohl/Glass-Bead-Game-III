@@ -2,8 +2,6 @@
 
 *Glass Bead Game III is shortened to* **GBG III** *throughout this manual.*
 
-*Draft — not yet public. Will publish alongside App Store approval for GBG III.*
-
 This manual is organized in increasing order of complexity: setup, then playing GBG III live,
 then the settings you'll reach for occasionally, then connecting outboard MIDI gear.
 
@@ -22,8 +20,9 @@ Installs from the App Store, same as any other app — nothing special needed.
 GBG III is free software. It doesn't require an account, doesn't ask you to sign in or sign up,
 has no in-app purchases or payments of any kind, and doesn't track or transmit your data
 anywhere — it makes no network connections on its own. The one exception is entirely your
-choice: **Enable Network MIDI** (§4) opens a local Wi-Fi connection for MIDI only, off by
-default, and only to devices on your own network.
+choice: on iPad, **Enable Network MIDI** (§4) opens a local Wi-Fi connection for MIDI only, off by
+default, and only to devices on your own network. (On Mac, Network MIDI is set up in macOS's own
+Audio MIDI Setup, not in GBG III.)
 
 ### What GBG III is
 
@@ -179,6 +178,9 @@ occasionally rather than mid-phrase.
 
 ## 4. Connecting outboard MIDI gear
 
+MIDI output is controlled by **Use Midi MPE** in Settings (on by default). Everything in this
+section lives under that switch.
+
 GBG III's **MIDI Destination** and **MIDI Source** pickers (under Use Midi MPE) list whatever your
 Mac or iPad already sees as MIDI ports — physical USB-MIDI interfaces, virtual/IAC ports,
 Bluetooth MIDI devices, or Network MIDI sessions. GBG III draws no distinction between these:
@@ -193,6 +195,17 @@ separate in-app Bluetooth pairing screen — pair the device at the system level
   a sequencer or DAW playing X/Y/Z back on their channels (2/3/4, see **MPE** below).
 - **Use internal synth** — GBG III's own built-in sound. Turn this off once your outboard gear
   is working and you'd rather hear only that.
+
+### Network MIDI (Wi-Fi)
+
+- **iPad:** turn on **Enable Network MIDI**. Your iPad then appears as a Network MIDI session
+  that a Mac on the same Wi-Fi can connect to in **Audio MIDI Setup → Window → Show MIDI Studio**,
+  then the **Network** (globe) button (or a USB cable works too). Once connected, the
+  session shows up in **MIDI Destination** and **MIDI Source** like any other port. iPadOS asks for Local Network
+  permission the first time; if you declined, turn it back on in **Settings → Privacy &
+  Security → Local Network**.
+- **Mac:** there's no switch in GBG III. Set up the session in Audio MIDI Setup's MIDI Network
+  Setup window, and it appears in GBG III's pickers.
 
 ### Sustain pedal
 

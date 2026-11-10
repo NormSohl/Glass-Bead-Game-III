@@ -10,8 +10,9 @@
 # the login keychain (the script offers to do that). Claude Code's own shell can't sign.
 #
 # ONE-TIME SETUP
-#   1. App Store Connect: create the app record (both iOS and macOS platforms) with bundle ID
-#      com.sohl.norm.Glass-Bead-Game-III. An upload fails without it.
+#   1. App Store Connect: GBG III ships as version 2.0 of the existing "A Glass Bead Game" app
+#      (bundle ID com.sohl.norm.Glass-Bead-Game-2), so no new app record is needed. Make sure
+#      that record has both iOS and macOS platforms; add macOS there if it's missing.
 #   2. App Store Connect > Users and Access > Integrations > App Store Connect API: generate a
 #      Team key with the "Admin" role and download AuthKey_<KEYID>.p8 (only downloadable once).
 #      Put it in ~/.appstoreconnect/private_keys/ and chmod 600 it. Admin rather than App
@@ -43,7 +44,7 @@ set -euo pipefail
 
 SCHEME="Glass Bead Game III"
 PROJECT="Glass Bead Game III.xcodeproj"
-BUNDLE_ID="com.sohl.norm.Glass-Bead-Game-III"
+BUNDLE_ID="com.sohl.norm.Glass-Bead-Game-2"
 
 PLATFORM="both"
 BUILD_NUMBER=""
