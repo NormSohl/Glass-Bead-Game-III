@@ -34,7 +34,8 @@ a map of that space — every visible intersection is a specific, exact interval
 root. Play by moving through the map instead of pressing fixed keys.
 
 For the theory behind it — why just intonation, how the lattice is built, what the diamonds and
-scale limits mean mathematically — see [MapTone](https://www.sohl.com/maptone/).
+scale limits mean mathematically — see [An Atlas of Consonance](https://www.sohl.com/maptone/), an essay with interactive figures
+built on the same math as GBG III.
 
 On first launch, GBG III asks for nothing — no Bluetooth pairing prompt, and MIDI access needs
 no permission prompt on either platform for a normal outboard-MIDI or Network MIDI connection.
@@ -156,7 +157,8 @@ occasionally rather than mid-phrase.
 - **Dissonance Field** — a continuous roughness/consonance visualization behind the grid. Turn
   it on when exploring unfamiliar harmonic territory and you want to *see* where the consonant
   regions are, not just the marked diamonds; leave it off otherwise to save a little rendering
-  overhead.
+  overhead. The [Dissonance section of An Atlas of Consonance](https://www.sohl.com/maptone/#s8)
+  explains what the field shows.
 - **Filter Grid to Z** — thins the background grid down to just the scale degrees relevant to
   your current Z position, matching how the diamonds themselves thin out. Turn it off if you'd
   rather see the full, uniform grid regardless of where Z sits.
